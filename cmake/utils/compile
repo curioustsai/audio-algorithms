@@ -1,0 +1,169 @@
+#!/bin/bash
+set -e
+
+#------------- get parameters section ------------------------------------------
+
+printHelp() {
+	echo "Usage: "
+	echo "$SCRIPT -p <platform> [-t] [-b <buildType>] [-l <libsType>] [-j <njobs>] [-n] [-c] [-h]"
+	echo ""
+	echo "    -p    Platform which can be: ${UBNT_PLATFORMS_LIST[*]}. There is no default value. This is mandatory."
+	echo "    -t    Build the tests."
+	echo "    -d    Build with log level debug."
+	echo "    -b    The build type which can be Debug, Release or MinSizeRel. Default is MinSizeRel."
+	echo "    -l    How the libraries will be built. Either STATIC or SHARED. Default is STATIC."
+	echo "    -j    How many compilation units will be done simultaneously. Default is 4."
+	echo "    -n    Skip all intermediate steps and perform the build directly"
+	echo "    -c    Do clean before build"
+	echo "    -h    Prints this help and exits."
+	echo ""
+}
+
+UBNT_BUILD_TYPE=MinSizeRel
+UBNT_PLATFORM_TYPE=__empty__
+UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3b gen4l x86)
+UBNT_LIBRARIES_TYPE=STATIC
+UBNT_JOBS_COUNT=4
+UBNT_EXPORT_COMPILE_COMMANDS=ON
+UBNT_DO_CLEAN=OFF
+
+UBNT_WITH_TESTS=OFF
+AUDIO_LOG_LEVEL="warn"
+
+SCRIPT=$0
+OPTIONS="p:tg:b:l:j:nch"
+ARGS=`getopt $OPTIONS $*`
+set -- $ARGS
+for i
+do
+	case "$i"
+	in
+		-p)
+			UBNT_PLATFORM_TYPE=$2; shift
+			shift
+			;;
+		-t)
+			UBNT_WITH_TESTS=ON
+			shift
+			;;
+		-g)
+			AUDIO_LOG_LEVEL=$2; shift
+			shift
+			;;
+		-b)
+			UBNT_BUILD_TYPE=$2; shift
+			shift
+			;;
+		-l)
+			UBNT_LIBRARIES_TYPE=$2; shift
+			shift
+			;;
+		-j)
+			UBNT_JOBS_COUNT=$2; shift
+			shift
+			;;
+		-c)
+			UBNT_DO_CLEAN=YES
+			shift
+			;;
+		-n)
+			UBNT_SKIP_TO_NINJA=1
+			shift;;
+		-h)
+			printHelp
+			exit 0
+			;;
+	esac
+done
+
+#validation of the user input
+if [[ ! "${UBNT_PLATFORMS_LIST[*]}" =~ "${UBNT_PLATFORM_TYPE}" ]]
+then
+	printHelp
+	exit 1
+fi
+if [ "${UBNT_BUILD_TYPE}" != "Debug" ] && [ "${UBNT_BUILD_TYPE}" != "Release" ] && [ "${UBNT_BUILD_TYPE}" != "MinSizeRel" ]
+then
+	printHelp
+	exit 2
+fi
+if [ "${UBNT_LIBRARIES_TYPE}" != "STATIC" ] && [ "${UBNT_LIBRARIES_TYPE}" != "SHARED" ]
+then
+	printHelp
+	exit 3
+fi
+
+#compute some folder paths
+UBNT_CMAKE_DIR=$(readlink -m $(dirname $0)/../..)
+UBNT_OUTPUT_DIR=${UBNT_CMAKE_DIR}/build/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}/
+UBNT_WORK_DIR=${UBNT_OUTPUT_DIR}/work
+UBNT_ROOTFS_DIR=${UBNT_OUTPUT_DIR}/rootfs
+
+if [ ${UBNT_DO_CLEAN} == "YES" ]
+then
+	echo "CLEAN ${UBNT_OUTPUT_DIR}"
+	rm -rf ${UBNT_OUTPUT_DIR}
+fi
+
+#establish how the install will be done: with or without strip
+if [ "${UBNT_BUILD_TYPE}" = "Debug" ]
+then
+	INSTALL_TARGET="install"
+else
+	INSTALL_TARGET="install/strip"
+fi
+
+if [ "${UBNT_SKIP_TO_NINJA}" = "1" ]
+then
+	cd ${UBNT_WORK_DIR} && \
+	DESTDIR=${UBNT_ROOTFS_DIR} STAGING_DIR=none \
+		ninja -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
+	exit 0
+fi
+
+if [ "${UBNT_PLATFORM_TYPE}" != "x86" ]
+then
+	#------------- initialize variables for various parts of the scripts -----------
+	. ${UBNT_CMAKE_DIR}/cmake/utils/defaults.sh
+
+	#------------- grab firmware cache - toolchains and staging --------------------
+	. ${UBNT_CMAKE_DIR}/cmake/utils/getBarebonesBuilder.sh
+fi
+
+#------------- do the compilation and installation -----------------------------
+mkdir -p ${UBNT_WORK_DIR}
+mkdir -p ${UBNT_ROOTFS_DIR}
+
+if [ "${UBNT_PLATFORM_TYPE}" != "x86" ]
+then
+	BBB=${UBNT_FW_CACHE}/${UBNT_PLATFORM_TYPE}/barebones
+
+	set +e
+	which cmake
+	if [ "$?" = "1" ]
+	then
+		PATH=$PATH:${BBB}/staging_dir/host/bin/
+	fi
+	set -e
+fi
+
+cd ${UBNT_WORK_DIR} && cmake \
+	-DCMAKE_TOOLCHAIN_FILE=${UBNT_CMAKE_DIR}/cmake/conf/toolchain_${UBNT_PLATFORM_TYPE}.cmake \
+	-DUBNT_FW_CACHE=${UBNT_FW_CACHE} \
+	-DUBNT_LIBRARIES_TYPE=${UBNT_LIBRARIES_TYPE} \
+	-DCMAKE_BUILD_TYPE=${UBNT_BUILD_TYPE} \
+	-DUBNT_WITH_TESTS=${UBNT_WITH_TESTS} \
+	-DAUDIO_LOG_LEVEL=${AUDIO_LOG_LEVEL} \
+	-DUBNT_DEBUG_CMDS=${UBNT_DEBUG_CMDS} \
+	-DCMAKE_EXPORT_COMPILE_COMMANDS=${UBNT_EXPORT_COMPILE_COMMANDS} \
+	-G Ninja \
+	${UBNT_CMAKE_DIR}
+#	-DCMAKE_VERBOSE_MAKEFILE=TRUE \
+
+cd ${UBNT_WORK_DIR} && \
+	DESTDIR=${UBNT_ROOTFS_DIR} STAGING_DIR=none \
+		ninja -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
+
+#------------------- post-build actions ----------------------------------------
+
+tree -s ${UBNT_ROOTFS_DIR}

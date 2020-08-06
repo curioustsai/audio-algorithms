@@ -1,0 +1,52 @@
+# default to uvc-develop and all configs use same build
+job_name=unifi-protect/uvc/uvc-firmware/develop
+job_number=519
+default_barebones_path=${job_name}/$job_number
+
+# gen2
+NAME_gen2_barebones=openwrt-gen2-rel.tar.gz
+PATH_gen2_barebones=$default_barebones_path
+HASH_gen2_barebones=3283179ab3296075822a336d1b4c161b
+
+NAME_gen2_toolchains=toolchain-arm_v6k_gcc-4.7-linaro_uClibc-0.9.33.2_eabi.tar.xz
+PATH_gen2_toolchains=7
+HASH_gen2_toolchains=ac7e6f84130ac486c5a6713d82898e01
+
+
+# gen3l
+NAME_gen3l_barebones=openwrt-gen3l-rel.tar.gz
+PATH_gen3l_barebones=$default_barebones_path
+HASH_gen3l_barebones=1c4d68c79d45e1563a6e193fd046939b
+
+NAME_gen3l_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
+PATH_gen3l_toolchains=7
+HASH_gen3l_toolchains=995f57d765f9e077ab68b8c2881fdfe5
+
+
+# gen3m
+NAME_gen3m_barebones=openwrt-gen3m-rel.tar.gz
+PATH_gen3m_barebones=$default_barebones_path
+HASH_gen3m_barebones=f9163c731ee133bad93d3eb9d8ef8b23
+
+NAME_gen3m_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
+PATH_gen3m_toolchains=7
+HASH_gen3m_toolchains=995f57d765f9e077ab68b8c2881fdfe5
+
+# gen3b
+NAME_gen3b_barebones=openwrt-gen3b-rel.tar.gz
+PATH_gen3b_barebones=$default_barebones_path
+HASH_gen3b_barebones=bc1110c2af10945ea77e926cce557ef0
+
+NAME_gen3b_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
+PATH_gen3b_toolchains=7
+HASH_gen3b_toolchains=995f57d765f9e077ab68b8c2881fdfe5
+
+# gen4l
+NAME_gen4l_barebones=openwrt-gen4l-rel.tar.gz
+PATH_gen4l_barebones=$default_barebones_path
+HASH_gen4l_barebones=dbcc7ee93e41b08dcb5373b95af29d5d
+
+NAME_gen4l_toolchains=linaro-aarch64-2017.02-gcc6.3.tar.xz
+PATH_gen4l_toolchains=7
+HASH_gen4l_toolchains=ae21c0ad32874316819276f5ad1c233c
+

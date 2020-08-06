@@ -1,0 +1,12 @@
+macro(glob_source_files)
+    file(
+        GLOB_RECURSE
+        CPP_SOURCES
+        "${SOURCES_ROOT}/${PROJECT_NAME}/src/*.cpp"
+    )
+    file(
+        GLOB_RECURSE
+        C_SOURCES
+        "${SOURCES_ROOT}/${PROJECT_NAME}/src/*.c"
+    )
+endmacro()
