@@ -3,144 +3,125 @@
 #include <iostream>
 
 using namespace ubnt::smartaudio;
+const static int NUM_ON = 4;
+const static int NUM_ON_OFF = 8;
+const static float INTERVAL_SEC = 0.1; // second
 
 void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) {
-    _numTargetFreq = numTargetFreq;
-    _sampleRate = config.sampleRate;
-    _frameSize = config.frameSize;
-    _threshold = config.threshold;
+	_numTargetFreq = numTargetFreq;
+	_sampleRate = config.sampleRate;
+	_frameSize = config.frameSize;
+	_threshold = config.threshold;
 
-    // units in second
-    _observeBufLen = int(0.100 * _sampleRate / _frameSize * 16);
-    _frameUpperBound = int(0.100 * _sampleRate / _frameSize * 8.5);
-    _frameLowerBound = int(0.100 * _sampleRate / _frameSize * 3.5);
-    _holdOff = 0;
+	// 4 cycles of 100 ms and 100 ms off, then 5 seconds off
+	// units in second
+	_observeBufLen = int(INTERVAL_SEC * _sampleRate / _frameSize * 16);
+	_frameUpperBound = int(INTERVAL_SEC * _sampleRate / _frameSize * 8.5);
+	_frameLowerBound = int(INTERVAL_SEC * _sampleRate / _frameSize * 3.5);
+	_holdOff = 0;
 
-    _goertzel = new Goertzel*[_numTargetFreq];
-    for (int i = 0; i < _numTargetFreq; ++i) {
-        _goertzel[i] = new Goertzel(_sampleRate, _frameSize, targetFrequencies[i]);
-    }
+	_goertzel = new Goertzel*[_numTargetFreq];
+	for (int i = 0; i < _numTargetFreq; ++i) {
+		_goertzel[i] = new Goertzel(_sampleRate, _frameSize, targetFrequencies[i]);
+	}
 
-    _observeBufIndex = 0;
-    _observeBuf = new bool[_observeBufLen];
-    for (int i = 0; i < _observeBufLen; ++i) {
-        _observeBuf[i] = false;
-    }
+	_observeBufIndex = 0;
+	_observeBuf = new bool[_observeBufLen];
+	for (int i = 0; i < _observeBufLen; ++i) {
+		_observeBuf[i] = false;
+	}
 }
 
 void CoDetector::Release() {
-    for (int i = 0 ; i < _numTargetFreq; ++i) {
-        delete _goertzel[i];
-    }
-    delete [] _goertzel;
-    delete [] _observeBuf;
+	for (int i = 0 ; i < _numTargetFreq; ++i) {
+		delete _goertzel[i];
+	}
+	delete [] _goertzel;
+	delete [] _observeBuf;
 }
 
 
 bool CoDetector::Detect(float* data, int numSample) {
-    bool observePrev;
-    bool observeNow;
-    float power;
+	bool observePrev;
+	bool observeNow;
+	float power;
 
-    power = 0.f;
-    for(int i = 0; i < _numTargetFreq; ++i) {
-        power += _goertzel[i]->calculate(data, numSample);
-    }
-
-#ifdef AUDIO_ALGO_DEBUG
-    _powerAvg = power / (float)numSample;
-    _powerAvg = (_powerAvg >= 1.f) ? 1.0f : _powerAvg;
-#endif
-
-    power = 10.0f * (log10f(power) - log10f((float)numSample));
-    observePrev = _observeBuf[_observeBufIndex];
-    _observeBuf[_observeBufIndex++] = (power > _threshold);
-    _observeBufIndex = (_observeBufIndex != _observeBufLen) ? _observeBufIndex : 0;
-    observeNow = _observeBuf[_observeBufIndex];
+	power = 0.f;
+	for(int i = 0; i < _numTargetFreq; ++i) {
+		power += _goertzel[i]->calculate(data, numSample);
+	}
 
 #ifdef AUDIO_ALGO_DEBUG
-    _status = power > _threshold;
+	_powerAvg = power / (float)numSample;
+	_powerAvg = (_powerAvg >= 1.f) ? 1.0f : _powerAvg;
 #endif
 
-    if (_holdOff > 0) {
-        _holdOff--;
-        return false;
-    }
+	power = 10.0f * (log10f(power) - log10f((float)numSample));
+	observePrev = _observeBuf[_observeBufIndex];
+	_observeBuf[_observeBufIndex++] = (power > _threshold);
+	_observeBufIndex = (_observeBufIndex != _observeBufLen) ? _observeBufIndex : 0;
+	observeNow = _observeBuf[_observeBufIndex];
 
-    if (observePrev != observeNow) {
-        int numDetected = 0;
-        int numDetectedOn[4] = {0};
-        int duration = int(0.1*_sampleRate/_frameSize);
+#ifdef AUDIO_ALGO_DEBUG
+	_status = power > _threshold;
+#endif
 
-        int index = _observeBufIndex;
-        for (int intervalCount = 0; intervalCount < 8; ++intervalCount) {
-            for (int step = 0; step < duration; ++step) {
-                index = (index != _observeBufLen) ? index : 0;
-                if ((intervalCount % 2) == 0) {
-                    numDetectedOn[intervalCount/2] += _observeBuf[index];
-                }
-                numDetected += _observeBuf[index];
-                index++;
-            }
-        }
+	if (_holdOff > 0) {
+		_holdOff--;
+		return false;
+	}
 
-        int stepRemain = _observeBufLen - 8 * duration;
-        for (int step = 0; step < stepRemain; ++step) {
-            index = (index != _observeBufLen) ? index : 0;
-            numDetected += _observeBuf[index];
-            index++;
-        }
+	if (observePrev != observeNow) {
+		int numDetected = 0;
+		int numDetectedOn[NUM_ON] = {0};
+		int duration = int(0.1*_sampleRate/_frameSize);
 
-        int legalCount = 0;
-        int threshold = int (0.1 * _sampleRate/_frameSize * 0.7);
-        for (int i = 0; i < 4; ++i) {
-            if (numDetectedOn[i] > threshold) {
-                legalCount++;
-            }
-        }
+		int index = _observeBufIndex;
+		for (int intervalCount = 0; intervalCount < NUM_ON_OFF; ++intervalCount) {
+			int intervalCount_2 = intervalCount/2;
+			for (int step = 0; step < duration; ++step) {
+				index = (index != _observeBufLen) ? index : 0;
+				if ((intervalCount % 2) == 0) {
+					numDetectedOn[intervalCount_2] += _observeBuf[index];
+				}
+				numDetected += _observeBuf[index];
+				index++;
+			}
+		}
 
-        // continuous on status may not robust
-        if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount == 4)) {
-            _holdOff = int(1.0 * _sampleRate / _frameSize);
-            return true;
-        }
-    }
+		int stepRemain = _observeBufLen - NUM_ON_OFF * duration;
+		for (int step = 0; step < stepRemain; ++step) {
+			index = (index != _observeBufLen) ? index : 0;
+			numDetected += _observeBuf[index];
+			index++;
+		}
 
-//    if (observePrev != observeNow) {
-//        int count = 0 ;
-//        int numDetected = 0;
-//        int duration  = int(0.1 * 0.6 * _sampleRate / _frameSize);
-//        int legalCount = 0;
-//
-//        for (int index = _observeBufIndex, step = 0; step < _observeBufLen; ++index, ++step) {
-//            index = (index != _observeBufLen) ? index : 0;
-//            numDetected += _observeBuf[index];
-//            count++;
-//
-//            if ((_observeBuf[index] && !_observeBuf[index + 1]) && (step != _observeBufLen - 1)) {
-//               if (count > duration) { legalCount++; }
-//               count = 0;
-//            }
-//        }
-//
-//        // continuous on status may not robust
-//        if ((_frameLowerBound < numDetected) && (legalCount >= 4)) {
-//            _holdOff = int(1.0 * _sampleRate / _frameSize);
-//            return true;
-//        }
-//    }
+		int legalCount = 0;
+		int threshold = int (0.1 * _sampleRate/_frameSize * 0.7);
+		for (int i = 0; i < NUM_ON; ++i) {
+			if (numDetectedOn[i] > threshold) {
+				legalCount++;
+			}
+		}
 
-    return false;
+		// continuous on status may not robust
+		if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount == NUM_ON)) {
+			_holdOff = int(1.0 * _sampleRate / _frameSize);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void CoDetector::SetThreshold(float threshold) { _threshold = threshold; }
 float CoDetector::GetThreshold() const { return _threshold; }
 void CoDetector::ResetStates() {
-    _holdOff = 0;
-    _observeBufIndex = 0;
-    for (int i = 0; i < _observeBufLen; ++i) {
-        _observeBuf[i] = false;
-    }
+	_holdOff = 0;
+	_observeBufIndex = 0;
+	for (int i = 0; i < _observeBufLen; ++i) {
+		_observeBuf[i] = false;
+	}
 }
 
 #ifdef AUDIO_ALGO_DEBUG

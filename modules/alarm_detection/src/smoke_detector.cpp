@@ -3,6 +3,9 @@
 #include <iostream>
 
 using namespace ubnt::smartaudio;
+const static int NUM_ON = 3;
+const static int NUM_ON_OFF = 6;
+const static float INTERVAL_SEC = 0.5; // second
 
 void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) {
     _numTargetFreq = numTargetFreq;
@@ -10,11 +13,16 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
     _frameSize = config.frameSize;
     _threshold = config.threshold;
 
-    _observeBufLen = int(8.0 * 0.5 * (float)_sampleRate / (float)_frameSize);
-    _observeFrameNumHead = int(0.5 * (float)_sampleRate / (float)_frameSize);
-    _observeFrameNumTail = int(1.5 * (float)_sampleRate / (float)_frameSize);
+    /*
+     |-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|
+     ON,     OFF,   ON,    OFF,   ON,    OFF,   ON,    OFF,   OFF,   OFF
+     INTERVAL ON: 3
+     INTERVAL OFF: 5
+     */
+
+    _observeBufLen = int(8.0 * INTERVAL_SEC * (float)_sampleRate / (float)_frameSize);
     _frameUpperBound = int(_observeBufLen * 4.0 / 8.0);
-    _frameLowerBound = int(_observeBufLen * 3.0 / 8.0);
+    _frameLowerBound = int(_observeBufLen * 2.5 / 8.0);
 
     _candidateBufLen = 10;
     _holdOff = 0;
@@ -66,13 +74,13 @@ bool SmokeDetector::Detect(float* data, int numSample) {
 	_candidateBuf[_candidateBufIndex++] = power > _threshold;
     _candidateBufIndex = (_candidateBufIndex != _candidateBufLen) ? _candidateBufIndex : 0;
 
-    filterOut = false;
+	filterOut = false;
 	for (int i = 0; i < _candidateBufLen; ++i) {
 		if (_candidateBuf[i]) {
-            filterOut = true;
+			filterOut = true;
 			break;
 		}
-    }
+	}
 
 #ifdef AUDIO_ALGO_DEBUG
 	_status = power > _threshold;
@@ -89,28 +97,41 @@ bool SmokeDetector::Detect(float* data, int numSample) {
     }
 
     if (observe_prev != observe_now) {
-        int num_detected = 0;
-        int num_detected_head = 0;
-		int num_detected_tail = 0;
+        int numDetected = 0;
+        int numDetectedOn[NUM_ON] = {0};
+        int duration = int(INTERVAL_SEC * _sampleRate/_frameSize);
 
-		for (int index = _observeBufIndex, step = 0; step < _observeBufLen; ++index, ++step) {
-		    index = (index != _observeBufLen) ? index : 0;
+        int index = _observeBufIndex;
+        for (int intervalCount = 0; intervalCount < NUM_ON_OFF; ++intervalCount) {
+            int intervalCount_2 = intervalCount / 2;
 
-			num_detected += _observeBuf[index];
-			if (step < _observeFrameNumHead) {
-				num_detected_head += _observeBuf[index];
-			}
-			else if (step > (_observeBufLen - _observeFrameNumTail)) {
-				num_detected_tail += _observeBuf[index];
-			}
-		}
+            for (int step = 0; step < duration; ++step) {
+                index = (index != _observeBufLen) ? index : 0;
+                if ((intervalCount % 2) == 0) {
+                    numDetectedOn[intervalCount_2] += _observeBuf[index];
+                }
+                numDetected += _observeBuf[index];
+                index++;
+            }
+        }
 
-        num_detected_tail = _observeFrameNumTail - num_detected_tail;
+        int stepRemain = _observeBufLen - NUM_ON_OFF * duration;
+        for (int step = 0; step < stepRemain; ++step) {
+            index = (index != _observeBufLen) ? index : 0;
+            numDetected += _observeBuf[index];
+            index++;
+        }
 
-        if ((_frameLowerBound < num_detected) && (num_detected < _frameUpperBound) &&
-        (num_detected_head > (_observeFrameNumHead * 0.9)) &&
-        (num_detected_tail > (_observeFrameNumTail * 0.8))) {
-            _holdOff = int(0.5 * _sampleRate / _frameSize);
+        int legalCount = 0;
+        int threshold = int (0.5 * _sampleRate/_frameSize * 0.8);
+        for (int i = 0; i < NUM_ON; ++i) {
+            if (numDetectedOn[i] > threshold) {
+                legalCount++;
+            }
+        }
+        // continuous on status may not robust
+        if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount == NUM_ON)) {
+            _holdOff = int(1.0 * _sampleRate / _frameSize);
             return true;
         }
     }
