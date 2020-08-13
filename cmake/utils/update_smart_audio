@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -e
+
+usage()
+{
+	echo -e ""
+	echo -e "Usage: $0 [OPTIONS]"
+	echo -e "OPTIONS"
+	echo -e "\t -h: prints this help"
+	echo -e "\t -d <algo_path>: audio-algorithms directory path"
+	echo -e "\t -t: <mw_path>: middleware directory path"
+	echo -e "\t -m: <model_path>: copy model to middleware"
+	echo -e "\t -u <user>: user, default ubnt"
+	echo -e "\t -w <password>: password, default ubnt"
+
+	echo ""
+}
+
+USER="ubnt"
+PASS="ubntubnt"
+
+ParentDir=$(dirname `pwd`)
+AudioAlgoRoot=$ParentDir"/audio-algorithms/"
+MWPath=$ParentDir"/unifi-video-fw-middleware/sources/ubnt_smart_audio/"
+# LOGLEVEL=""
+MoveModel=false
+ModelPath=""
+
+while getopts "hd:t:m:u:w" o
+do
+	case "$o" in
+	h)
+		usage
+		exit 0
+		;;
+	d)
+		AudioAlgoPath=$OPTARG
+		;;
+	t)
+		MWPath=$OPTARG
+		;;
+	m)
+		MoveModel=true
+		ModelPath=$OPTARG
+		;;
+	u)
+		USER=$OPTARG
+		;;
+	w)
+		PASS=$OPTARG
+		;;
+	*)
+		echoerr "No parameters"
+		;;
+	esac
+done
+
+
+
+AudioAlgoPath=$AudioAlgoRoot"/build/gen3l/MinSizeRel/rootfs/"
+
+
+$AudioAlgoRoot/cmake/utils/compile "-p gen3l -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p gen3m -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p gen3s -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p gen4l -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p x86"
+
+cp "$AudioAlgoPath"/include/*"" $MWPath"/include/ubnt_smart_audio/"
+
+
+for plat in gen3l gen3m gen3s gen4l x86; do
+	if [ ! -d $MWPath"/lib/${plat}/" ]
+	then
+		mkdir $MWPath"/lib/${plat}/"
+	fi
+	cp "$AudioAlgoRoot"/build/${plat}/MinSizeRel/rootfs/lib/*"" $MWPath"/lib/${plat}/"
+done

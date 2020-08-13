@@ -19,7 +19,7 @@ set(
 #where is the sysroot
 set(
     CMAKE_FIND_ROOT_PATH
-    ${UBNT_FW_CACHE}/gen4l/barebones/staging_dir/target-aarch64-openwrt-linux-gnu
+    ${UBNT_FW_CACHE}/gen4l/barebones/staging_dir/target-aarch64-linux-gnu_glibc
 )
 
 #never search for utility apps in the target
@@ -39,7 +39,6 @@ add_definitions(-DGEN4L)
 add_definitions(-D_FILE_OFFSET_BITS=64)
 add_definitions(-DUBNT_USE_BACKTRACE)
 add_definitions(-DCONFIG_AMBARELLA_MAX_CHANNEL_NUM=2)
-add_definitions(-DAMBARELLA_VIN_CH=0)
 add_definitions(-DCONFIG_ARCH_S5L)
 
 #compile flags

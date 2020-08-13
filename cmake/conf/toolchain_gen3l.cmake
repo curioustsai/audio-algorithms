@@ -1,4 +1,4 @@
-#gen2 toolchain descriptor
+#gen3l toolchain descriptor
 
 #the brand of the OS
 set(CMAKE_SYSTEM_NAME Linux)

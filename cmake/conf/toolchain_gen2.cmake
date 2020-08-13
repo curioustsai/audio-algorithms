@@ -37,12 +37,15 @@ set(UBNT_PLATFORM_CPU "a5s")
 #definitions
 add_definitions(-DGEN2)
 add_definitions(-D_FILE_OFFSET_BITS=64)
+add_definitions(-DUBNT_USE_BACKTRACE)
 
 #compile flags
 add_compile_options(
     -march=armv6k
     -mtune=arm1136j-s
     -msoft-float
+    -funwind-tables
+    -Wno-psabi
 )
 
 #linker flags

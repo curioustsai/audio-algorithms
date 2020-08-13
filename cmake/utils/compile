@@ -9,19 +9,20 @@ printHelp() {
 	echo ""
 	echo "    -p    Platform which can be: ${UBNT_PLATFORMS_LIST[*]}. There is no default value. This is mandatory."
 	echo "    -t    Build the tests."
-	echo "    -d    Build with log level debug."
+	echo "    -g    Build with log level debug."
 	echo "    -b    The build type which can be Debug, Release or MinSizeRel. Default is MinSizeRel."
 	echo "    -l    How the libraries will be built. Either STATIC or SHARED. Default is STATIC."
 	echo "    -j    How many compilation units will be done simultaneously. Default is 4."
 	echo "    -n    Skip all intermediate steps and perform the build directly"
 	echo "    -c    Do clean before build"
+	echo "    -v    Enable verbose build"
 	echo "    -h    Prints this help and exits."
 	echo ""
 }
 
 UBNT_BUILD_TYPE=MinSizeRel
 UBNT_PLATFORM_TYPE=__empty__
-UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3b gen4l x86)
+UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3s gen4l x86)
 UBNT_LIBRARIES_TYPE=STATIC
 UBNT_JOBS_COUNT=4
 UBNT_EXPORT_COMPILE_COMMANDS=ON
@@ -31,7 +32,7 @@ UBNT_WITH_TESTS=OFF
 AUDIO_LOG_LEVEL="warn"
 
 SCRIPT=$0
-OPTIONS="p:tg:b:l:j:nch"
+OPTIONS="p:tg:b:l:j:ncvh"
 ARGS=`getopt $OPTIONS $*`
 set -- $ARGS
 for i
@@ -68,7 +69,11 @@ do
 			;;
 		-n)
 			UBNT_SKIP_TO_NINJA=1
-			shift;;
+			shift
+			;;
+		-v)	UBNT_NINJA_VERBOSE="-v"
+			shift
+			;;
 		-h)
 			printHelp
 			exit 0
@@ -117,7 +122,7 @@ if [ "${UBNT_SKIP_TO_NINJA}" = "1" ]
 then
 	cd ${UBNT_WORK_DIR} && \
 	DESTDIR=${UBNT_ROOTFS_DIR} STAGING_DIR=none \
-		ninja -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
+		ninja ${UBNT_NINJA_VERBOSE} -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
 	exit 0
 fi
 
@@ -162,7 +167,8 @@ cd ${UBNT_WORK_DIR} && cmake \
 
 cd ${UBNT_WORK_DIR} && \
 	DESTDIR=${UBNT_ROOTFS_DIR} STAGING_DIR=none \
-		ninja -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
+		ninja ${UBNT_NINJA_VERBOSE} -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
+
 
 #------------------- post-build actions ----------------------------------------
 
