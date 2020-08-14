@@ -1,5 +1,5 @@
 #Set the name of the project
-project(alarm_detection)
+project(audio_events)
 
 #detect the source files
 glob_source_files()
