@@ -2,16 +2,13 @@
  * Copyright (C) 2014-2020, Ubiquiti Networks, Inc,
 */
 
-#include "smoke_detector.h"
-#include "co_detector.h"
+#include "audio_events.h"
 #include "sndfile.hh"
-// #include "matplotlibcpp.h"
 #include <iostream>
 #include <string>
-// #include "CLI/CLI.hpp"
+#include <cmath>
 
 using namespace ubnt::smartaudio;
-// namespace plt = matplotlibcpp;
 
 int main(int argc, char** argv) {
     std::string inputFilePath;
@@ -67,6 +64,7 @@ int main(int argc, char** argv) {
     Config configCo = { samplerate, numSamplesPerFrame, co_threshold };
     SmokeDetector smokeDetector;
     CoDetector coDetector;
+    LoudnessDetector loudnessDetector(-20.f, -96.f);
 
     smokeDetector.Init(configSmoke, targetFrequencies, numTargetFreq);
     coDetector.Init(configCo, targetFrequencies, numTargetFreq);
@@ -85,10 +83,12 @@ int main(int argc, char** argv) {
 
             bool resultSmoke = smokeDetector.Detect(dataFloat, numSamplesPerFrame);
             bool resultCo = coDetector.Detect(dataFloat, numSamplesPerFrame);
+            // AudioEventType resultLoud = loudnessDetector.Detect(dataFloat, numSamplesPerFrame);
 
             for (int sampleCount = 0; sampleCount < numSamplesPerFrame; ++sampleCount) {
                 bufferOut[outputChannels * sampleCount] = dataFloat[sampleCount];
                 bufferOut[outputChannels * sampleCount + 1] = ((float)resultSmoke * 0.5f + (float)resultCo * 0.8f);
+                // bufferOut[outputChannels * sampleCount + 1] = ((float)resultLoud * 0.1f);
 #ifdef AUDIO_ALGO_DEBUG
                 bufferOut[outputChannels * sampleCount + 2] = sqrtf(smokeDetector.GetPowerAvg());
                 bufferOut[outputChannels * sampleCount + 3] = 0.8f * (float)smokeDetector.GetStatus();

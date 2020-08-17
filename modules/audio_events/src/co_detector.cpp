@@ -15,10 +15,12 @@ void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) 
 
 	// 4 cycles of 100 ms and 100 ms off, then 5 seconds off
 	// units in second
-	_observeBufLen = int(INTERVAL_SEC * _sampleRate / _frameSize * 16);
+	_observeBufLen = int(INTERVAL_SEC * _sampleRate / _frameSize * 10.0);
 	_frameUpperBound = int(INTERVAL_SEC * _sampleRate / _frameSize * 8.5);
 	_frameLowerBound = int(INTERVAL_SEC * _sampleRate / _frameSize * 3.5);
+	_holdOn = 0;
 	_holdOff = 0;
+	_alarmCount = 0;
 
 	_goertzel = new Goertzel*[_numTargetFreq];
 	for (int i = 0; i < _numTargetFreq; ++i) {
@@ -41,7 +43,7 @@ void CoDetector::Release() {
 }
 
 
-bool CoDetector::Detect(float* data, int numSample) {
+AudioEventType CoDetector::Detect(float* data, int numSample) {
 	bool observePrev;
 	bool observeNow;
 	float power;
@@ -65,20 +67,23 @@ bool CoDetector::Detect(float* data, int numSample) {
 #ifdef AUDIO_ALGO_DEBUG
 	_status = power > _threshold;
 #endif
+	
+	if (_holdOn > 0) _holdOn--;
+	if (_holdOn == 0) { _alarmCount = 0; }
 
 	if (_holdOff > 0) {
 		_holdOff--;
-		return false;
+		return AUDIO_EVENT_NONE;
 	}
 
 	if (observePrev != observeNow) {
 		int numDetected = 0;
 		int numDetectedOn[NUM_ON] = {0};
-		int duration = int(0.1*_sampleRate/_frameSize);
+		int duration = int(INTERVAL_SEC * _sampleRate / _frameSize);
 
 		int index = _observeBufIndex;
 		for (int intervalCount = 0; intervalCount < NUM_ON_OFF; ++intervalCount) {
-			int intervalCount_2 = intervalCount/2;
+			int intervalCount_2 = intervalCount / 2;
 			for (int step = 0; step < duration; ++step) {
 				index = (index != _observeBufLen) ? index : 0;
 				if ((intervalCount % 2) == 0) {
@@ -97,21 +102,26 @@ bool CoDetector::Detect(float* data, int numSample) {
 		}
 
 		int legalCount = 0;
-		int threshold = int (0.1 * _sampleRate/_frameSize * 0.7);
+		int threshold = int (INTERVAL_SEC * _sampleRate/_frameSize * 0.7);
 		for (int i = 0; i < NUM_ON; ++i) {
 			if (numDetectedOn[i] > threshold) {
 				legalCount++;
 			}
 		}
 
-		// continuous on status may not robust
 		if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount == NUM_ON)) {
-			_holdOff = int(1.0 * _sampleRate / _frameSize);
-			return true;
+			_holdOff = int(4.0 * _sampleRate / _frameSize);
+			_holdOn = int(10.0 * _sampleRate / _frameSize);
+			_alarmCount++;
+
+			if (_alarmCount >= 2) {
+				_alarmCount = 0;
+				return AUDIO_EVENT_CO;
+			}
 		}
 	}
 
-	return false;
+	return AUDIO_EVENT_NONE;
 }
 
 void CoDetector::SetThreshold(float threshold) { _threshold = threshold; }

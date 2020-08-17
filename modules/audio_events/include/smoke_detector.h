@@ -13,7 +13,7 @@ public:
 	~SmokeDetector () = default;;
     void Init(Config config, int* targetFrequencies, int numTargetFreq);
     void Release();
-	bool Detect(float* data, int numSample) override;
+	AudioEventType Detect(float* data, int numSample) override;
     void SetThreshold(float threshold) override;
     float GetThreshold() const override;
     void ResetStates();
@@ -41,7 +41,9 @@ private:
     int _observeFrameNumTail;
     int _frameUpperBound;
     int _frameLowerBound;
+	int _holdOn;
 	int _holdOff;
+	int _alarmCount;
 
 #ifdef AUDIO_ALGO_DEBUG
         float _powerAvg;

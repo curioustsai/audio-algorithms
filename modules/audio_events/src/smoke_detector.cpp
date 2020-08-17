@@ -14,8 +14,8 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
     _threshold = config.threshold;
 
     /*
-     |-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|
-     ON,     OFF,   ON,    OFF,   ON,    OFF,   ON,    OFF,   OFF,   OFF
+     |-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|-0.5s-|
+     ON,     OFF,   ON,    OFF,   ON,    OFF,   OFF,   OFF
      INTERVAL ON: 3
      INTERVAL OFF: 5
      */
@@ -25,7 +25,9 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
     _frameLowerBound = int(_observeBufLen * 2.5 / 8.0);
 
     _candidateBufLen = 10;
+    _holdOn = 0;
     _holdOff = 0;
+    _alarmCount = 0;
 
     _goertzel = new Goertzel* [_numTargetFreq];
     for (int i = 0; i < _numTargetFreq; ++i) {
@@ -54,7 +56,7 @@ void SmokeDetector::Release() {
     delete [] _observeBuf;
 }
 
-bool SmokeDetector::Detect(float* data, int numSample) {
+AudioEventType SmokeDetector::Detect(float* data, int numSample) {
     bool filterOut;
     bool observe_prev;
     bool observe_now;
@@ -91,10 +93,8 @@ bool SmokeDetector::Detect(float* data, int numSample) {
     _observeBufIndex = (_observeBufIndex != _observeBufLen) ? _observeBufIndex : 0;
     observe_now = _observeBuf[_observeBufIndex];
 
-    if (_holdOff > 0) {
-        _holdOff--;
-        return false;
-    }
+	if (_holdOn > 0) { _holdOn--; } 
+	if (_holdOn == 0) { _alarmCount = 0; }
 
     if (observe_prev != observe_now) {
         int numDetected = 0;
@@ -123,20 +123,25 @@ bool SmokeDetector::Detect(float* data, int numSample) {
         }
 
         int legalCount = 0;
-        int threshold = int (0.5 * _sampleRate/_frameSize * 0.8);
+        int threshold = int (INTERVAL_SEC * _sampleRate/_frameSize * 0.7);
         for (int i = 0; i < NUM_ON; ++i) {
             if (numDetectedOn[i] > threshold) {
                 legalCount++;
             }
         }
-        // continuous on status may not robust
+
         if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount == NUM_ON)) {
-            _holdOff = int(1.0 * _sampleRate / _frameSize);
-            return true;
+			_holdOn = int(5.0 * _sampleRate / _frameSize);
+			_alarmCount++;
+
+			if (_alarmCount >= 2) {
+				_alarmCount = 0;
+            	return AUDIO_EVENT_SMOKE;
+			}
         }
     }
 
-    return false;
+    return AUDIO_EVENT_NONE;
 }
 
 void SmokeDetector::SetThreshold(float threshold) { _threshold = threshold; }

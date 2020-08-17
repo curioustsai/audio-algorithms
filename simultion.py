@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     # only support wav files now
     input_format = '*.wav'
-    execute_bin = './build/x86/' + build_type + '/rootfs/bin/ui_alarm_detection'
+    execute_bin = './build/x86/' + build_type + '/rootfs/bin/ui_audio_events'
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)

@@ -34,4 +34,7 @@ install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/goertzel.h DESTINATION /in
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/alarm_detector.h DESTINATION /include)
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/co_detector.h DESTINATION /include)
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/smoke_detector.h DESTINATION /include)
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/loudness_detector.h DESTINATION /include)
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_events.h DESTINATION /include)
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_event_type.h DESTINATION /include)
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
