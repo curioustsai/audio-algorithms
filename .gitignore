@@ -3,4 +3,4 @@
 /build
 /compile_commands.json
 /install.sh
-
+/.clangd

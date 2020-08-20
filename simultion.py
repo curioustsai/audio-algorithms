@@ -16,7 +16,7 @@ def collect_failure(filelist, folder):
 def check_result(outfile):
     [fs, waveform] = wavfile.read(outfile)
 
-    if waveform.shape[1] >= 2 and np.any(waveform[:, 1] >= 0.8):
+    if waveform.shape[1] >= 2 and np.any(waveform[:, 1] > 0):
         return False
 
     return True
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     # only support wav files now
     input_format = '*.wav'
-    execute_bin = './build/x86/' + build_type + '/rootfs/bin/ui_alarm_detection'
+    execute_bin = './build/x86/' + build_type + '/rootfs/bin/ui_audio_events'
 
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)

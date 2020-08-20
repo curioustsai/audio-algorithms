@@ -1,5 +1,5 @@
 #Set the name of the project
-project(ui_alarm_detection)
+project(ui_audio_events)
 
 #detect the source files
 file(
@@ -36,7 +36,7 @@ message("STATUS PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
-    ${SOURCES_ROOT}/alarm_detection/include/
+    ${SOURCES_ROOT}/audio_events/include/
     ${PROJECT_ROOT}/thirdparty/libsndfile/include
 	${PYTHON_INCLUDE_DIRS}
     ${PROJECT_ROOT}/thirdparty/matplotlib-cpp
@@ -63,7 +63,7 @@ target_link_libraries(
     ${PYTHON_LIBRARIES}
 	${LIBSNDFILE_LIBRARIES}
 	${PROJECT_ROOT}/thirdparty/libsndfile/lib/libsndfile.a
-    alarm_detection
+    audio_events
     -lpthread
     -lm
     -lz

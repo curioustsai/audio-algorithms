@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "audio_event_type.h"
 #include "goertzel.h"
 
 namespace ubnt {
@@ -17,7 +18,7 @@ typedef struct Config_ {
 
 class AlarmDetector {
 public:
-    virtual bool Detect(float *data, int num_sample) = 0;
+    virtual AudioEventType Detect(float *data, int num_sample) = 0;
     virtual void SetThreshold(float threshold) = 0;
     virtual float GetThreshold() const = 0;
 };
