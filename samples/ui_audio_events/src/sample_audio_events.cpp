@@ -64,10 +64,11 @@ int main(int argc, char** argv) {
     Config configCo = { samplerate, numSamplesPerFrame, co_threshold };
     SmokeDetector smokeDetector;
     CoDetector coDetector;
-    LoudnessDetector loudnessDetector(-20.f, -96.f);
+    LoudnessDetector loudnessDetector;
 
     smokeDetector.Init(configSmoke, targetFrequencies, numTargetFreq);
     coDetector.Init(configCo, targetFrequencies, numTargetFreq);
+    loudnessDetector.Init(-20.f, -80.0f);
 
     for (int windowCount = 0; windowCount < numTotalWindows; ++windowCount) {
         if (numSamplesPerWin != inFile.read(buffer, numSamplesPerWin)) {
@@ -81,18 +82,20 @@ int main(int argc, char** argv) {
                 dataFloat[sampleCount] = (float) data[sampleCount] / (float) maxSampleValue;
             }
 
-            bool resultSmoke = smokeDetector.Detect(dataFloat, numSamplesPerFrame);
-            bool resultCo = coDetector.Detect(dataFloat, numSamplesPerFrame);
-            // AudioEventType resultLoud = loudnessDetector.Detect(dataFloat, numSamplesPerFrame);
+			AudioEventType event;
+            event = smokeDetector.Detect(dataFloat, numSamplesPerFrame);
+			event |= coDetector.Detect(dataFloat, numSamplesPerFrame);
+			event |= loudnessDetector.Detect(dataFloat, numSamplesPerFrame);
+			
 
             for (int sampleCount = 0; sampleCount < numSamplesPerFrame; ++sampleCount) {
                 bufferOut[outputChannels * sampleCount] = dataFloat[sampleCount];
-                bufferOut[outputChannels * sampleCount + 1] = ((float)resultSmoke * 0.5f + (float)resultCo * 0.8f);
-                // bufferOut[outputChannels * sampleCount + 1] = ((float)resultLoud * 0.1f);
+                bufferOut[outputChannels * sampleCount + 1] = ((float)event * 0.1f);
 #ifdef AUDIO_ALGO_DEBUG
                 bufferOut[outputChannels * sampleCount + 2] = sqrtf(smokeDetector.GetPowerAvg());
                 bufferOut[outputChannels * sampleCount + 3] = 0.8f * (float)smokeDetector.GetStatus();
-                bufferOut[outputChannels * sampleCount + 4] = sqrtf(coDetector.GetPowerAvg());
+                // bufferOut[outputChannels * sampleCount + 4] = sqrtf(coDetector.GetPowerAvg());
+                bufferOut[outputChannels * sampleCount + 4] = sqrtf(loudnessDetector.GetPowerAvg());
                 bufferOut[outputChannels * sampleCount + 5] = 0.8f * (float)coDetector.GetStatus();
 #endif
             }

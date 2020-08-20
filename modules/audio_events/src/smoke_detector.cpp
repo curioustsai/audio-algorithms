@@ -29,31 +29,25 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
     _holdOff = 0;
     _alarmCount = 0;
 
-    _goertzel = new Goertzel* [_numTargetFreq];
+    _goertzel = new Goertzel*[_numTargetFreq];
     for (int i = 0; i < _numTargetFreq; ++i) {
         _goertzel[i] = new Goertzel(_sampleRate, _frameSize, targetFrequencies[i]);
     }
 
     _candidateBufIndex = 0;
     _candidateBuf = new bool[_candidateBufLen];
-	for (int i = 0; i < _candidateBufLen; ++i) {
-		_candidateBuf[i] = false;
-	}
+    for (int i = 0; i < _candidateBufLen; ++i) { _candidateBuf[i] = false; }
 
     _observeBufIndex = 0;
-	_observeBuf = new bool[_observeBufLen];
-	for (int i = 0; i < _observeBufLen; ++i) {
-		_observeBuf[i] = false;
-	}
+    _observeBuf = new bool[_observeBufLen];
+    for (int i = 0; i < _observeBufLen; ++i) { _observeBuf[i] = false; }
 }
 
 void SmokeDetector::Release() {
-    for (int i = 0; i < _numTargetFreq; ++i) {
-        delete _goertzel[i];
-    }
-    delete [] _goertzel;
-    delete [] _candidateBuf;
-    delete [] _observeBuf;
+    for (int i = 0; i < _numTargetFreq; ++i) { delete _goertzel[i]; }
+    delete[] _goertzel;
+    delete[] _candidateBuf;
+    delete[] _observeBuf;
 }
 
 AudioEventType SmokeDetector::Detect(float* data, int numSample) {
@@ -63,9 +57,7 @@ AudioEventType SmokeDetector::Detect(float* data, int numSample) {
     float power;
 
     power = 0.f;
-    for(int i = 0; i < _numTargetFreq; ++i) {
-        power += _goertzel[i]->calculate(data, numSample);
-    }
+    for (int i = 0; i < _numTargetFreq; ++i) { power += _goertzel[i]->calculate(data, numSample); }
 
 #ifdef AUDIO_ALGO_DEBUG
     _powerAvg = power / (float)numSample;
@@ -73,33 +65,33 @@ AudioEventType SmokeDetector::Detect(float* data, int numSample) {
 #endif
 
     power = 10.0f * (log10f(power) - log10f((float)numSample));
-	_candidateBuf[_candidateBufIndex++] = power > _threshold;
+    _candidateBuf[_candidateBufIndex++] = power > _threshold;
     _candidateBufIndex = (_candidateBufIndex != _candidateBufLen) ? _candidateBufIndex : 0;
 
-	filterOut = false;
-	for (int i = 0; i < _candidateBufLen; ++i) {
-		if (_candidateBuf[i]) {
-			filterOut = true;
-			break;
-		}
-	}
+    filterOut = false;
+    for (int i = 0; i < _candidateBufLen; ++i) {
+        if (_candidateBuf[i]) {
+            filterOut = true;
+            break;
+        }
+    }
 
 #ifdef AUDIO_ALGO_DEBUG
-	_status = power > _threshold;
+    _status = power > _threshold;
 #endif
 
     observe_prev = _observeBuf[_observeBufIndex];
-	_observeBuf[_observeBufIndex++] = filterOut;
+    _observeBuf[_observeBufIndex++] = filterOut;
     _observeBufIndex = (_observeBufIndex != _observeBufLen) ? _observeBufIndex : 0;
     observe_now = _observeBuf[_observeBufIndex];
 
-	if (_holdOn > 0) { _holdOn--; } 
-	if (_holdOn == 0) { _alarmCount = 0; }
+    if (_holdOn > 0) { _holdOn--; }
+    if (_holdOn == 0) { _alarmCount = 0; }
 
     if (observe_prev != observe_now) {
         int numDetected = 0;
         int numDetectedOn[NUM_ON] = {0};
-        int duration = int(INTERVAL_SEC * _sampleRate/_frameSize);
+        int duration = int(INTERVAL_SEC * _sampleRate / _frameSize);
 
         int index = _observeBufIndex;
         for (int intervalCount = 0; intervalCount < NUM_ON_OFF; ++intervalCount) {
@@ -123,21 +115,20 @@ AudioEventType SmokeDetector::Detect(float* data, int numSample) {
         }
 
         int legalCount = 0;
-        int threshold = int (INTERVAL_SEC * _sampleRate/_frameSize * 0.7);
+        int threshold = int(INTERVAL_SEC * _sampleRate / _frameSize * 0.7);
         for (int i = 0; i < NUM_ON; ++i) {
-            if (numDetectedOn[i] > threshold) {
-                legalCount++;
-            }
+            if (numDetectedOn[i] > threshold) { legalCount++; }
         }
 
-        if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount == NUM_ON)) {
-			_holdOn = int(5.0 * _sampleRate / _frameSize);
-			_alarmCount++;
+        if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) &&
+            (legalCount == NUM_ON)) {
+            _holdOn = int(5.0 * _sampleRate / _frameSize);
+            _alarmCount++;
 
-			if (_alarmCount >= 2) {
-				_alarmCount = 0;
-            	return AUDIO_EVENT_SMOKE;
-			}
+            if (_alarmCount >= 2) {
+                _alarmCount = 0;
+                return AUDIO_EVENT_SMOKE;
+            }
         }
     }
 
@@ -150,14 +141,10 @@ float SmokeDetector::GetThreshold() const { return _threshold; }
 void SmokeDetector::ResetStates() {
     _holdOff = 0;
     _candidateBufIndex = 0;
-    for (int i = 0; i < _candidateBufLen; ++i) {
-        _candidateBuf[i] = false;
-    }
+    for (int i = 0; i < _candidateBufLen; ++i) { _candidateBuf[i] = false; }
 
     _observeBufIndex = 0;
-    for (int i = 0; i < _observeBufLen; ++i) {
-        _observeBuf[i] = false;
-    }
+    for (int i = 0; i < _observeBufLen; ++i) { _observeBuf[i] = false; }
 }
 
 #ifdef AUDIO_ALGO_DEBUG

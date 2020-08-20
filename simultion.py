@@ -16,7 +16,7 @@ def collect_failure(filelist, folder):
 def check_result(outfile):
     [fs, waveform] = wavfile.read(outfile)
 
-    if waveform.shape[1] >= 2 and np.any(waveform[:, 1] >= 0.8):
+    if waveform.shape[1] >= 2 and np.any(waveform[:, 1] > 0):
         return False
 
     return True

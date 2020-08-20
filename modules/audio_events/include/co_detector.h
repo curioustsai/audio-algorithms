@@ -3,7 +3,6 @@
 #include "alarm_detector.h"
 #include "goertzel.h"
 
-
 namespace ubnt {
 namespace smartaudio {
 
@@ -13,8 +12,8 @@ public:
     ~CoDetector() = default;
     void Init(Config config, int* targetFrequencies, int numTargetFreq);
     void Release();
-	AudioEventType Detect(float* data, int numSample) override;
-	void SetThreshold(float threshold) override;
+    AudioEventType Detect(float* data, int numSample) override;
+    void SetThreshold(float threshold) override;
     float GetThreshold() const override;
     void ResetStates();
 
@@ -26,11 +25,11 @@ public:
 private:
     int _numTargetFreq;
     int _sampleRate;
-    int _frameSize;;
+    int _frameSize;
     float _threshold;
     Goertzel** _goertzel;
 
-	bool* _observeBuf;
+    bool* _observeBuf;
     int _observeBufLen;
     int _observeBufIndex;
     int _frameUpperBound;
@@ -43,7 +42,6 @@ private:
     float _powerAvg;
     bool _status;
 #endif
-
 };
 
 } // namespace smartaudio

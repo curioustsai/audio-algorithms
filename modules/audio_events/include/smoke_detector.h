@@ -3,17 +3,16 @@
 #include "alarm_detector.h"
 #include "goertzel.h"
 
-
 namespace ubnt {
 namespace smartaudio {
 
 class SmokeDetector : public AlarmDetector {
 public:
-	SmokeDetector ()  = default;
-	~SmokeDetector () = default;;
+    SmokeDetector() = default;
+    ~SmokeDetector() = default;
     void Init(Config config, int* targetFrequencies, int numTargetFreq);
     void Release();
-	AudioEventType Detect(float* data, int numSample) override;
+    AudioEventType Detect(float* data, int numSample) override;
     void SetThreshold(float threshold) override;
     float GetThreshold() const override;
     void ResetStates();
@@ -30,24 +29,24 @@ private:
     int _numTargetFreq;
     Goertzel** _goertzel;
 
-	bool *_observeBuf;
-	bool *_candidateBuf;
-	int _candidateBufLen;
-	int _candidateBufIndex;
+    bool* _observeBuf;
+    bool* _candidateBuf;
+    int _candidateBufLen;
+    int _candidateBufIndex;
     int _observeBufLen;
-	int _observeBufIndex;
+    int _observeBufIndex;
 
     int _observeFrameNumHead;
     int _observeFrameNumTail;
     int _frameUpperBound;
     int _frameLowerBound;
-	int _holdOn;
-	int _holdOff;
-	int _alarmCount;
+    int _holdOn;
+    int _holdOff;
+    int _alarmCount;
 
 #ifdef AUDIO_ALGO_DEBUG
-        float _powerAvg;
-        bool _status;
+    float _powerAvg;
+    bool _status;
 #endif
 };
 

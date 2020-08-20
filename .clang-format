@@ -1,0 +1,32 @@
+Language: Cpp
+Standard: Cpp11
+BasedOnStyle: Google
+
+TabWidth: 4
+IndentWidth: 4
+AccessModifierOffset: -4
+ColumnLimit: 100
+
+#AlwaysBreakTemplateDeclarations: false
+
+ReflowComments: false
+
+IncludeBlocks:   Preserve
+IncludeCategories:
+  - Regex:           '^".*"'
+    Priority:        2
+  - Regex:           '^<.*'
+    Priority:        3
+  - Regex:           '^<.*\.hp*>'
+    Priority:        4
+  - Regex:           '.*'
+    Priority:        1
+
+SpacesBeforeTrailingComments: 1
+AlignEscapedNewlines: DontAlign
+
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
+
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 1

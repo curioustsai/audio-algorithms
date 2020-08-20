@@ -7,21 +7,21 @@ namespace smartaudio {
 
 class LoudnessDetector {
 public:
-	LoudnessDetector(float thresholdLoud, float thresholdQuiet);
+    void Init(float thresholdLoud, float thresholdQuiet);
     AudioEventType Detect(float* data, int numSample);
     void SetThresholdLoud(float thresholdLoud);
     float GetThresholdLoud() const;
     void SetThresholdQuiet(float thresholdQuiet);
     float GetThresholdQuiet() const;
     float GetPowerAvg() const;
+    float GetPowerAvgdB() const;
 
 private:
-	float _powerAvg;
+    float _powerAvg;
+    float _powerAvgdB;
     float _thresholdLoud;
     float _thresholdQuiet;
-    int _holdOff;
-
 };
 
-}  // namespace smartaudio
-}  // namespace ubnt
+} // namespace smartaudio
+} // namespace ubnt

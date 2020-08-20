@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "goertzel.h"
 #include "audio_event_type.h"
+#include "goertzel.h"
 
 namespace ubnt {
 namespace smartaudio {
