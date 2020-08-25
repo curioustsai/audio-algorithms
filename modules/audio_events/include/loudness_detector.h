@@ -1,3 +1,7 @@
+/**
+ *  Copyright (C) 2020, Ubiquiti Networks, Inc,
+ */
+
 #pragma once
 
 #include "audio_event_type.h"
@@ -17,10 +21,10 @@ public:
     float GetPowerAvgdB() const;
 
 private:
-    float _powerAvg;
-    float _powerAvgdB;
-    float _thresholdLoud;
-    float _thresholdQuiet;
+    float _powerAvg{0.0};
+    float _powerAvgdB{0.0};
+    float _thresholdLoud{0.0};
+    float _thresholdQuiet{0.0};
 };
 
 } // namespace smartaudio

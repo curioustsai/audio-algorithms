@@ -1,3 +1,7 @@
+/**
+ *  Copyright (C) 2020, Ubiquiti Networks, Inc,
+ */
+
 #pragma once
 
 #include "alarm_detector.h"

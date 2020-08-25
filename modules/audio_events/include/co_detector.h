@@ -1,3 +1,7 @@
+/**
+ *  Copyright (C) 2020, Ubiquiti Networks, Inc,
+ */
+
 #pragma once
 
 #include "alarm_detector.h"
@@ -23,24 +27,24 @@ public:
 #endif
 
 private:
-    int _numTargetFreq;
-    int _sampleRate;
-    int _frameSize;
-    float _threshold;
+    int _numTargetFreq{0};
+    int _sampleRate{48000};
+    int _frameSize{128};
+    float _threshold{-20.0};
     Goertzel** _goertzel;
 
     bool* _observeBuf;
-    int _observeBufLen;
-    int _observeBufIndex;
-    int _frameUpperBound;
-    int _frameLowerBound;
-    int _holdOn;
-    int _holdOff;
-    int _alarmCount;
+    int _observeBufLen{0};
+    int _observeBufIndex{0};
+    int _frameUpperBound{0};
+    int _frameLowerBound{0};
+    int _holdOn{0};
+    int _holdOff{0};
+    int _alarmCount{0};
 
 #ifdef AUDIO_ALGO_DEBUG
-    float _powerAvg;
-    bool _status;
+    float _powerAvg{0.0};
+    bool _status{false};
 #endif
 };
 

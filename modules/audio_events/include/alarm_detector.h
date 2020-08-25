@@ -1,6 +1,6 @@
-//
-// Created by richard on 7/9/20.
-//
+/**
+ *  Copyright (C) 2020, Ubiquiti Networks, Inc,
+ */
 
 #pragma once
 

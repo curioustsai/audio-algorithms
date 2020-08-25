@@ -1,6 +1,6 @@
-//
-// Created by richard on 7/9/20.
-//
+/**
+ *  Copyright (C) 2020, Ubiquiti Networks, Inc,
+ */
 
 #pragma once
 
@@ -13,10 +13,10 @@ public:
     float calculate(const float *data, int num_sample) const;
 
 private:
-    int _sampleRate;
-    int _frameSize;
-    int _targetFreq;
-    float _coefficient;
+    int _sampleRate{48000};
+    int _frameSize{128};
+    int _targetFreq{0};
+    float _coefficient{0.0};
 };
 } // namespace smartaudio
 } // namespace ubnt
