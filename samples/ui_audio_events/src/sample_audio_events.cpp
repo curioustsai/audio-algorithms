@@ -6,6 +6,7 @@
 #include "CLI/Validators.hpp"
 #include "audio_events.h"
 #include "sndfile.hh"
+#include "version.h"
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -30,6 +31,9 @@ int main(int argc, char** argv) {
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) { return app.exit(e); }
+
+    std::cout << "AUDIO ALGO VERSION: " << AUDIO_ALGO_VERSION << std::endl;
+    std::cout << g_AUDIO_ALGO_SHA1 << std::endl;
 
     SndfileHandle inFile = SndfileHandle(inputFilePath);
     SndfileHandle outFile;

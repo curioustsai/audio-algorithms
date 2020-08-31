@@ -37,6 +37,7 @@ include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
     ${SOURCES_ROOT}/audio_events/include/
+    ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/include
 	${PYTHON_INCLUDE_DIRS}
     ${PROJECT_ROOT}/thirdparty/matplotlib-cpp

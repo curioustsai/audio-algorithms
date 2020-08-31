@@ -4,17 +4,16 @@ cmake_minimum_required(VERSION 3.0.2)
 #Set the name of the project
 project(all)
 
+#include some utility functionalities
+include(cmake/utils/debug.cmake)
+include(cmake/utils/glob_source_files.cmake)
+
 OPTION(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
 OPTION(UBNT_WITH_TESTS "Compile test" OFF)
 
 if(NOT DEFINED UBNT_PLATFORM_NAME)
     set(UBNT_PLATFORM_NAME x86)
 endif()
-
-
-#include some utility functionalities
-include(cmake/utils/debug.cmake)
-include(cmake/utils/glob_source_files.cmake)
 
 #set the root folder
 if(NOT DEFINED PROJECT_ROOT)
@@ -41,9 +40,9 @@ get_filename_component(
     ABSOLUTE
 )
 
-# list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT}/cmake/utils/gitsha/")
-# include(GetGitRevisionDescription)
-# get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_ROOT}/cmake/utils/gitsha/")
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 message(STATUS "PROJECT_ROOT: ${PROJECT_ROOT}")
 message(STATUS "SOURCES_ROOT: ${SOURCES_ROOT}")
