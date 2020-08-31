@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 
     smokeDetector.Init(configSmoke, targetFrequencies, numTargetFreq);
     coDetector.Init(configCo, targetFrequencies, numTargetFreq);
-    loudnessDetector.Init(-20.f, -80.0f);
+    loudnessDetector.Init("g4dome", -20.0, -95.0);
 
     for (int windowCount = 0; windowCount < numTotalWindows; ++windowCount) {
         if (numSamplesPerWin != inFile.read(buffer, numSamplesPerWin)) {
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
             for (int sampleCount = 0; sampleCount < numSamplesPerFrame; ++sampleCount) {
                 bufferOut[outputChannels * sampleCount] = dataFloat[sampleCount];
-                bufferOut[outputChannels * sampleCount + 1] = ((float)event * 0.1f);
+                bufferOut[outputChannels * sampleCount + 1] = ((float)(1 << event) * 0.1f);
 #ifdef AUDIO_ALGO_DEBUG
                 bufferOut[outputChannels * sampleCount + 2] = sqrtf(smokeDetector.GetPowerAvg());
                 bufferOut[outputChannels * sampleCount + 3] =
