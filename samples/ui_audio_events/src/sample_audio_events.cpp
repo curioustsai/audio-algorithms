@@ -3,7 +3,6 @@
 */
 
 #include "CLI/CLI.hpp"
-#include "CLI/Validators.hpp"
 #include "audio_events.h"
 #include "sndfile.hh"
 #include "version.h"
