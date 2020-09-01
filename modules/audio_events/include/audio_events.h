@@ -9,4 +9,3 @@
 #include "co_detector.h"
 #include "loudness_detector.h"
 #include "smoke_detector.h"
-

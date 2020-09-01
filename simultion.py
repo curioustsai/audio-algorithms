@@ -44,9 +44,15 @@ if __name__ == "__main__":
                         default='./data/samples_alarm_result',
                         type=str)
 
-    parser.add_argument('-t',
-                        dest='threshold',
-                        help='threshold value for algorithm',
+    parser.add_argument('--smokeThreshold',
+                        dest='smokeThreshold',
+                        help='smoke threshold for algorithm',
+                        default='-20',
+                        type=str)
+
+    parser.add_argument('--coThreshold',
+                        dest='coThreshold',
+                        help='co threshold for algorithm',
                         default='-20',
                         type=str)
 
@@ -66,7 +72,8 @@ if __name__ == "__main__":
     build_type = args.build_type
     input_folder = args.input_folder
     output_folder = args.output_folder
-    threshold = args.threshold
+    smokeThreshold = args.smokeThreshold
+    coThreshold = args.coThreshold
     log_file = args.log_file
     target_dir = args.target_dir
 
@@ -83,7 +90,7 @@ if __name__ == "__main__":
     for infile in input_files:
         outfile = os.path.basename(infile).replace('.wav', '-result.wav')
         outfile = os.path.join(output_folder, outfile)
-        cmd = [execute_bin, '\'' + infile + '\'', '\'' + outfile + '\'', threshold]
+        cmd = [execute_bin, '-i \'' + infile + '\' -o \'' + outfile + '\' --smokeThreshold ', smokeThreshold, '--coThreshold ', coThreshold]
         cmd = ' '.join(cmd)
         print(cmd)
         subprocess.call(cmd, shell=True)
