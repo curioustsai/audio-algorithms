@@ -27,6 +27,8 @@ void LoudnessDetector::Init(std::string model, float thresholdLoud, float thresh
     }
 }
 
+void LoudnessDetector::Release() {}
+
 AudioEventType LoudnessDetector::Detect(float* data, int numSamples) {
     AudioEventType detected = AUDIO_EVENT_NONE;
     float power = 0.f;
@@ -52,6 +54,14 @@ AudioEventType LoudnessDetector::Detect(float* data, int numSamples) {
 
     return detected;
 }
+
+void LoudnessDetector::ResetStates() {
+    _powerAvg = 0;
+    _powerAvgdB = 0;
+    _loudCnt = 0;
+    _quietCnt = 0;
+}
+
 void LoudnessDetector::SetThresholdLoud(float thresholdLoud) { _thresholdLoud = thresholdLoud; }
 void LoudnessDetector::SetThresholdQuiet(float thresholdQuiet) { _thresholdQuiet = thresholdQuiet; }
 void LoudnessDetector::SetQuietCntThr(int quietCntThr) { _quietCntThr = quietCntThr; }

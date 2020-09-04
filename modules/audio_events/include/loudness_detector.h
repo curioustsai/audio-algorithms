@@ -15,6 +15,8 @@ public:
     LoudnessDetector() = default;
     ~LoudnessDetector() = default;
     void Init(std::string model, float thresholdLoud, float thresholdQuiet);
+    void Release();
+    void ResetStates();
     AudioEventType Detect(float* data, int numSample);
     void SetLevelThreshold(int levelThreshold);
     void SetThresholdLoud(float thresholdLoud);
