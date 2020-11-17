@@ -21,9 +21,9 @@ endif()
 
 
 #set the include folder search path
-find_package(PythonLibs 2.7)
-message("STATUS PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
-message("STATUS PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
+# find_package(PythonLibs 2.7)
+# message("STATUS PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+# message("STATUS PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
 
 # set(SndFile_DIR, "/home/richard/workspace/libsndfile/build")
 # list(APPEND CMAKE_MODULE_PATH "/home/richard/workspace/libsndfile/CMakeBuild")
@@ -38,7 +38,7 @@ include_directories(
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
     ${SOURCES_ROOT}/audio_events/include/
     ${SOURCES_ROOT}/version
-    ${PROJECT_ROOT}/thirdparty/libsndfile/include
+    ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PYTHON_INCLUDE_DIRS}
     ${PROJECT_ROOT}/thirdparty/matplotlib-cpp
 	${PROJECT_ROOT}/thirdparty/CLI11/include
@@ -61,9 +61,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 #define the list of library dependencies
 target_link_libraries(
     ${PROJECT_NAME}
-    ${PYTHON_LIBRARIES}
+    # ${PYTHON_LIBRARIES}
 	${LIBSNDFILE_LIBRARIES}
-	${PROJECT_ROOT}/thirdparty/libsndfile/lib/libsndfile.a
+	${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib/libsndfile.a
     audio_events
     -lpthread
     -lm
