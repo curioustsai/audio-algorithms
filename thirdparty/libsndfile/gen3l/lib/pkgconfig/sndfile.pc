@@ -1,0 +1,12 @@
+prefix=/home/richard/workspace/libsndfile/build/gen3l
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: sndfile
+Description: A library for reading and writing audio files
+Requires:
+Requires.private: 
+Version: 1.0.29
+Libs: -L${libdir} -lsndfile
+Cflags: -I${includedir}
