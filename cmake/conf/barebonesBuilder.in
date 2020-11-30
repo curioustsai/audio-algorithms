@@ -59,3 +59,12 @@ NAME_gen4l_toolchains=linaro-aarch64-2017.02-gcc6.3.tar.xz
 PATH_gen4l_toolchains=7
 HASH_gen4l_toolchains=ae21c0ad32874316819276f5ad1c233c
 
+# gen4c
+NAME_gen4c_barebones=openwrt-gen4c-rel.tar.gz
+PATH_gen4c_barebones=$default_barebones_path
+HASH_gen4c_barebones=62daa40885c694f52e74777845601ed6
+
+NAME_gen4c_toolchains=linaro-aarch64-2018.08-gcc8.2-x86_64.tar.xz
+PATH_gen4c_toolchains=10
+HASH_gen4c_toolchains=845ebc9c42646ba1ff0c6967a75e0926
+
