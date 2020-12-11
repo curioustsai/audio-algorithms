@@ -1,0 +1,281 @@
+#include "c_npy.h"
+#include "SpeechEnhance.h"
+
+extern char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword);
+#define LEN_FILENAME 256
+
+int32_t Test_Beamformer(char* input_filename)
+{
+	char filename[LEN_FILENAME];
+
+	Beamformer stBeamformer;
+	MemMgr stMemMgr;
+	uint32_t fftlen = 512;
+	uint32_t half_fftlen = 256;
+	uint32_t sample_rate = 16000;
+	uint32_t nframe = 256;
+	uint32_t memSize;
+	uint32_t idx, idx_c, idx_col, idx_row, idx_R;
+
+	cmatrix_t* Zxx_npy, * beamformed_npy;
+	cmatrix_t* speech_status_npy, * noise_status_npy, * noise_bin_npy;
+	cmatrix_t* speechRyy_npy, * noiseRvv_npy, * R_inv_npy;
+	cmatrix_t* eigen_vector_npy, * mvdr_coef_npy;
+	cmatrix_t* spp_npy;
+
+	float32_t* Zxx, * beamformed;
+	uint8_t* speech_status, * noise_status;
+	uint32_t* noise_bin;
+	float32_t* X_iter, * output;
+	float32_t* speechRyy, * noiseRvv;
+	float32_t* eigen_vector, * mvdr_coef;
+	float32_t* R_inv;
+	float32_t* spp;
+
+	/* input */
+	Zxx_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_Zxx.npy"));
+	speech_status_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_speech_status.npy"));
+	noise_status_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_noise_status.npy"));
+	//noise_bin_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_noise_bin.npy"));
+
+	/* output*/
+	beamformed_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_beamformed.npy"));
+
+	/* intermediate */
+	speechRyy_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_speechRyy.npy"));
+	noiseRvv_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_noiseRvv.npy"));
+	//eigen_vector_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_eigen.npy"));
+	mvdr_coef_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_mvdr_coef.npy"));
+	R_inv_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_R_inv.npy"));
+	spp_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_spp.npy"));
+
+	// Beamformer
+	uint32_t total_frame = (uint32_t) Zxx_npy->shape[0];
+	uint32_t nchannel = (uint32_t) Zxx_npy->shape[1];
+	uint32_t bins = (uint32_t) Zxx_npy->shape[2];
+	uint32_t ncov = (uint32_t)(nchannel * (nchannel + 1) / 2);
+
+	MemMgr_InitZero(&stMemMgr);
+	Beamformer_QueryMemSize(&stMemMgr, fftlen, nchannel);
+	MemMgr_AllocMem(&stMemMgr);
+	Beamformer_Init(&stBeamformer, &stMemMgr, fftlen, nchannel);
+
+	uint32_t frame_cnt = 0;
+	uint8_t update_noise, update_speech;
+	X_iter = (float32_t*)malloc(sizeof(float32_t) * fftlen * nchannel);
+	output = (float32_t*)malloc(sizeof(float32_t) * fftlen);
+
+	for (frame_cnt = 0; frame_cnt < total_frame - 1; ++frame_cnt)
+	{
+		Zxx = ((float32_t*)Zxx_npy->data + 2 * frame_cnt * nchannel * bins);
+		beamformed = ((float32_t*)beamformed_npy->data + 2 * frame_cnt * bins);
+		speechRyy = ((float32_t*)speechRyy_npy->data + 2 * frame_cnt * bins * nchannel * nchannel);
+		noiseRvv = ((float32_t*)noiseRvv_npy->data + 2 * frame_cnt * bins * nchannel * nchannel);
+		R_inv = ((float32_t*)R_inv_npy->data + 2 * frame_cnt * bins * nchannel * nchannel);
+		//eigen_vector = ((float32_t*)eigen_vector_npy->data + 2 * frame_cnt * bins * nchannel);
+		mvdr_coef = ((float32_t*)mvdr_coef_npy->data + 2 * frame_cnt * bins * nchannel);
+		spp = ((float32_t*)spp_npy->data + frame_cnt * bins);
+
+		// compare snr_band, noise power, speech_frame, noise_frame;
+		speech_status = ((uint8_t*)speech_status_npy->data + frame_cnt * nframe);
+		noise_status = ((uint8_t*)noise_status_npy->data + frame_cnt * nframe);
+		//noise_bin = ((uint32_t*)noise_bin_npy->data + frame_cnt * bins);
+
+		for (idx_c = 0; idx_c < nchannel; ++idx_c)
+		{
+			for (idx = 0; idx < half_fftlen; ++idx)
+			{
+				X_iter[2 * idx * nchannel + 2 * idx_c] = Zxx[2 * bins * idx_c + 2 * idx];
+				X_iter[2 * idx * nchannel + 2 * idx_c + 1] = Zxx[2 * bins * idx_c + 2 * idx + 1];
+			}
+		}
+
+		update_noise = Beamformer_UpdateNoiseMatrix(&stBeamformer, X_iter, *noise_status, spp);
+		update_speech = Beamformer_UpdateSpeechMatrix(&stBeamformer, X_iter, *speech_status);
+
+		// Compare SpeechRyy & NoiseRvv, the same, checked
+		float32_t temp, temp1, temp2, temp3, temp4;
+#if 0
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			idx_R = 0;
+			for (idx_row = 0; idx_row < nchannel; ++idx_row)
+			{
+				for (idx_col = 0; idx_col <= idx_row; ++idx_col)
+				{
+					temp1 = noiseRvv[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col];
+					temp2 = stBeamformer.noiseRvv[2 * idx * ncov + 2 * idx_R];
+					temp = temp1 - temp2;
+					if (temp < 0)
+						temp = -temp;
+					temp = temp / temp1;
+
+					if ((temp1 != temp2) && (temp > 0.01))
+						printf("frame_cnt: %d\tidx:%d\tnoiseRvv_r py: %f, c: %f\n", frame_cnt, idx, temp1, temp2);
+
+					temp1 = noiseRvv[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col + 1];
+					temp2 = stBeamformer.noiseRvv[2 * idx * ncov + 2 * idx_R + 1];
+					temp = temp1 - temp2;
+					if (temp < 0)
+						temp = -temp;
+					temp = temp / temp1;
+
+					if ((temp1 != temp2) && (temp > 0.01))
+						printf("frame_cnt: %d\tidx:%d\tnoiseRvv_i py: %f, c: %f\n", frame_cnt, idx, temp1, temp2);
+
+					temp1 = speechRyy[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col];
+					temp2 = stBeamformer.speechRyy[2 * idx * ncov + 2 * idx_R];
+					temp = temp1 - temp2;
+					if (temp < 0)
+						temp = -temp;
+					temp = temp / temp1;
+
+					if ((temp1 != temp2) && (temp > 0.01))
+						printf("frame_cnt: %d\tidx:%d\tspeechRyy_r py: %f, c: %f\n", frame_cnt, idx, temp1, temp2);
+
+					temp1 = speechRyy[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col + 1];
+					temp2 = stBeamformer.speechRyy[2 * idx * ncov + 2 * idx_R + 1];
+					temp = temp1 - temp2;
+					if (temp < 0)
+						temp = -temp;
+					temp = temp / temp1;
+
+					if ((temp1 != temp2) && (temp > 0.01))
+						printf("frame_cnt: %d\tidx:%d\tspeechRyy_i py: %f, c: %f\n", frame_cnt, idx, temp1, temp2);
+					++idx_R;
+				}
+			}
+		}
+#endif
+
+#if 0 // set speechRyy, noiseRvv
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			idx_R = 0;
+			for (idx_row = 0; idx_row < nchannel; ++idx_row)
+			{
+				for (idx_col = 0; idx_col <= idx_row; ++idx_col)
+				{
+					stBeamformer.noiseRvv[2 * idx * ncov + 2 * idx_R] =
+					noiseRvv[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col]; 
+					stBeamformer.noiseRvv[2 * idx * ncov + 2 * idx_R + 1] =
+					noiseRvv[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col + 1];
+
+					stBeamformer.speechRyy[2 * idx * ncov + 2 * idx_R] =
+					speechRyy[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col];
+					stBeamformer.speechRyy[2 * idx * ncov + 2 * idx_R + 1] =
+					speechRyy[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col + 1];
+
+					stBeamformer.R_inv[2 * idx * ncov + 2 * idx_R] =
+					R_inv[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col];
+					stBeamformer.R_inv[2 * idx * ncov + 2 * idx_R + 1] =
+					R_inv[2 * idx * nchannel * nchannel + 2 * idx_row * nchannel + 2 * idx_col + 1];
+
+					++idx_R;
+				}
+			}
+		}
+#endif
+#if 0 //feed in eigen vector
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			for (idx_c = 0; idx_c < nchannel; ++idx_c)
+			{
+				stBeamformer.eigen_vector[2 * idx * nchannel + 2 * idx_c] =
+					eigen_vector[2 * idx * nchannel + 2 * idx_c];
+				stBeamformer.eigen_vector[2 * idx * nchannel + 2 * idx_c + 1] =
+					eigen_vector[2 * idx * nchannel + 2 * idx_c + 1];
+			}
+		}
+#endif
+
+		Beamformer_UpdateMwfFilter(&stBeamformer, update_speech, update_noise);
+#if 0	//compare eigen vector
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			for (idx_c = 0; idx_c < nchannel; ++idx_c)
+			{
+				temp1 = fabs(eigen_vector[2 * idx * nchannel + 2 * idx_c]);
+				temp2 = fabs(stBeamformer.eigen_vector[2 * idx * nchannel + 2 * idx_c]);
+				temp = temp1 - temp2;
+				if (temp < 0)
+					temp = -temp;
+
+				if (temp > 0.1)
+					printf("eigen_vector_r py: %f, c: %f\n", temp1, temp2);
+
+				temp1 = fabs(eigen_vector[2 * idx * nchannel + 2 * idx_c + 1]);
+				temp2 = fabs(stBeamformer.eigen_vector[2 * idx * nchannel + 2 * idx_c + 1]);
+				temp = temp1 - temp2;
+				if (temp < 0)
+					temp = -temp;
+
+				if (temp > 0.1)
+					printf("eigen_vector_i py: %f, c: %f\n", temp1, temp2);
+			}
+		}
+#endif
+
+#if 0 // compare mvdr coef
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			for (idx_c = 0; idx_c < nchannel; ++idx_c)
+			{
+				//stBeamformer.mvdr_coef[2 * idx * nchannel + 2 * idx_c] = mvdr_coef[2 * idx * nchannel + 2 * idx_c];
+				//stBeamformer.mvdr_coef[2 * idx * nchannel + 2 * idx_c + 1] = mvdr_coef[2 * idx * nchannel + 2 * idx_c + 1];
+#if 1
+				//real 
+				temp1 = mvdr_coef[2 * idx * nchannel + 2 * idx_c];
+				temp2 = stBeamformer.mvdr_coef[2 * idx * nchannel + 2 * idx_c];
+				temp = fabs(temp1 - temp2) / temp1;
+
+				if (temp > 0.05)
+					printf("frame_cnt: %d\tidx:%d\tmvdr_coef_r[%d] py: %f, c: %f\n", frame_cnt, idx, idx_c, temp1, temp2);
+
+				// image
+				temp1 = mvdr_coef[2 * idx * nchannel + 2 * idx_c + 1];
+				temp2 = stBeamformer.mvdr_coef[2 * idx * nchannel + 2 * idx_c + 1];
+				temp = fabs(temp1 - temp2) / temp1;
+
+				if (temp > 0.05)
+					printf("frame_cnt: %d\tidx:%d\tmvdr_coef_i[%d] py: %f, c: %f\n", frame_cnt, idx, idx_c, temp1, temp2);
+#endif
+			}
+		}
+#endif
+
+		/* Check Beamformer_DoFilter: Done */
+		Beamformer_DoFilter(&stBeamformer, X_iter, output);
+#if 0 		
+		float32_t sum_output = 0.f;
+		float32_t sum_beamformed = 0.f;
+		float32_t snr;
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			sum_output += (output[2 * idx] * output[2 * idx] + output[2 * idx + 1] * output[2 * idx + 1]);
+			sum_beamformed += (beamformed[2 * idx] * beamformed[2 * idx] + beamformed[2 * idx + 1] * beamformed[2 * idx + 1]);
+		}
+		snr = 10 * log10f((sum_output / (sum_beamformed + 1e-12f)));
+		printf("snr_db: %f\n", snr);
+#endif
+	}
+
+
+	free(X_iter);
+	free(output);
+	Beamformer_Release(&stBeamformer);
+	MemMgr_Release(&stMemMgr);
+
+	c_npy_matrix_free(Zxx_npy);
+	c_npy_matrix_free(beamformed_npy);
+	c_npy_matrix_free(speech_status_npy);
+	c_npy_matrix_free(noise_status_npy);
+	//c_npy_matrix_free(noise_bin_npy);
+	c_npy_matrix_free(speechRyy_npy);
+	c_npy_matrix_free(noiseRvv_npy);
+	//c_npy_matrix_free(eigen_vector_npy);
+	c_npy_matrix_free(spp_npy);
+	c_npy_matrix_free(mvdr_coef_npy);
+
+	return 0;
+}

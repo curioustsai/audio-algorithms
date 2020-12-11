@@ -1,0 +1,81 @@
+#include "wavfile.h"
+#include "webrtc_agc.h"
+
+extern char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword);
+
+#define LEN_FILENAME 256
+
+int32_t Test_AutoGainCtrl_WebRTC(char* input_filename)
+{
+	char filename[LEN_FILENAME];
+	AudioData* input_wav, * output_wav;
+
+	uint32_t sample_rate = 16000;
+	uint32_t nframe = sample_rate * NUM_SUBFRAME / 1000;
+
+	AgcVad vadNear;
+	DigitalAgc agcInst;
+	int16_t compressionGaindB = 9; // default 9dB
+	int16_t targetLevelDbfs = 3; 
+	uint8_t limiterEnable = 1; //default kAgcTrue (on)
+
+
+	input_wav = wavfile_read(input_filename);
+	int length = input_wav->length;
+#ifdef AUDIO_ALGO_DEBUG
+	output_wav = wavfile_create(16000, 5, length, 0);
+#else
+	output_wav = wavfile_create(16000, 1, length, 0);
+#endif
+
+	WebRtcAgc_InitVad(&vadNear);
+	WebRtcAgc_InitDigital(&agcInst, compressionGaindB, targetLevelDbfs, limiterEnable);
+
+	int16_t* input = input_wav->data[0];
+	int16_t* output = output_wav->data[0];
+#ifdef AUDIO_ALGO_DEBUG
+	int16_t* output_logratio = output_wav->data[1];
+	int16_t* output_capacitorFast = output_wav->data[2];
+	int16_t* output_capacitorSlow = output_wav->data[3];
+	int16_t* output_cur_level = output_wav->data[4];
+#endif
+	size_t nTotal = (length / nframe);
+
+	for (int i = 0; i < nTotal; i++) {
+		int nAgcRet = WebRtcAgc_ProcessDigital(&agcInst, &vadNear, (const int16_t* const)input, (int16_t* const)output);
+
+		if (nAgcRet != 0) {
+			printf("failed in WebRtcAgc_Process\n");
+			return -1;
+		}
+
+#ifdef AUDIO_ALGO_DEBUG
+		for (int j = 0; j < nframe; j++) {
+			output_logratio[j] = agcInst.vadNearend.logRatio;
+		}
+
+		for (int k = 0; k < NUM_SUBFRAME; k++)
+		{
+			for (int j = 0; j < 16; j++)
+			{
+				output_capacitorFast[k * 16 + j] = (int16_t) CC_Sqrt(agcInst.dbgInfo.capacitorFastArr[k]);
+				output_capacitorSlow[k * 16 + j] = (int16_t) CC_Sqrt(agcInst.dbgInfo.capacitorSlowArr[k]);
+				output_cur_level[k * 16 + j] = (int16_t) CC_Sqrt(agcInst.dbgInfo.cur_levelArr[k]);
+			}
+		}
+		output_logratio += nframe;
+		output_capacitorFast += nframe;
+		output_capacitorSlow += nframe;
+		output_cur_level += nframe;
+#endif
+
+		input += nframe;
+		output += nframe;
+	}
+
+	wavfile_write(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_agc_webrtc.wav"), output_wav);
+	wavfile_release(input_wav);
+	wavfile_release(output_wav);
+
+	return 0;
+}

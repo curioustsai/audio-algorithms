@@ -1,0 +1,127 @@
+#include "c_npy.h"
+#include "bmp.h"
+#include "SpeechEnhance.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+extern char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword);
+#define LEN_FILENAME 256
+
+int32_t Test_NoiseReduce(char* input_filename)
+{
+	char filename[LEN_FILENAME];
+	MemMgr stMemMgr;
+	NoiseReduce stNoiseEst;
+	uint32_t fftlen = 512;
+	uint32_t half_fftlen = 256;
+	uint32_t sample_rate = 16000;
+	uint32_t nframe = 256;
+	uint32_t idx;
+
+	cmatrix_t* Zxx_ref_npy, * vad_npy, *post_filt_npy;
+	cmatrix_t* speech_frame_npy, * noise_frame_npy, * noise_bin_npy;
+	FILE* bmp_fptr;
+	char* bmp;
+
+	Zxx_ref_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_Zxx_ref.npy"));
+	vad_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_vad.py.npy"));
+	speech_frame_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_speech_frame.npy"));
+	noise_frame_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_noise_frame.npy"));
+	noise_bin_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_noise_bin.npy"));
+	post_filt_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_wien_filt.npy"));
+
+	MemMgr_InitZero(&stMemMgr);
+#ifdef CCVOICE_NS_ENABLE
+	NoiseReduce_QueryMemSize(&stMemMgr, fftlen, 1);
+	MemMgr_AllocMem(&stMemMgr);
+	NoiseReduce_Init(&stNoiseEst, &stMemMgr, sample_rate, fftlen, 1);
+#else
+	NoiseReduce_QueryMemSize(&stMemMgr, fftlen, 0);
+	MemMgr_AllocMem(&stMemMgr);
+	NoiseReduce_Init(&stNoiseEst, &stMemMgr, sample_rate, fftlen, 0);
+#endif
+
+	uint32_t length = (uint32_t) Zxx_ref_npy->shape[0];
+	uint32_t bins = (uint32_t) Zxx_ref_npy->shape[1];
+	uint32_t frame_cnt = 0;
+	float32_t* power = (float32_t*)malloc(sizeof(float32_t) * fftlen);
+	float32_t* output = (float32_t*)malloc(sizeof(float32_t) * fftlen);
+	uint32_t size_bmp;
+
+	size_bmp = bmp_size(length - 1, half_fftlen);
+	bmp = (char*)malloc(size_bmp);
+	bmp_init(bmp, length - 1, half_fftlen);
+	
+	float32_t* Zxx_ref, * post_filt;
+	uint8_t* vad_ptr;
+	uint8_t* speech_frame, * noise_frame;
+	uint8_t* noise_bin;
+	float32_t sum_output, sum_post, snr;
+
+	for (frame_cnt = 0; frame_cnt < length - 1; ++frame_cnt)
+	{
+		Zxx_ref = ((float32_t*)Zxx_ref_npy->data + 2 * frame_cnt * bins);
+		post_filt = ((float32_t*)post_filt_npy->data + 2 * frame_cnt * bins);
+		vad_ptr = ((uint8_t*)vad_npy->data + frame_cnt * nframe);
+
+		// compare snr_band, noise power, speech_frame, noise_frame;
+		speech_frame = ((uint8_t*)speech_frame_npy->data + frame_cnt * nframe);
+		noise_frame = ((uint8_t*)noise_frame_npy->data + frame_cnt * nframe);
+		noise_bin = ((uint8_t*)noise_bin_npy->data + frame_cnt * bins);
+
+		for (idx = 0; idx < half_fftlen; ++idx)
+			power[idx] = Zxx_ref[2 * idx] * Zxx_ref[2 * idx] + Zxx_ref[2 * idx + 1] * Zxx_ref[2 * idx + 1];
+
+		NoiseReduce_EstimateNoise(&stNoiseEst, power, (uint32_t)frame_cnt, *vad_ptr);
+		NoiseReduce_SnrVAD(&stNoiseEst);
+
+#ifdef CCVOICE_NS_ENABLE
+		NoiseReduce_WienerFilter(&stNoiseEst, power, output);
+#endif
+
+		if (*speech_frame != stNoiseEst.speech_frame)
+			printf("speech frame diff at frame: %d\n", (int32_t)frame_cnt);
+
+		if (*noise_frame != stNoiseEst.noise_frame)
+			printf("noise frame diff at frame: %d\n", (int32_t)frame_cnt);
+
+#if 0
+		for (idx = 0; idx < half_fftlen; ++idx)
+		{
+			if (stNoiseEst.noise_bin[idx] == 0)
+				bmp_set(bmp, frame_cnt, half_fftlen - 1 - idx, bmp_encode(0.f, 0.f, 0.f));
+			else
+				bmp_set(bmp, frame_cnt, half_fftlen - 1 - idx, bmp_encode(1.f, 1.f, 1.f));
+		}
+#endif
+
+		sum_output = 0.f;
+		sum_post = 0.f;
+		for (idx = 1; idx < half_fftlen; ++idx)
+		{
+			sum_output += (output[2 * idx] * output[2 * idx] + output[2 * idx + 1] * output[2 * idx + 1]);
+			sum_post += (post_filt[2 * idx] * post_filt[2 * idx] + post_filt[2 * idx + 1] * post_filt[2 * idx + 1]);
+		}
+		snr = fabsf(20.f * log10f((sum_output / (sum_post + 1e-12f))));
+
+		if (snr > 0.1)
+			printf("snr_db: %f\n", snr);
+	}
+
+	bmp_fptr = fopen(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_noise_bin.bmp"), "wb");
+	fwrite(bmp, size_bmp, 1, bmp_fptr);
+	fclose(bmp_fptr);
+
+	free(power);
+	free(output);
+	free(bmp);
+	NoiseReduce_Release(&stNoiseEst);
+	MemMgr_Release(&stMemMgr);
+	c_npy_matrix_free(Zxx_ref_npy);
+	c_npy_matrix_free(vad_npy);
+	c_npy_matrix_free(speech_frame_npy);
+	c_npy_matrix_free(noise_frame_npy);
+	c_npy_matrix_free(noise_bin_npy);
+
+	return 0;
+}

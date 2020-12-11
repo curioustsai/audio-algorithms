@@ -3,4 +3,4 @@ configure_file("${SOURCES_ROOT}/version/version.cpp.in" "${CMAKE_BINARY_DIR}/ver
 set(VERSION_SOURCES "${CMAKE_BINARY_DIR}/version.cpp" "${SOURCES_ROOT}/version/version.h")
 
 add_subdirectory(audio_events)
-
+add_subdirectory(speech_enhance)

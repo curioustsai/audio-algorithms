@@ -1,0 +1,58 @@
+#include "SpeechEnhance.h"
+#include "c_npy.h"
+#include "wavfile.h"
+
+extern char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword);
+#define LEN_FILENAME 256
+
+int32_t Test_AutoGainCtrl(char* input_filename)
+{
+	char filename[LEN_FILENAME];
+	AutoGainCtrl stAGC;
+	AudioData* input_wav, * output_wav;
+	uint32_t fftlen = 512;
+	uint32_t half_fftlen = 256;
+	uint32_t sample_rate = 16000;
+	uint32_t nframe = 256;
+	uint32_t idx;
+
+	cmatrix_t* speech_status_npy, * spp_npy;
+	uint8_t* speech_status;
+	float32_t *spp;
+	float32_t input32f[256], output32f[256];
+
+	speech_status_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_speech_status.npy"));
+	spp_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_spp.npy"));
+
+	AutoGainCtrl_Init(&stAGC, 32768 / sqrtf(2.0f), nframe, 1.0f / 8.0f, 8.0f);
+
+	uint32_t length = (uint32_t) spp_npy->shape[0];
+	uint32_t frame_cnt;
+
+	input_wav = wavfile_read(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_ns.wav"));
+	output_wav = wavfile_create(16000, 1, length * nframe, 0);
+
+	for (frame_cnt = 0; frame_cnt < length - 1; ++frame_cnt)
+	{
+		speech_status = ((uint8_t*)speech_status_npy->data + frame_cnt * nframe);
+		spp = ((float32_t*)spp_npy->data + frame_cnt);
+
+		for (idx = 0; idx < nframe; ++idx)
+			input32f[idx] = (float32_t) input_wav->data[0][nframe * frame_cnt + idx];
+
+		AutoGainCtrl_Process(&stAGC, input32f, *speech_status, *spp, output32f);
+
+		for (idx = 0; idx < nframe; ++idx)
+			output_wav->data[0][frame_cnt * nframe + idx] = (int16_t) output32f[idx];
+	}
+
+	wavfile_write(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_agc.wav"), output_wav);
+	wavfile_release(input_wav);
+	wavfile_release(output_wav);
+
+	AutoGainCtrl_Release(&stAGC);
+	c_npy_matrix_free(speech_status_npy);
+	c_npy_matrix_free(spp_npy);
+
+	return 0;
+}

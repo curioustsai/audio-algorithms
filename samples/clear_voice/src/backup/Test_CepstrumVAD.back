@@ -1,0 +1,90 @@
+#include "SpeechEnhance.h"
+#include "c_npy.h"
+#include "wavfile.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+// feed fft data: Zxx_ref into cepstrum vad module
+// to check if vad flag correct
+// TODO: further check other flag, etc.
+
+extern char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword);
+#define LEN_FILENAME 256
+
+int32_t Test_CepstrumVAD(char* input_filename)
+{
+	char filename[LEN_FILENAME];
+	AudioData* vad_wav;
+	CepstrumVAD stCepstrumVAD;
+	MemMgr stMemMgr;
+	arm_rfft_fast_instance_f32 fft_inst;
+	uint32_t fftlen = 512;
+	uint32_t half_fftlen = 256;
+	uint32_t sample_rate = 16000;
+	uint32_t nframe = 256;
+	uint32_t size;
+	uint32_t vad;
+	uint32_t idx;
+
+	float32_t* Zxx_ref; // fft input
+	cmatrix_t* Zxx_ref_npy;
+	cmatrix_t* vad_npy, *pitch_npy, * cepData_max_npy, * max_idx_npy;
+	int16_t * cepData_max_ptr, * max_idx_ptr;
+	uint8_t* vad_ptr;
+	uint16_t* pitch_ptr;
+	float32_t ref_pow[256];
+
+	arm_rfft_512_fast_init_f32(&fft_inst);
+
+	Zxx_ref_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_Zxx_ref.npy"));
+
+	vad_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_vad.py.npy"));
+	pitch_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_pitch.npy"));
+	//cepData_max_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_cepData_max.npy"));
+	//max_idx_npy = c_npy_matrix_read_file(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_py_max_idx.npy"));
+
+	MemMgr_InitZero(&stMemMgr);
+	CepstrumVAD_QueryMemSize(&stMemMgr, fftlen, 5, 5);
+	MemMgr_AllocMem(&stMemMgr);
+	CepstrumVAD_Init(&stCepstrumVAD, &stMemMgr, fftlen, sample_rate, &fft_inst);
+
+	uint32_t length = Zxx_ref_npy->shape[0];
+	uint32_t bins = Zxx_ref_npy->shape[1];
+	uint32_t frame_cnt;
+	vad_wav = wavfile_create(16000, 1, length * nframe, 0);
+
+	for (frame_cnt = 0; frame_cnt < length; ++frame_cnt)
+	{
+		Zxx_ref = ((float32_t*)Zxx_ref_npy->data + 2 * frame_cnt * bins);
+		Zxx_ref[1] = Zxx_ref[2 * 256];
+		for (idx = 0; idx < half_fftlen; ++idx)
+			ref_pow[idx] = Zxx_ref[2 * idx] * Zxx_ref[2 * idx] + Zxx_ref[2 * idx + 1] * Zxx_ref[2 * idx + 1];
+
+		vad = CepstrumVAD_Process(&stCepstrumVAD, ref_pow, stMemMgr.scratch_memory);
+		vad_ptr = ((uint8_t*)vad_npy->data + frame_cnt * nframe);
+		pitch_ptr = ((uint16_t*)pitch_npy->data + frame_cnt * nframe);
+		//cepData_max_ptr = ((int16_t*)cepData_max_npy->data + frame_cnt * nframe);
+		//max_idx_ptr = ((int16_t*)max_idx_npy->data + frame_cnt * nframe);
+
+		if (vad != *vad_ptr)
+			printf("vad diff at frame_number: %d\n", (int32_t)frame_cnt);
+
+		//if (stCepstrumVAD.pitch != *pitch_ptr);
+		//	printf("pitch diff at frame_number: %d\n", (int32_t)frame_cnt);
+
+		for (idx = 0; idx < nframe; ++idx)
+			vad_wav->data[0][frame_cnt * nframe + idx] = vad;
+	}
+
+	wavfile_write(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_vad.wav"), vad_wav);
+	wavfile_release(vad_wav);
+
+	CepstrumVAD_Release(&stCepstrumVAD);
+	MemMgr_Release(&stMemMgr);
+
+	c_npy_matrix_free(Zxx_ref_npy);
+	//c_npy_matrix_free(cepData_max_npy);
+	//c_npy_matrix_free(max_idx_npy);
+
+	return 0;
+}

@@ -1,0 +1,110 @@
+#include "SpeechEnhance.h"
+#include "wavfile.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+extern const float32_t kBlocks256w512[512];
+extern const float32_t kBlocks160w512[512];
+extern char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword);
+#define LEN_FILENAME 256
+
+int32_t Test_FFT(char* input_filename)
+{
+	char filename[LEN_FILENAME];
+
+	AudioData* input_wav, *output_wav;
+	uint32_t sample_rate, nchannel, total_length, fftlen, half_fftlen;
+	uint32_t nframe, nshift;
+	uint32_t frame_cnt;
+	uint32_t idx;
+	float32_t* input_32f;
+
+	arm_rfft_fast_instance_f32 instance;
+	float32_t* inframe, * inframe_windowed, * fft_data, * overlap, * fftwin;
+	float32_t* ifft_data;
+	float32_t power_before, power_after, power_after1, snr;
+
+	input_wav = wavfile_read(input_filename);
+	sample_rate = input_wav->sample_rate;
+	nchannel = input_wav->nchannel;
+	total_length = input_wav->length;
+	nframe = 160;
+	fftlen = 512;
+	nshift = fftlen - nframe;
+	half_fftlen = fftlen >> 1;
+
+	output_wav = wavfile_create(sample_rate, 1, total_length, 0);
+
+	input_32f = (float32_t*)calloc(nframe, sizeof(float32_t));
+	inframe = (float32_t*)calloc(fftlen, sizeof(float32_t));
+	inframe_windowed = (float32_t*)calloc(fftlen, sizeof(float32_t));
+	fft_data = (float32_t*)calloc(fftlen, sizeof(float32_t));
+	ifft_data = (float32_t*)calloc(fftlen, sizeof(float32_t));
+	overlap = (float32_t*)calloc(nshift, sizeof(float32_t));
+
+	// initialization
+	switch (nframe)
+	{
+	case 160:
+		fftwin = kBlocks160w512;
+		break;
+	case 256:
+		fftwin = kBlocks256w512;
+		break;
+	default:
+		return ARM_MATH_TEST_FAILURE;
+	}
+
+	arm_rfft_512_fast_init_f32(&instance);
+
+	frame_cnt = 0;
+	power_after1 = 0;
+	while ((frame_cnt + 1) * nframe < total_length)
+	{
+		power_before = 0.f;
+		for (idx = 0; idx < nframe; ++idx)
+		{
+			input_32f[idx] = (float32_t)input_wav->data[0][frame_cnt * nframe + idx];
+			power_before += (input_32f[idx] * input_32f[idx]);
+		}
+
+		arm_copy_f32(inframe + nframe, inframe, nshift);
+		arm_copy_f32(input_32f, inframe + nshift, nframe);
+
+		arm_mult_f32(inframe, fftwin, inframe_windowed, fftlen);
+
+		arm_rfft_fast_f32(&instance, inframe_windowed, fft_data, 0);
+		arm_rfft_fast_f32(&instance, fft_data, ifft_data, 1);
+
+		arm_mult_f32(ifft_data, fftwin, fft_data, fftlen);
+		arm_add_f32(ifft_data, overlap, ifft_data, nshift);
+		arm_copy_f32(ifft_data + nframe, overlap, nshift);
+
+
+		power_after = 0.f;
+		for (idx = 0; idx < nframe; ++idx)
+		{
+			output_wav->data[0][frame_cnt * nframe + idx] = (int16_t)ifft_data[idx];
+			power_after += (ifft_data[idx] * ifft_data[idx]);
+		}
+
+		snr = 10.0f * log10f(power_before / (power_after1 + 1e-12f));
+		printf("SNR: %f\n", snr);
+		power_after1 = power_after;
+
+		++frame_cnt;
+	}
+
+	wavfile_write(replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_ifft.wav"), output_wav);
+	wavfile_release(input_wav);
+	wavfile_release(output_wav);
+
+	free(input_32f);
+	free(inframe);
+	free(inframe_windowed);
+	free(fft_data);
+	free(ifft_data);
+	free(overlap);
+
+	return 1;
+}

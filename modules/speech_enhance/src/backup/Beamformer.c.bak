@@ -1,0 +1,597 @@
+#include "Beamformer.h"
+#include <stdlib.h>
+
+static inline void cmatrix_inverse2x2(float* input, float* output) {
+    // a b.conj()       c  -b.conj()
+    // b c			=> -b   a
+    // 1/det(input)
+
+    // det = ac - conj(b)b, a real number for our covarince matrix
+    // a = a_r + j*a_i = input[0] + j*input[1];
+    // b = b_r + j*b_i = input[2] + j*input[3];
+    // c = c_r + j*c_i = input[4] + j*input[5];
+
+    float det_recip;
+    //float a_r, a_i, b_r, b_i, c_r, c_i;
+    float a_r, b_r, b_i, c_r;
+    float temp1, temp2;
+
+    a_r = input[0];
+    //a_i = input[1];
+    b_r = input[2];
+    b_i = input[3];
+    c_r = input[4];
+    //c_i = input[5];
+
+    temp1 = a_r * c_r;               //a*c, where a & idx_c are real
+    temp2 = (b_r * b_r + b_i * b_i); //b*b.conj()
+
+    // FIXME: should have better way
+    if (temp1 == temp2) {
+        temp1 *= 1.01f;
+        //printf("decip is zero: %f\n", temp1);
+        //return -1;
+    }
+    det_recip = temp1 - temp2;
+    //printf("det: %f\n", det_recip);
+
+    det_recip = 1.0f / det_recip;
+
+    output[0] = c_r * det_recip;
+    output[1] = 0; //c_i* det_recip;
+
+    output[2] = -b_r * det_recip;
+    output[3] = -b_i * det_recip;
+
+    output[4] = a_r * det_recip;
+    output[5] = 0; //a_i* det_recip;
+
+    return;
+}
+
+static inline void cmatrix_mul2x2(float* a, float* b, float* output) {
+    // input: a, b are low triangle cmatrix
+    // ouptut: output is full cmatrix
+
+    // a0 a1.conj()  b0 b1.conj()
+    // a1 a2		 b1 b2
+    // =>
+    // a0*b0+a1.conj()*b1 (output[0], output[1])   a0*b1.conj()+a1.conj()*b2 (output[2], output[3])
+    // a1*b0+a2*b1		  (output[4], output[5])   a1*b1.conj()+a2*b2		 (output[6], output[7])
+
+    // a0: a0_r+j*a0_i = a[0]+j*a[1]  b0: b0_r+j*b0_i = b[0]+j*b[1]
+    // a1: a1_r+j*a1_i = a[2]+j*a[3]  b1: b1_r+j*b1_i = b[2]+j*b[3]
+    // a2: a2_r+j*a2_i = a[4]+j*a[5]  b2: b2_r+j*b2_i = b[4]+j*b[5]
+#if 1
+    float a0_r, a0_i, a1_r, a1_i, a2_r, a2_i;
+    float b0_r, b0_i, b1_r, b1_i, b2_r, b2_i;
+    a0_r = a[0];
+    a0_i = a[1];
+    a1_r = a[2];
+    a1_i = a[3];
+    a2_r = a[4];
+    a2_i = a[5];
+    b0_r = b[0];
+    b0_i = b[1];
+    b1_r = b[2];
+    b1_i = b[3];
+    b2_r = b[4];
+    b2_i = b[5];
+
+    // output (0,0):
+    // a0*b0 = (a0_r+ja0_i)*(b0_r+jb0_i)
+    output[0] = a0_r * b0_r - a0_i * b0_i;
+    output[1] = a0_i * b0_r + a0_r * b0_i;
+    // a1.conj()*b1 = (a1_r-ja1_i)*(b1_r+jb1_i)
+    output[0] += a1_r * b1_r + a1_i * b1_i;
+    output[1] += (-a1_i * b1_r + a1_r * b1_i);
+
+    // output (0,1):
+    //a0*b1.conj() = (a0_r+ja0_i)*(b1_r-jb1_i)
+    output[2] = a0_r * b1_r + a0_i * b1_i;
+    output[3] = a0_i * b1_r - a0_r * b1_i;
+    //a1.conj()*b2 = (a1_r-ja1_i)*(b2_r+jb2_i)
+    output[2] += a1_r * b2_r + a1_i * b2_i;
+    output[3] += -a1_i * b2_r + a1_r * b2_i;
+
+    // output (1,0):
+    //a1*b0 = (a1_r+ja1_i)*(b0_r+jb0_i)
+    output[4] = a1_r * b0_r - a1_i * b0_i;
+    output[5] = a1_i * b0_r + a1_r * b0_i;
+    //a2*b1 = (a2_r+ja2_i)*(b1_r+jb1_i)
+    output[4] += a2_r * b1_r - a2_i * b1_i;
+    output[5] += a2_i * b1_r + a2_r * b1_i;
+
+    // output (1,1):
+    //a1*b1.conj() = (a1_r+ja1_i)*(b1_r-jb1_i)
+    output[6] = a1_r * b1_r + a1_i * b1_i;
+    output[7] = a1_i * b1_r - a1_r * b1_i;
+    //a2*b2 = (a2_r+ja2_i)*(b2_r+jb2_i)
+    output[6] += a2_r * b2_r - a2_i * b2_i;
+    output[7] += a2_i * b2_r + a2_r * b2_i;
+#else // much slower...
+    arm_matrix_instance_f32 cm_a, cm_b, cm_c;
+    float a_32f[8], b_32f[8];
+
+    arm_mat_init_f32(&cm_a, 2, 2, a_32f);
+    arm_mat_init_f32(&cm_b, 2, 2, b_32f);
+    arm_mat_init_f32(&cm_c, 2, 2, output);
+
+    a_32f[0] = a[0];
+    a_32f[1] = a[1];
+    a_32f[2] = a[2];
+    a_32f[3] = -a[3];
+    a_32f[4] = a[2];
+    a_32f[5] = a[3];
+    a_32f[6] = a[4];
+    a_32f[7] = a[5];
+
+    b_32f[0] = b[0];
+    b_32f[1] = b[1];
+    b_32f[2] = b[2];
+    b_32f[3] = -b[3];
+    b_32f[4] = b[2];
+    b_32f[5] = b[3];
+    b_32f[6] = b[4];
+    b_32f[7] = b[5];
+
+    arm_mat_cmplx_mult_f32(&cm_a, &cm_b, &cm_c);
+#endif
+
+    return;
+}
+
+static inline void cmatrix_eigvect(float* input, float* eigen_value, float* eigen_vector) {
+    // find eigenvalue
+    float T, D;
+    float temp;
+
+    // (a, b*) = > (input0+j*input1)
+    // (b, d)  = > (input2+j*input3) (input4+j*input5)
+
+    // T = a+d
+    T = input[0] + input[4];
+    // D = a*d-b^2
+    D = input[0] * input[4];
+    D -= (input[2] * input[2] + input[3] * input[3]);
+
+    if (D == 0) {
+        // return basis (1+0j, 0) (0, 1+0j)
+        eigen_value[0] = eigen_value[1] = 0.0f;
+        eigen_value[2] = eigen_value[3] = 0.0f;
+
+        eigen_vector[0] = 1;
+        eigen_vector[1] = 0;
+        eigen_vector[2] = 0;
+        eigen_vector[3] = 0;
+
+        eigen_vector[4] = 0;
+        eigen_vector[5] = 0;
+        eigen_vector[6] = 1;
+        eigen_vector[7] = 0;
+        return;
+    }
+
+    temp = sqrtf(T * T / 4.0f - D);
+    eigen_value[0] = 0.5f * T + temp;
+    eigen_value[1] = 0.0f;
+    eigen_value[2] = 0.5f * T - temp;
+    eigen_value[3] = 0.0f;
+
+    // find eigenvector 1
+    // eigen1 - d
+    eigen_vector[0] = eigen_value[0] - input[4];
+    eigen_vector[1] = 0; //input[5] - eigen_value[1];
+    // b = input2 + j*input3
+    eigen_vector[2] = input[2];
+    eigen_vector[3] = input[3];
+
+    temp = eigen_vector[0] * eigen_vector[0];
+    temp += eigen_vector[1] * eigen_vector[1];
+    temp += eigen_vector[2] * eigen_vector[2];
+    temp += eigen_vector[3] * eigen_vector[3];
+    temp = sqrtf(temp);
+
+    eigen_vector[0] /= temp;
+    eigen_vector[1] /= temp;
+    eigen_vector[2] /= temp;
+    eigen_vector[3] /= temp;
+
+#if 0
+	// find eigenvector 2
+	// eigen2 - d 
+	eigen_vector[4] = eigen_value[2] - input[4];
+	eigen_vector[5] = 0;
+	// b
+	eigen_vector[6] = input[2];
+	eigen_vector[7] = input[3];
+	temp = eigen_vector[4] * eigen_vector[4];
+	temp += eigen_vector[5] * eigen_vector[5];
+	temp += eigen_vector[6] * eigen_vector[6];
+	temp += eigen_vector[6] * eigen_vector[7];
+	temp = sqrtf(temp);
+
+	eigen_vector[4] /= temp;
+	eigen_vector[5] /= temp;
+	eigen_vector[6] /= temp;
+	eigen_vector[7] /= temp;
+#endif
+
+    return;
+}
+
+/* int32_t Beamformer_QueryMemSize(MemMgr* hMemMgr, uint16_t fftlen, uint16_t nchannel) { */
+/*     uint32_t line_size = 0; */
+/*     uint32_t scratch_size = 0; */
+/*     uint32_t half_fftlen = (fftlen >> 1U); */
+/*     uint32_t ncov = nchannel * (nchannel + 1U) / 2U; // lower triangle only */
+/*  */
+/*     line_size = MemMgr_SzCnt_32(half_fftlen * ncov * 2U);      // speechRyy */
+/*     line_size += MemMgr_SzCnt_32(half_fftlen * ncov * 2U);     // noiseRvv */
+/*     line_size += MemMgr_SzCnt_32(half_fftlen * nchannel * 2U); // bf_coef */
+/*  */
+/*     hMemMgr->line_size += line_size; */
+/*     hMemMgr->scratch_size = max(hMemMgr->scratch_size, scratch_size); */
+/*  */
+/* #ifdef _MEMORY_USAGE */
+/*     printf("Memory usage in Beamformer: line: %d\t scratch: %d\n", line_size, scratch_size); */
+/* #endif */
+/*  */
+/*     return STATUS_SUCCESS; */
+/* } */
+
+int32_t Beamformer_Init(Beamformer* handle, uint16_t fftlen, uint16_t nchannel) {
+    uint16_t i, c;
+    uint16_t ncov, half_fftlen;
+
+    ncov = nchannel * (nchannel + 1) / 2;
+    half_fftlen = (fftlen >> 1);
+
+    handle->fn = 0;
+    handle->half_fftlen = half_fftlen;
+    handle->nchannel = nchannel;
+    handle->ncov = ncov; // lower triangle only
+    handle->speech_cnt = 0;
+    handle->noise_cnt = 0;
+
+    handle->mu = 1.0f;
+    handle->ref_ch = 0;
+
+    handle->speechRyy = (float*)malloc(half_fftlen * handle->ncov * 2U * sizeof(float));
+    handle->noiseRvv = (float*)malloc(half_fftlen * handle->ncov * 2U * sizeof(float));
+    handle->bf_coef = (float*)malloc(half_fftlen * nchannel * 2U * sizeof(float));
+
+    for (i = 0; i < half_fftlen; ++i) {
+        for (c = 0; c < nchannel; ++c) {
+            handle->bf_coef[2 * i * nchannel + 2 * c] = 1.f / sqrtf(nchannel);
+            handle->bf_coef[2 * i * nchannel + 2 * c + 1] = 0;
+        }
+        handle->speechRyy[2 * i * ncov + 0] = 4096.f; // init sample valuel 256*256
+        handle->speechRyy[2 * i * ncov + 1] = 0.f;
+        handle->speechRyy[2 * i * ncov + 2] = 0.f;
+        handle->speechRyy[2 * i * ncov + 3] = 0.f;
+        handle->speechRyy[2 * i * ncov + 4] = 4096.f; // init sample valuel 256*256
+        handle->speechRyy[2 * i * ncov + 5] = 0.f;
+
+        handle->noiseRvv[2 * i * ncov + 0] = 4096.f;
+        handle->noiseRvv[2 * i * ncov + 1] = 0.f;
+        handle->noiseRvv[2 * i * ncov + 2] = 0.f;
+        handle->noiseRvv[2 * i * ncov + 3] = 0.f;
+        handle->noiseRvv[2 * i * ncov + 4] = 4096.f; // init sample valuel 256*256
+        handle->noiseRvv[2 * i * ncov + 5] = 0.f;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+int32_t Beamformer_Release(Beamformer* handle) {
+    free(handle->speechRyy);
+	free(handle->noiseRvv);
+    free(handle->bf_coef);
+
+    return STATUS_SUCCESS;
+}
+
+uint8_t Beamformer_UpdateSpeechMatrix(Beamformer* handle, float* mic_input, uint8_t speech_status) {
+    uint16_t idx;
+    uint16_t half_fftlen = handle->half_fftlen;
+    uint16_t nchannel = handle->nchannel;
+
+    uint32_t cnt;
+    float alpha;
+
+    float *X_ptr, *Ryy;
+    float R[2];
+    uint8_t update_speech;
+
+    update_speech = 0;
+    if (speech_status == 1 || handle->fn <= 50) {
+        cnt = ++handle->speech_cnt;
+        alpha = (cnt >= 10) ? 0.05f : 0.9f;
+
+        X_ptr = mic_input;
+        Ryy = handle->speechRyy;
+
+        idx = half_fftlen;
+        while (idx--) {
+            // Rxx = np.dot(X_freq, X_freq.conj().T
+            // nchannel * nchannel, but we only save half hermitian matrix
+            // example:
+            // 0,			(0,0)
+            // 1, 2,		(1,0) (1,1)
+
+            R[0] = X_ptr[0] * X_ptr[0] + X_ptr[1] * X_ptr[1];
+            Ryy[0] += alpha * (R[0] - Ryy[0]);
+            Ryy += 2;
+
+            R[0] = X_ptr[2] * X_ptr[0] + X_ptr[3] * X_ptr[1];
+            R[1] = X_ptr[3] * X_ptr[0] - X_ptr[2] * X_ptr[1];
+            Ryy[0] += alpha * (R[0] - Ryy[0]);
+            Ryy[1] += alpha * (R[1] - Ryy[1]);
+            Ryy += 2;
+
+            R[0] = X_ptr[2] * X_ptr[2] + X_ptr[3] * X_ptr[3];
+            Ryy[0] += alpha * (R[0] - Ryy[0]);
+            Ryy += 2;
+
+            X_ptr += 2 * nchannel;
+        }
+
+        if (cnt % 10 == 0) update_speech = 1;
+    }
+
+    return update_speech;
+}
+
+uint8_t Beamformer_UpdateNoiseMatrix(Beamformer* handle, float* mic_input, uint8_t noise_status,
+                                     float* spp) {
+    uint16_t half_fftlen = handle->half_fftlen;
+    uint16_t nchannel = handle->nchannel;
+    uint16_t idx;
+    uint32_t cnt;
+    float alpha;
+    float *X_ptr, R[2], *Rvv, *ptr_spp;
+    float npp;
+
+    uint8_t update_noise;
+
+    update_noise = 0;
+    handle->fn++;
+    if (noise_status == 1 || handle->fn <= 50) {
+        cnt = ++handle->noise_cnt;
+        alpha = (cnt >= 10) ? 0.05f : 0.9f;
+
+        X_ptr = mic_input;
+        Rvv = handle->noiseRvv;
+        ptr_spp = spp;
+
+        idx = half_fftlen;
+        while (idx--) {
+            // Rxx = np.dot(X_freq, X_freq.conj().T
+            // nchannel * nchannel, but we only save half hermitian matrix
+            // example:
+            // 0,			(0,0)
+            // 1, 2,		(1,0) (1,1)
+            // idx = (row_idx) + (col_idx)
+
+            npp = (1.0f - *ptr_spp++);
+            npp *= npp;
+
+            R[0] = npp * (X_ptr[0] * X_ptr[0] + X_ptr[1] * X_ptr[1]);
+            Rvv[0] += alpha * (R[0] - Rvv[0]);
+            Rvv += 2;
+
+            R[0] = npp * (X_ptr[2] * X_ptr[0] + X_ptr[3] * X_ptr[1]);
+            R[1] = npp * (X_ptr[3] * X_ptr[0] - X_ptr[2] * X_ptr[1]);
+            Rvv[0] += alpha * (R[0] - Rvv[0]);
+            Rvv[1] += alpha * (R[1] - Rvv[1]);
+            Rvv += 2;
+
+            R[0] = npp * (X_ptr[2] * X_ptr[2] + X_ptr[3] * X_ptr[3]);
+            Rvv[0] += alpha * (R[0] - Rvv[0]);
+            Rvv += 2;
+
+            X_ptr += 2 * nchannel;
+        }
+
+        if (cnt % 10 == 0) update_noise = 1;
+    }
+
+    return update_noise;
+}
+
+int32_t Beamformer_UpdateMvdrFilter(Beamformer* handle, uint8_t update_speech,
+                                    uint8_t update_noise) {
+    uint16_t half_fftlen = handle->half_fftlen;
+    uint16_t ncov = handle->ncov;
+    uint16_t idx;
+
+    float *Ryy, *Rvv, *bf_coef;
+    float eigen_value[4], eigen_vector[4];
+    float Rxx[6], Rvv_inv[6], den;
+    float num[4];
+
+    if ((1 == update_speech) || (1 == update_noise)) {
+        Ryy = handle->speechRyy;
+        Rvv = handle->noiseRvv;
+        bf_coef = handle->bf_coef;
+
+        idx = half_fftlen;
+        while (idx--) {
+            // find eigen vector of Rxx
+            // guarantee index 0 corresponding to the largest eigenvalue
+            uiv_copy_f32(Ryy, Rxx, 2 * ncov);
+            if ((Ryy[0] + Ryy[4]) > (Rvv[0] + Rvv[4])) uiv_sub_f32(Ryy, Rvv, Rxx, 2 * ncov);
+
+            cmatrix_eigvect(Rxx, eigen_value, eigen_vector);
+            cmatrix_inverse2x2(Rvv, Rvv_inv);
+
+            // cmatrix_mul2x1(Rvv_inv, steer, num);
+            // ( Rvv_inv[0] + j*Rvv_inv[1], Rvv_inv[2] - j*Rvv_inv[3] ) (eigv[0] + j*egv[1])
+            // ( Rvv_inv[2] + j*Rvv_inv[3], Rvv_inv[4] + j*Rvv_inv[5] ) (eigv[2] + j*egv[3])
+
+            num[0] = (Rvv_inv[0] * eigen_vector[0] - Rvv_inv[1] * eigen_vector[1]);
+            num[1] = (Rvv_inv[1] * eigen_vector[0] + Rvv_inv[0] * eigen_vector[1]);
+            num[0] += (Rvv_inv[2] * eigen_vector[2] + Rvv_inv[3] * eigen_vector[3]);
+            num[1] += (Rvv_inv[2] * eigen_vector[3] - Rvv_inv[3] * eigen_vector[2]);
+
+            num[2] = (Rvv_inv[2] * eigen_vector[0] - Rvv_inv[3] * eigen_vector[1]);
+            num[3] = (Rvv_inv[3] * eigen_vector[0] + Rvv_inv[2] * eigen_vector[1]);
+            num[2] += (Rvv_inv[4] * eigen_vector[2] - Rvv_inv[5] * eigen_vector[3]);
+            num[3] += (Rvv_inv[5] * eigen_vector[2] + Rvv_inv[4] * eigen_vector[3]);
+
+            // steering.conj().T * num
+            // (eigv[0] - j*eigv[1], eigv[2] - j*eigv[3]) (num[0] + j*num[1])
+            //											  (num[2] + j*num[3])
+            den = eigen_vector[0] * num[0] + eigen_vector[1] * num[1];
+            den += eigen_vector[2] * num[2] + eigen_vector[3] * num[3];
+            den *= 1.41421356f; // sqrtf((float)nchannel);
+            den = 1.0f / den;
+
+            // (num[0]+j*num[1]) * (den[0] - j*den[1])
+            bf_coef[0] = num[0] * den;
+            bf_coef[1] = num[1] * den;
+            // (num[2]+j*num[3]) * (den[0] - j*den[1])
+            bf_coef[2] = num[2] * den;
+            bf_coef[3] = num[3] * den;
+
+            bf_coef += 4;
+            Ryy += 2 * ncov;
+            Rvv += 2 * ncov;
+        }
+    }
+
+    return STATUS_SUCCESS;
+}
+
+int32_t Beamformer_UpdateMwfFilter(Beamformer* handle, uint8_t update_speech,
+                                   uint8_t update_noise) {
+    uint16_t half_fftlen;
+    uint16_t nchannel;
+    uint16_t ncov;
+    float mu;
+    uint16_t ref_ch;
+    uint16_t idx;
+
+    float* Ryy;
+    float* Rvv;
+    float temp;
+#ifdef _MWF_PROTECT_
+    float temp_abs[4];
+#endif
+    float trace_Ryy;
+    float trace_Rvv;
+
+    float num[8];
+    float Rvv_inv[6];
+    float w[4];
+    float *ptr_w, *ptr_num;
+
+    half_fftlen = handle->half_fftlen;
+    nchannel = handle->nchannel;
+    ncov = handle->ncov;
+    mu = handle->mu;
+    ref_ch = handle->ref_ch;
+
+    if ((1 == update_speech) || (1 == update_noise)) {
+        Ryy = handle->speechRyy;
+        Rvv = handle->noiseRvv;
+        ptr_w = handle->bf_coef;
+
+        idx = half_fftlen;
+        while (idx--) {
+            trace_Ryy = Ryy[0] + Ryy[4];
+            trace_Rvv = Rvv[0] + Rvv[4];
+
+            if ((trace_Rvv <= 256.f) || (trace_Ryy <= (trace_Rvv + 256.f))) {
+                Ryy += 2 * ncov;
+                Rvv += 2 * ncov;
+                ptr_w += 2 * nchannel;
+
+                //stDebugger.bHit[255-idx] = 0;
+
+                continue;
+            }
+
+            //stDebugger.bHit[255-idx] = 1;
+
+            //cmatrix_inverse2x2(Rvv, Rvv_inv);
+            temp = Rvv[0] * Rvv[4];
+            temp -= (Rvv[2] * Rvv[2] + Rvv[3] * Rvv[3]);
+            // reciporal of det(Rvv)
+            temp = 1.0f / temp;
+            Rvv_inv[0] = Rvv[4] * temp;
+            Rvv_inv[1] = 0;
+            Rvv_inv[2] = -Rvv[2] * temp;
+            Rvv_inv[3] = -Rvv[3] * temp;
+            Rvv_inv[4] = Rvv[0] * temp;
+            Rvv_inv[5] = 0;
+
+            cmatrix_mul2x2(Rvv_inv, Ryy, num);
+
+            num[0] = num[0] - 1.0f;
+            num[6] = num[6] - 1.0f;
+            temp = mu + num[0] + num[6];
+
+            //w.conj() = num[:, ref_ch].conj()
+            temp = 1.f / temp;
+            ptr_num = num + 2 * ref_ch;
+            w[0] = ptr_num[0] * temp;
+            w[1] = -ptr_num[1] * temp;
+            ptr_num += 2 * nchannel;
+            w[2] = ptr_num[0] * temp;
+            w[3] = -ptr_num[1] * temp;
+
+#ifdef _MWF_PROTECT_
+            temp_abs[0] = fabsf(w[0]);
+            temp_abs[1] = fabsf(w[1]);
+            temp_abs[2] = fabsf(w[2]);
+            temp_abs[3] = fabsf(w[3]);
+            temp = fmaxf(temp_abs[0], temp_abs[1]);
+            temp = fmaxf(temp, temp_abs[2]);
+            temp = fmaxf(temp, temp_abs[3]);
+
+            if (temp < 0.1f) {
+                temp = 0.1f / temp;
+                w[0] *= temp;
+                w[1] *= temp;
+                w[2] *= temp;
+                w[3] *= temp;
+            }
+#endif
+
+            ptr_w[0] += (0.7f * (w[0] - ptr_w[0]));
+            ptr_w[1] += (0.7f * (w[1] - ptr_w[1]));
+            ptr_w[2] += (0.7f * (w[2] - ptr_w[2]));
+            ptr_w[3] += (0.7f * (w[3] - ptr_w[3]));
+            ptr_w += 4;
+
+            Ryy += 2 * ncov;
+            Rvv += 2 * ncov;
+        }
+    }
+
+    return STATUS_SUCCESS;
+}
+
+int32_t Beamformer_DoFilter(Beamformer* handle, float* mic_inputs, float* beamformed) {
+    uint16_t half_fftlen = handle->half_fftlen;
+    uint16_t nchannel = handle->nchannel;
+    uint16_t idx;
+    float *w, *x, *out_ptr;
+
+    w = handle->bf_coef;
+    x = mic_inputs;
+    out_ptr = beamformed;
+
+    idx = half_fftlen;
+    while (idx--) {
+        uiv_cmplx_dot_prod_f32(w, x, nchannel, out_ptr, out_ptr + 1);
+        w += 2 * nchannel;
+        x += 2 * nchannel;
+        out_ptr += 2;
+    }
+//    beamformed[1] = 0.0f; // force bin index half_fftlen + 1 to be zero
+
+    return STATUS_SUCCESS;
+}
