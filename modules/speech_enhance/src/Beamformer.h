@@ -11,8 +11,6 @@ typedef struct _Beamformer {
     uint32_t noise_cnt;
     uint32_t half_fftlen;
     uint32_t nchannel;
-    uint32_t ref_ch;
-    float mu;
 
     complex float* speechRyy; // half_fftlen, nchannel*nchannel
     complex float* noiseRvv;  // half_fftlen, nchannel*nchannel

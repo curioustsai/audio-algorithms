@@ -35,6 +35,9 @@ float amax_f32(float *array, int len, int *index) {
 }
 
 void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint32_t nchannel) {
+	int i, j, q;
+	int axis, pair_id;
+
     handle->fn = 0;
     handle->fs = fs;
     handle->sound_speed = 343.0f;
@@ -43,9 +46,11 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     handle->fftlen = fftlen;
     handle->half_fftlen = uiv_half_fftlen(fftlen);
     handle->free_tracking_mode = 0;
-    handle->target_angle = 252;
+    handle->target_angle = 250;
+    /* handle->free_tracking_mode = 0; */
+    /* handle->target_angle = 205; */
 
-    handle->num_pair = (nchannel >= 3) ? 3 : 1;
+    handle->num_pair = (nchannel == 4) ? 6 : ((nchannel == 3) ? 3 : 1);
 
     /**
 	 * GCC-Phat
@@ -58,7 +63,7 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     handle->mapper =
         (uint32_t *)calloc(handle->num_angle_samples * handle->num_pair, sizeof(uint32_t));
     handle->xcorr =
-        (complex float *)calloc(handle->half_fftlen * handle->num_pair,  sizeof(complex float));
+        (complex float *)calloc(handle->half_fftlen * handle->num_pair, sizeof(complex float));
 
     handle->theta_pair_rad = (float *)calloc(handle->num_pair, sizeof(float));
     handle->theta_pair_deg = (float *)calloc(handle->num_pair, sizeof(float));
@@ -67,20 +72,39 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     /**
 	 * Projection
 	 */
-    handle->micPos = malloc(handle->num_pair * sizeof(float[3]));
-    handle->basis = malloc(handle->num_pair * sizeof(float[3]));
+    handle->micPos = calloc(handle->num_pair, sizeof(float[3]));
+    handle->basis = calloc(handle->num_pair, sizeof(float[3]));
 
-    handle->micPos[0][0] = 2.f / 100;
+#if 1
+    handle->micPos[0][0] = 0.02f;
     handle->micPos[0][1] = 0.f;
     handle->micPos[0][2] = 0.f;
 
-    handle->micPos[1][0] = -2.f / 100;
+    handle->micPos[1][0] = -0.02f;
     handle->micPos[1][1] = 0.f;
     handle->micPos[1][2] = 0.f;
 
     handle->micPos[2][0] = 0.f;
-    handle->micPos[2][1] = 5.23f / 100;
+    handle->micPos[2][1] = 0.0523f;
     handle->micPos[2][2] = 0.f;
+#else
+    handle->micPos[0][0] = 0.043f * cosf(60.f / 180.f * M_PI);
+    handle->micPos[0][1] = 0.043f * sinf(60.f / 180.f * M_PI);
+    handle->micPos[0][2] = 0.f;
+
+    handle->micPos[1][0] = 0.043f * cosf(120.f / 180.f * M_PI);
+    handle->micPos[1][1] = 0.043f * sinf(120.f / 180.f * M_PI);
+    handle->micPos[1][2] = 0.f;
+
+    handle->micPos[2][0] = 0.043f * cosf(-120.f / 180.f * M_PI);
+    handle->micPos[2][1] = 0.043f * sinf(-120.f / 180.f * M_PI);
+    handle->micPos[2][2] = 0.f;
+
+    handle->micPos[3][0] = 0.043f * cosf(-60.f / 180.f * M_PI);
+    handle->micPos[3][1] = 0.043f * sinf(-60.f / 180.f * M_PI);
+    handle->micPos[3][2] = 0.f;
+
+#endif
 
     handle->theta_rad = 0;
     handle->phi_rad = 0;
@@ -88,30 +112,25 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     handle->phi_deg = 0;
     handle->energy = 0;
 
-    handle->basis[0][0] = handle->micPos[1][0] - handle->micPos[0][0];
-    handle->basis[0][1] = handle->micPos[1][1] - handle->micPos[0][1];
-    handle->basis[0][2] = handle->micPos[1][2] - handle->micPos[0][2];
+    for (i = 0, pair_id = 0; i < nchannel; i++) {
+        for (j = i + 1; j < nchannel; j++, pair_id++) {
+            for (axis = 0; axis < 3; axis++) {
+                handle->basis[pair_id][axis] = handle->micPos[j][axis] - handle->micPos[i][axis];
+            }
+        }
+    }
 
     if (handle->nchannel >= 3) {
-        handle->basis[1][0] = handle->micPos[2][0] - handle->micPos[0][0];
-        handle->basis[1][1] = handle->micPos[2][1] - handle->micPos[0][1];
-        handle->basis[1][2] = handle->micPos[2][2] - handle->micPos[0][2];
+        handle->project_matrix = (float *)calloc(3 * 3, sizeof(float)); // projection on 3D
 
-        handle->basis[2][0] = handle->micPos[2][0] - handle->micPos[1][0];
-        handle->basis[2][1] = handle->micPos[2][1] - handle->micPos[1][1];
-        handle->basis[2][2] = handle->micPos[2][2] - handle->micPos[1][2];
-
-        handle->project_matrix = (float *)malloc(3 * 3 * sizeof(float)); // projection on 3D
-        memset(handle->project_matrix, 0, 3 * 3 * sizeof(float));
-
-        for (int pair_id = 0; pair_id < 3; pair_id++) {
-            for (int i = 0; i < 3; i++) {
+        for (pair_id = 0; pair_id < handle->num_pair; pair_id++) {
+            for (i = 0; i < 3; i++) {
                 handle->project_matrix[i * 3 + i] +=
                     handle->basis[pair_id][i] * handle->basis[pair_id][i];
-                for (int j = i + 1; j < 3; j++) {
+                for (j = i + 1; j < 3; j++) {
                     handle->project_matrix[i * 3 + j] +=
                         handle->basis[pair_id][i] * handle->basis[pair_id][j];
-                    handle->project_matrix[j * 3 + i] += handle->project_matrix[i * 3 + j];
+                    handle->project_matrix[j * 3 + i] = handle->project_matrix[i * 3 + j];
                 }
             }
         }
@@ -120,20 +139,20 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
                                handle->project_matrix[2 * 3 + 2];
     }
 
-    for (int q = 0; q < handle->num_angle_samples; q++) {
+    for (q = 0; q < handle->num_angle_samples; q++) {
         handle->candidate_angle[q] = (float)q / (float)(handle->num_angle_samples - 1) * M_PI;
     }
 
-    for (int pair_id = 0; pair_id < handle->num_pair; pair_id++) {
+    for (pair_id = 0; pair_id < handle->num_pair; pair_id++) {
         float c = handle->sound_speed;
         float mic_dist = 0.f;
 
-        for (int axis = 0; axis < 3; axis++) {
+        for (axis = 0; axis < 3; axis++) {
             mic_dist += (handle->basis[pair_id][axis] * handle->basis[pair_id][axis]);
         }
         mic_dist = sqrtf(mic_dist);
 
-        for (int q = 0; q < handle->num_angle_samples; q++) {
+        for (q = 0; q < handle->num_angle_samples; q++) {
             float tdoa = roundf(handle->num_interpolation * mic_dist * fs / c *
                                 cosf(handle->candidate_angle[q])) /
                          handle->num_interpolation;
@@ -168,19 +187,19 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     handle->numBuf_vad = (uint32_t *)calloc((angle_range + 2 * step), sizeof(uint32_t));
 
     handle->currentBeamIndex = 0;
-    handle->angleRetainNum = 1;
+    handle->angleRetainNum = 1; // 3
     handle->angleReset = (uint32_t *)calloc(handle->angleRetainNum, sizeof(uint32_t));
     handle->angleRetain = (int32_t *)calloc(handle->angleRetainNum, sizeof(int32_t));
     handle->sameSourceCount = (int32_t *)calloc(handle->angleRetainNum, sizeof(int32_t));
     handle->diffSourceCount = (int32_t *)calloc(handle->angleRetainNum, sizeof(int32_t));
     handle->angleDiff = (int *)calloc(handle->angleRetainNum, sizeof(int));
 
-    handle->angleRetainMaxTime = (uint32_t)(10 / 0.016);
+    handle->angleRetainMaxTime = (uint32_t)(10.f / 0.016);
 
-    handle->gccValThreshold = 0.1f;
-    handle->angleNumThreshold = 20;
-    handle->vadNumThreshold = 10;
-    handle->weightThreshold = 0.1f;
+    handle->gccValThreshold = 0.15f;
+    handle->angleNumThreshold = 30.f;
+    handle->vadNumThreshold = 30;
+    handle->weightThreshold = 0.25f;
 
     return;
 }
@@ -196,7 +215,7 @@ void SoundLocater_GccPhat(SoundLocater *handle, complex float *X, complex float 
 
     for (int i = 0; i < half_fftlen; i++) {
         complex float xcorr = X[i] * conjf(Y[i]);
-        xcorr = xcorr / cabsf(xcorr);
+        xcorr = xcorr / (cabsf(xcorr) + 1e-12);
         handle->xcorr[pair_id * half_fftlen + i] =
             0.9f * handle->xcorr[pair_id * half_fftlen + i] + 0.1f * xcorr;
     }
@@ -229,15 +248,11 @@ void SoundLocater_GccPhat(SoundLocater *handle, complex float *X, complex float 
 void SoundLocater_ProjectAngle(SoundLocater *handle, float *theta_rad, float *theta_deg,
                                float *phi_rad, float *phi_deg) {
 
-    float cos_theta0 = cosf(handle->theta_pair_rad[0]);
-    float cos_theta1 = cosf(handle->theta_pair_rad[1]);
-    float cos_theta2 = cosf(handle->theta_pair_rad[2]);
-
     float b[3] = {0.f};
-    for (int i = 0; i < 3; i++) {
-        b[i] = cos_theta0 * handle->basis[0][i];
-        b[i] += cos_theta1 * handle->basis[1][i];
-        b[i] += cos_theta2 * handle->basis[2][i];
+    for (int pair_id = 0; pair_id < handle->num_pair; pair_id++) {
+        for (int axis = 0; axis < 3; axis++) {
+            b[axis] += (cosf(handle->theta_pair_rad[pair_id]) * handle->basis[pair_id][axis]);
+        }
     }
 
     float n[3] = {0.f, 0.f, 0.05f};
@@ -261,35 +276,30 @@ void SoundLocater_ProjectAngle(SoundLocater *handle, float *theta_rad, float *th
 
 void SoundLocater_FindDoa(SoundLocater *handle, complex float *X, uint32_t *angle_deg,
                           float *energy) {
-    handle->fn = handle->fn + 1;
+    handle->fn++;
 
     if (handle->nchannel >= 3) {
-        complex float *ch0 = X;
-        complex float *ch1 = X + handle->half_fftlen;
-        complex float *ch2 = X + handle->half_fftlen * 2U;
-        float angle0, angle1, angle2;
-        float gccVal0, gccVal1, gccVal2;
+        float angle, gccVal;
 
-        SoundLocater_GccPhat(handle, ch0, ch1, 0, &angle0, &gccVal0);
-        SoundLocater_GccPhat(handle, ch0, ch2, 1, &angle1, &gccVal1);
-        SoundLocater_GccPhat(handle, ch1, ch2, 2, &angle2, &gccVal2);
+        for (int i = 0, pair_id = 0; i < handle->nchannel; i++) {
+            for (int j = i + 1; j < handle->nchannel; j++, pair_id++) {
+                complex float *X0 = X + handle->half_fftlen * i;
+                complex float *X1 = X + handle->half_fftlen * j;
 
-        handle->theta_pair_rad[0] = angle0;
-        handle->theta_pair_rad[1] = angle1;
-        handle->theta_pair_rad[2] = angle2;
+                SoundLocater_GccPhat(handle, X0, X1, pair_id, &angle, &gccVal);
+                handle->theta_pair_rad[pair_id] = angle;
+                handle->theta_pair_deg[pair_id] = angle * 180.f / M_PI;
 
-        handle->theta_pair_deg[0] = angle0 * 180.f / M_PI;
-        handle->theta_pair_deg[1] = angle1 * 180.f / M_PI;
-        handle->theta_pair_deg[2] = angle2 * 180.f / M_PI;
-
-        /* printf("angle deg: %f\t%f\n", handle->theta_pair_deg[0], handle->theta_pair_deg[1]); */
+                /* printf("[Pair: %d] angle deg: %f\n", pair_id, handle->theta_pair_deg[pair_id]); */
+            }
+        }
 
         SoundLocater_ProjectAngle(handle, &handle->theta_rad, &handle->theta_deg, &handle->phi_rad,
                                   &handle->phi_deg);
-        printf("theta deg: %f\n", handle->theta_deg);
+        /* printf("theta deg: %f\n", handle->theta_deg); */
 
-        handle->energy = gccVal0;
-        *energy = gccVal0;
+        handle->energy = gccVal;
+        *energy = gccVal;
         *angle_deg = (uint32_t)roundf(handle->theta_deg);
 
     } else {
@@ -301,9 +311,7 @@ void SoundLocater_FindDoa(SoundLocater *handle, complex float *X, uint32_t *angl
 
         handle->theta_rad = angle;
         handle->energy = gccVal;
-        // FIXME: make sure angle range: 0 ~ 359
         *angle_deg = (uint32_t)roundf(angle * 180.f / M_PI);
-        *angle_deg = min(359, max(0, *angle_deg));
         *energy = gccVal;
     }
 }
@@ -374,6 +382,7 @@ void SoundLocater_ReplaceAngle(SoundLocater *handle, int32_t angleClusterNew,
 
     if (angleClusterNew == ANGLE_UNVALID) return;
 
+    // find index with minimal difference
     for (int i = 1; i < handle->angleRetainNum; i++) {
         angleDiff[i] = abs(angleClusterNew - handle->angleRetain[i]);
         angleDiff[i] = min(angleDiff[i], 360 - angleDiff[i]);
@@ -384,6 +393,7 @@ void SoundLocater_ReplaceAngle(SoundLocater *handle, int32_t angleClusterNew,
     }
 
     if (min_angle_dist < angleDistThreshold) {
+        // replace the same index if difference is within tolerance
         handle->currentBeamIndex = min_index;
         handle->angleRetain[min_index] = angleClusterNew;
     } else {
@@ -397,6 +407,7 @@ void SoundLocater_ReplaceAngle(SoundLocater *handle, int32_t angleClusterNew,
             }
         }
 
+        // replace the same index with mininal retain time if out of tolerance
         handle->currentBeamIndex = angleReplace;
         handle->angleRetain[angleReplace] = angleClusterNew;
         handle->sameSourceCount[angleReplace] = 0;
@@ -418,7 +429,7 @@ void SoundLocater_RetainAngle(SoundLocater *handle, float *weightBuf, float weig
                     weight = amax_f32(&weightBuf[360 + destAngle - 20], 20 - destAngle, NULL);
                     weight = fmaxf(weight, amax_f32(&weightBuf[0], destAngle + 20, NULL));
                 } else if (destAngle > 340) {
-                    weight = amax_f32(&weightBuf[destAngle - 20], 360, NULL);
+                    weight = amax_f32(&weightBuf[destAngle], 360 - destAngle, NULL);
                     weight = fmaxf(weight, amax_f32(&weightBuf[0], destAngle + 20 - 360, NULL));
                 } else {
                     weight = amax_f32(&weightBuf[destAngle - 20], 40, NULL);
@@ -468,10 +479,10 @@ uint32_t SoundLocater_InBeamDet(SoundLocater *handle, int *angleBuf, int angleRe
 
 uint32_t SoundLocater_OutBeamDet(SoundLocater *handle, int *angleBuf, float *gccValueBuf,
                                  int angleRetain, int frame_delay) {
-    int angle = angleBuf[frame_delay - 1];
-    int delta_angle = abs(angle - angleRetain);
+    int angle = angleBuf[frame_delay];
+    int delta_angle = min(abs(angle - angleRetain), 360 - abs(angle - angleRetain));
 
-    if (delta_angle < 0) { delta_angle = 360 + delta_angle; }
+    handle->outbeam = 0;
 
     if (delta_angle > 60) {
         handle->outbeam = 1;
@@ -480,7 +491,7 @@ uint32_t SoundLocater_OutBeamDet(SoundLocater *handle, int *angleBuf, float *gcc
         int valid_count2 = 0;
         int valid_count3 = 0;
 
-        for (int i = 0; i < frame_delay + 20; i++) {
+        for (int i = frame_delay; i < frame_delay + 20; i++) {
             int angleDiff =
                 min(abs(angleBuf[i] - angleRetain), 360 - abs(angleBuf[i] - angleRetain));
             if (angleDiff < 10) {
@@ -492,9 +503,6 @@ uint32_t SoundLocater_OutBeamDet(SoundLocater *handle, int *angleBuf, float *gcc
         }
 
         if ((valid_count > 1) || (valid_count2 > 3) || (valid_count3 > 4)) { handle->outbeam = 0; }
-
-    } else {
-        handle->outbeam = 0;
     }
 
     return handle->outbeam;
@@ -507,6 +515,9 @@ void SoundLocater_Cluster(SoundLocater *handle, uint32_t angle_deg, float gccVal
     uint32_t angleDistThreshold = 10;
     float weightMax = 0.f;
     float gccValThreshold = handle->gccValThreshold;
+    float weightThreshold = handle->weightThreshold;
+    uint32_t angleNumThreshold = handle->angleNumThreshold;
+    uint32_t vadNumThreshold = handle->vadNumThreshold;
 
     update_buffer_int32(handle->angleBuf, angle_deg, bufLen);
     update_buffer_int32(handle->vadBuf, vad, bufLen);
@@ -515,15 +526,18 @@ void SoundLocater_Cluster(SoundLocater *handle, uint32_t angle_deg, float gccVal
     SoundLocater_ClusterAngle(handle, gccValThreshold, &angleCluster, &weightMax, &angleNum,
                               &vadNum);
     handle->angleCluster = angleCluster;
-
+#ifdef AUDIO_ALGO_DEBUG
+    handle->weightMax = weightMax;
+    handle->angleNum = angleNum;
+    handle->vadNum = vadNum;
     //    printf("angle Cluster: %d\n", handle->angleCluster);
+#endif
 
-    if ((weightMax > handle->weightThreshold) && (angleNum > handle->angleNumThreshold) &&
-        (vadNum > handle->vadNumThreshold)) {
+    if ((weightMax > weightThreshold) && (angleNum > angleNumThreshold) &&
+        (vadNum > vadNumThreshold)) {
         SoundLocater_ReplaceAngle(handle, angleCluster, angleDistThreshold);
     }
 
-    float weightThreshold = 0.25f;
     if (weightMax > weightThreshold) {
         SoundLocater_RetainAngle(handle, handle->weightBuf, weightThreshold);
     }

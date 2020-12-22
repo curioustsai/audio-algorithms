@@ -21,7 +21,11 @@ int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchann
     handle->nshift = nshift;
     handle->ref_ch = 0;
     handle->frame_cnt = 0;
-    handle->fftwin = kBlocks256w512;
+    /* handle->fftwin = kBlocks256w512; */
+    handle->fftwin = (float*)calloc(fftlen, sizeof(float));
+    for (int i = 0; i < fftlen; i++) {
+        handle->fftwin[i] = sqrtf(0.5f - 0.5f * cosf(2.f * M_PI * i / (fftlen - 1)));
+    }
     handle->fft_lookup = uiv_fft_init(fftlen);
 
     handle->alpha_dc = 0.98f;
@@ -39,16 +43,19 @@ int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchann
     handle->dc_remove =
         (float*)malloc(nframe * nchannel * sizeof(float));     // dc_remove(nframe * nchannel)
     handle->inputs_t = (float*)malloc(fftlen * sizeof(float)); // inputs_t(fftlen)
-    handle->inputs_f = (float*)malloc(half_fftlen * 2 * nchannel * sizeof(float)); // inputs_f(half_fftlen * 2 * nchannel)
+    handle->inputs_f = (float*)malloc(half_fftlen * 2 * nchannel *
+                                      sizeof(float)); // inputs_f(half_fftlen * 2 * nchannel)
     handle->ref_power = (float*)malloc(half_fftlen * sizeof(float)); // ref_power(half_fftlen)
-    handle->X_itr = (float*)malloc(half_fftlen * 2 * nchannel * sizeof(float)); // X_itr(half_fftlen * 2 * nchannel)
-    handle->beamformed = (float*)malloc(half_fftlen * 2 * sizeof(float)); // beamformed(half_fftlen * 2)
-    handle->beamformed_power = (float*)malloc(half_fftlen * sizeof(float));              // beamformed_power(half_fftlen)
+    handle->X_itr = (float*)malloc(half_fftlen * 2 * nchannel *
+                                   sizeof(float)); // X_itr(half_fftlen * 2 * nchannel)
+    handle->beamformed =
+        (float*)malloc(half_fftlen * 2 * sizeof(float)); // beamformed(half_fftlen * 2)
+    handle->beamformed_power =
+        (float*)malloc(half_fftlen * sizeof(float));              // beamformed_power(half_fftlen)
     handle->output_ifft = (float*)malloc(fftlen * sizeof(float)); // output_ifft(fftlen)
     handle->agc_out = (float*)malloc(nframe * sizeof(float));     // AGC (nframe)
 
     CepstrumVAD_Init(&handle->stCepstrumVAD, fftlen, sample_rate);
-    /* SpecFlatVAD_Init(&handle->stSpecFlatVAD, fftlen, sample_rate); */
     SoundLocater_Init(&handle->stSoundLocater, sample_rate, fftlen, nchannel);
     NoiseReduce_Init(&handle->stSnrEst, sample_rate, fftlen, 0);
     Beamformer_Init(&handle->stBeamformer, fftlen, nchannel);
@@ -57,6 +64,7 @@ int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchann
     NoiseReduce_Init(&handle->stPostFilt, sample_rate, fftlen, 1);
 #endif
 
+    Biquad_Init(&handle->stBiquad);
     AutoGainCtrl_Init(&handle->stAGC, 32767.0f / 2.0f, nframe, 1.0f / 8.0f, 2.0f);
     *pHandle = handle;
 
@@ -113,6 +121,7 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
         }
     }
 #endif
+
     for (idx_c = 0; idx_c < nchannel; ++idx_c) {
         uiv_copy_f32(&handle->inputs_last[idx_c * nshift], &inputs_t[0], nshift);
         uiv_copy_f32(&dc_remove[idx_c * nframe], &inputs_t[nshift], nframe);
@@ -148,10 +157,7 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
     NoiseReduce_EstimateNoise(&handle->stSnrEst, ref_power, handle->frame_cnt, vad);
     NoiseReduce_SnrVAD(&handle->stSnrEst);
 
-    noise_status = ((handle->stSnrEst.noise_frame == 1) && (vad == 0));
-    speech_status = ((handle->stSnrEst.speech_frame == 1) && (vad == 1));
-
-#ifdef _BF_ENABLE
+    /* #ifdef _BF_ENABLE */
 
     /* SoundLocater Doa */
     uint32_t angle_deg;
@@ -162,19 +168,22 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
     SoundLocater_Cluster(&handle->stSoundLocater, angle_deg, energy, handle->stSnrEst.speech_frame,
                          &inbeam, &outbeam);
 
+    noise_status = ((handle->stSnrEst.noise_frame == 1) && (vad == 0));
+    speech_status = ((handle->stSnrEst.speech_frame == 1) && (vad == 1) && inbeam);
+
     /* Beamforming */
-    /* update_noise = Beamformer_UpdateNoiseMatrix(&handle->stBeamformer, (complex float*)X_itr, */
-                                                /* noise_status, handle->stSnrEst.spp); */
-    /* update_speech = */
-    /*     Beamformer_UpdateSpeechMatrix(&handle->stBeamformer, (complex float*)X_itr, speech_status); */
+    update_noise = Beamformer_UpdateNoiseMatrix(&handle->stBeamformer, (complex float*)X_itr,
+                                                noise_status, handle->stSnrEst.spp);
+    update_speech =
+        Beamformer_UpdateSpeechMatrix(&handle->stBeamformer, (complex float*)X_itr, speech_status);
 
-    /* Beamformer_UpdateMwfFilter(&handle->stBeamformer, update_speech, update_noise); */
-    /* Beamformer_UpdateMvdrFilter(&handle->stBeamformer, update_speech, update_noise); */
-    /* Beamformer_DoFilter(&handle->stBeamformer, (complex float*)X_itr, (complex float*)beamformed); */
+    Beamformer_UpdateSteeringVector(&handle->stBeamformer, update_speech, update_noise);
+    Beamformer_UpdateMvdrFilter(&handle->stBeamformer, update_speech, update_noise);
+    Beamformer_DoFilter(&handle->stBeamformer, (complex float*)X_itr, (complex float*)beamformed);
 
-    /* uiv_cmplx_mag_squared_f32(beamformed, handle->beamformed_power, half_fftlen); */
-    /* ref_input = beamformed; */
-#endif
+    uiv_cmplx_mag_squared_f32(beamformed, handle->beamformed_power, half_fftlen);
+    ref_input = beamformed;
+    /* #endif */
 
 #ifdef _NS_ENABLE
     NoiseReduce_EstimateNoise(&handle->stPostFilt, handle->beamformed_power, handle->frame_cnt,
@@ -187,7 +196,6 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
 
 #ifdef _FFT_ONLY
 DEBUG_LOOP:
-    // put fft output directly to ifft buffer for debug
     uiv_ifft(handle->fft_lookup, &inputs_f[ref_ch * half_fftlen * 2U], output_ifft);
 #endif
 
@@ -208,6 +216,9 @@ DEBUG_LOOP:
     AutoGainCtrl_Process(&handle->stAGC, output_ifft, speech_status, spp_mean, agc_out);
     ref_output = agc_out;
 #endif // _AGC_ENABLE
+
+    // HPF biquad filter
+    Biquad_Process(&handle->stBiquad, ref_output, ref_output, nframe);
     for (idx_l = 0; idx_l < nframe; ++idx_l) output[idx_l] = (int16_t)ref_output[idx_l];
 
     return STATUS_SUCCESS;
@@ -217,6 +228,7 @@ int32_t SpeechEnhance_Release(void* hSpeechEnhance) {
     SpeechEnhance* handle = (SpeechEnhance*)hSpeechEnhance;
 
     uiv_fft_destroy(handle->fft_lookup);
+    free(handle->fftwin);
     free(handle->inputs_last);
     free(handle->overlap);
 

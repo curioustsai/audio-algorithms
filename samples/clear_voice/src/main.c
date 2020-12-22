@@ -9,10 +9,12 @@
 #include "bmp.h"
 
 #define LEN_FILENAME 256
+#define NCH_OUTPUT 2
 #define NCH_CEP 3
-#define NCH_NR 3
+#define NCH_NR 5
 #define NCH_AGC 3
-#define NCH_DOA 5
+#define NCH_DOA 6
+#define NCH_CLUSTER 4
 
 char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, char* subword) {
     size_t len_subword;
@@ -36,7 +38,7 @@ int32_t simulator(char* input_filename) {
     uint32_t sample_rate, nchannel, nframe, fftlen, half_fftlen;
     uint32_t tfbmp_size, total_frame, total_length;
     uint32_t frame_cnt;
-    int16_t *input_q15, *output_q15;
+    int16_t *input_q15, *output_q15, *out_buf;
 
     SNDFILE *infile, *outfile;
     SF_INFO sfinfo_in, sfinfo_out;
@@ -52,9 +54,18 @@ int32_t simulator(char* input_filename) {
     nchannel = sfinfo_in.channels;
     total_length = sfinfo_in.frames;
 
-    nframe = 256;
-    fftlen = 512;
-    half_fftlen = 256;
+	if (sample_rate == 16000) {
+    	nframe = 256;
+		fftlen = 512;
+		half_fftlen = 256;
+	} else if  (sample_rate == 48000) {
+		nframe = 1024;
+		fftlen = 2048;
+		half_fftlen = 1024;
+	} else {
+		printf("not supported sample rate\n");
+		return -1;
+	}
     /*  #<{(| limit length |)}># */
     /* frame_stop = 5000; */
     /* total_length = min(total_length, frame_stop * nframe); */
@@ -63,7 +74,7 @@ int32_t simulator(char* input_filename) {
     tfbmp_size = bmp_size(total_frame, half_fftlen);
 
     memcpy(&sfinfo_out, &sfinfo_in, sizeof(SF_INFO));
-    sfinfo_out.channels = 1;
+    sfinfo_out.channels = NCH_OUTPUT;
 
     char* output_filename =
         replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_output.wav");
@@ -74,28 +85,32 @@ int32_t simulator(char* input_filename) {
 
     input_q15 = (int16_t*)malloc((sizeof(int16_t) * nframe * nchannel));
     output_q15 = (int16_t*)malloc((sizeof(int16_t) * nframe));
+    out_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * NCH_OUTPUT));
 
 #ifdef AUDIO_ALGO_DEBUG
     /**
 	 * sndfile
 	 */
-    SNDFILE *cep_file, *nr_file, *agc_file, *doa_file;
-    SF_INFO sfinfo_cep, sfinfo_nr, sfinfo_agc, sfinfo_doa;
+    SNDFILE *cep_file, *nr_file, *agc_file, *doa_file, *cluster_file;
+    SF_INFO sfinfo_cep, sfinfo_nr, sfinfo_agc, sfinfo_doa, sfinfo_cluster;
 
     memcpy(&sfinfo_cep, &sfinfo_in, sizeof(SF_INFO));
     memcpy(&sfinfo_nr, &sfinfo_in, sizeof(SF_INFO));
     memcpy(&sfinfo_agc, &sfinfo_in, sizeof(SF_INFO));
     memcpy(&sfinfo_doa, &sfinfo_in, sizeof(SF_INFO));
+    memcpy(&sfinfo_cluster, &sfinfo_in, sizeof(SF_INFO));
 
     sfinfo_cep.channels = NCH_CEP;
     sfinfo_nr.channels = NCH_NR;
     sfinfo_agc.channels = NCH_AGC;
     sfinfo_doa.channels = NCH_DOA;
+    sfinfo_cluster.channels = NCH_CLUSTER;
 
     int16_t* cep_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_cep.channels));
     int16_t* nr_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_nr.channels));
     int16_t* agc_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_agc.channels));
     int16_t* doa_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_doa.channels));
+    int16_t* cluster_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_cluster.channels));
 
     char* cep_filename =
         replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_cep.wav");
@@ -112,6 +127,10 @@ int32_t simulator(char* input_filename) {
     char* doa_filename =
         replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_doa.wav");
     doa_file = sf_open(doa_filename, SFM_WRITE, &sfinfo_doa);
+
+    char* cluster_filename =
+        replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_cluster.wav");
+    cluster_file = sf_open(cluster_filename, SFM_WRITE, &sfinfo_cluster);
 
     /**
 	 * bmp
@@ -136,7 +155,11 @@ int32_t simulator(char* input_filename) {
     frame_cnt = 0;
     while ((readcount = sf_read_short(infile, input_q15, readcount)) == nframe*nchannel) {
         SpeechEnhance_Process(hSpeechEnhance, input_q15, output_q15);
-        sf_write_short(outfile, output_q15, nframe);
+		for (int idx_l = 0;  idx_l < nframe; ++idx_l) {
+            out_buf[NCH_OUTPUT * idx_l + 0] = input_q15[idx_l*nchannel];
+            out_buf[NCH_OUTPUT * idx_l + 1] = output_q15[idx_l];
+		}
+        sf_write_short(outfile, out_buf, nframe*NCH_OUTPUT);
 
 #ifdef AUDIO_ALGO_DEBUG
 		/**
@@ -145,17 +168,21 @@ int32_t simulator(char* input_filename) {
         SpeechEnhance* ptr = (SpeechEnhance*)hSpeechEnhance;
         for (int idx_l = 0; idx_l < nframe; ++idx_l) {
             // DOA
-            /* doa_buf[NCH_DOA * idx_l] = input_q15[idx_l]; */
-            doa_buf[NCH_DOA * idx_l   ] = (int16_t)(ptr->stSoundLocater.theta_pair_rad[0] / M_PI * 32768);
-            doa_buf[NCH_DOA * idx_l + 1] = (int16_t)(ptr->stSoundLocater.theta_pair_rad[1] / M_PI * 32768);
-            /* doa_buf[NCH_DOA * idx_l + 2] = (int16_t)(ptr->stSoundLocater.theta_rad / M_PI * 32768); */
-            doa_buf[NCH_DOA * idx_l + 2] = (int16_t)(ptr->stSoundLocater.theta_rad / M_PI * 180.0);
-            doa_buf[NCH_DOA * idx_l + 3] = (int16_t)((float)ptr->stSoundLocater.angleCluster / 180.0 * 32768.0);
+            doa_buf[NCH_DOA * idx_l + 0] = input_q15[idx_l*nchannel];
+            doa_buf[NCH_DOA * idx_l + 1] = (int16_t)(ptr->stSoundLocater.theta_pair_rad[0] / M_PI * 32768.0);
+            doa_buf[NCH_DOA * idx_l + 2] = (int16_t)(ptr->stSoundLocater.theta_pair_rad[1] / M_PI * 32768.0);
+            doa_buf[NCH_DOA * idx_l + 3] = (int16_t)(ptr->stSoundLocater.theta_deg);
+            doa_buf[NCH_DOA * idx_l + 4] = (int16_t)(ptr->stSoundLocater.angleCluster);
 
 			int curBeamIdx = ptr->stSoundLocater.currentBeamIndex;
 			int angleRetain = ptr->stSoundLocater.angleRetain[curBeamIdx];
-			if (angleRetain > 180) angleRetain = angleRetain - 360;
-            doa_buf[NCH_DOA * idx_l + 4] = (int16_t)( angleRetain / 180.0 * 32768.0);
+            doa_buf[NCH_DOA * idx_l + 5] = (int16_t)(angleRetain);
+
+			// Cluster
+			cluster_buf[NCH_CLUSTER * idx_l] = input_q15[idx_l*nchannel];
+            cluster_buf[NCH_CLUSTER * idx_l + 1] = (int16_t)(ptr->stSoundLocater.angleNum);
+            cluster_buf[NCH_CLUSTER * idx_l + 3] = (int16_t)(ptr->stSoundLocater.vadNum);
+            cluster_buf[NCH_CLUSTER * idx_l + 2] = (int16_t)(ptr->stSoundLocater.weightMax*100.f);
 
             // Cepstrum VAD
             cep_buf[NCH_CEP * idx_l] = output_q15[idx_l];
@@ -166,6 +193,8 @@ int32_t simulator(char* input_filename) {
             nr_buf[NCH_NR * idx_l] = output_q15[idx_l];
             nr_buf[NCH_NR * idx_l + 1] = (int16_t)(ptr->stSnrEst.speech_frame * 16384);
             nr_buf[NCH_NR * idx_l + 2] = (int16_t)(ptr->stSnrEst.noise_frame * 16384);
+			nr_buf[NCH_NR * idx_l + 3] = (int16_t)(ptr->stSnrEst.snr_max * 100);
+			nr_buf[NCH_NR * idx_l + 4] = (int16_t)(ptr->stPostFilt.snr_max * 100);
 
             // AutoGainCtrl
             agc_buf[NCH_AGC * idx_l] = output_q15[idx_l];
@@ -173,6 +202,7 @@ int32_t simulator(char* input_filename) {
             agc_buf[NCH_AGC * idx_l + 2] = (int16_t)(ptr->stAGC.last_g_fp * 3276.8f);
         }
         sf_write_short(doa_file, doa_buf, nframe * NCH_DOA);
+        sf_write_short(cluster_file, cluster_buf, nframe * NCH_CLUSTER);
         sf_write_short(cep_file, cep_buf, nframe * NCH_CEP);
         sf_write_short(nr_file, nr_buf, nframe * NCH_NR);
         sf_write_short(agc_file, agc_buf, nframe * NCH_AGC);
@@ -212,7 +242,7 @@ int32_t simulator(char* input_filename) {
             bmp_set(spp_bmp, frame_cnt, half_fftlen - 1 - idx_l, bmp_encode(pow, pow, pow));
 
             // beamformed
-            pow = ptr->beamformed[idx_l];
+            pow = ptr->beamformed_power[idx_l];
             pow = 10 * log10f(pow + 1e-12f);
             if (pow > 132.0f) pow = 132.0f;
             pow /= 132.0f;
@@ -226,6 +256,7 @@ int32_t simulator(char* input_filename) {
     SpeechEnhance_Release(hSpeechEnhance);
     free(input_q15);
     free(output_q15);
+    free(out_buf);
     sf_close(infile);
     sf_close(outfile);
 
@@ -234,10 +265,12 @@ int32_t simulator(char* input_filename) {
 	 * sndfile
 	 */
     free(doa_buf);
+    free(cluster_buf);
     free(agc_buf);
     free(nr_buf);
     free(cep_buf);
     sf_close(doa_file);
+    sf_close(cluster_file);
     sf_close(agc_file);
     sf_close(nr_file);
     sf_close(cep_file);

@@ -4,3 +4,9 @@
 /compile_commands.json
 /install.sh
 /.clangd
+/data
+/scripts
+/test.txt
+/samples/ui_webrtc_apm/
+/thirdparty/webrtc-audio-processing/
+

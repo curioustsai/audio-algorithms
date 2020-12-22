@@ -74,6 +74,11 @@ typedef struct _SoundLocater {
     uint32_t vadNumThreshold;
     float gccValThreshold;
     float weightThreshold;
+#ifdef AUDIO_ALGO_DEBUG
+	float weightMax; 
+	uint32_t angleNum;
+	uint32_t vadNum;
+#endif
 
     /**
 	 * if current frame is inbeam or not

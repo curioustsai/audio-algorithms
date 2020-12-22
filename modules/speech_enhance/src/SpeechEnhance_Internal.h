@@ -9,15 +9,16 @@
 #include "NoiseReduce.h"
 #include "SoundLocater.h"
 #include "SpecFlatVAD.h"
+#include "Biquad.h"
 #include "basic_op.h"
 #include "fftwrap.h"
 
 #define MAX_NCHANNEL 4
 
 // #define _FFT_ONLY
-// #define _DC_REMOVAL
- #define _BF_ENABLE
-// #define _NS_ENABLE
+#define _DC_REMOVAL
+#define _BF_ENABLE
+#define _NS_ENABLE
 // #define _AGC_ENABLE
 
 typedef struct _SpeechEnhance {
@@ -28,13 +29,14 @@ typedef struct _SpeechEnhance {
     NoiseReduce stPostFilt;
     AutoGainCtrl stAGC;
     SoundLocater stSoundLocater;
+	BiquadFilter stBiquad;
 
     void* fft_lookup;
     float alpha_dc; // 0.98
     float state_y[MAX_NCHANNEL];
     float state_x[MAX_NCHANNEL];
 
-    const float* fftwin; // sizeof(float) * fftlen
+    float* fftwin; // sizeof(float) * fftlen
     float* inputs_last;  // sizeof(float) * nshift * nchannel
     float* overlap;      // sizeof(float) * nframe
 
