@@ -1,12 +1,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include <sndfile.h>
 
 #include "SpeechEnhance.h"
 #include "SpeechEnhance_Internal.h"
+
+#ifdef AUDIO_ALGO_DEBUG
 #include "bmp.h"
+#endif
 
 #define LEN_FILENAME 256
 #define NCH_OUTPUT 2
@@ -35,8 +39,12 @@ int32_t simulator(char* input_filename) {
     char filename[LEN_FILENAME];
 
     void* hSpeechEnhance;
-    uint32_t sample_rate, nchannel, nframe, fftlen, half_fftlen;
-    uint32_t tfbmp_size, total_frame, total_length;
+    uint32_t sample_rate, nchannel, nframe, fftlen;
+#ifdef AUDIO_ALGO_DEBUG
+    uint32_t tfbmp_size, total_frame;
+	uint32_t half_fftlen;
+	uint32_t total_length;
+#endif
     uint32_t frame_cnt;
     int16_t *input_q15, *output_q15, *out_buf;
 
@@ -52,26 +60,34 @@ int32_t simulator(char* input_filename) {
 
     sample_rate = sfinfo_in.samplerate;
     nchannel = sfinfo_in.channels;
+#ifdef AUDIO_ALGO_DEBUG
     total_length = sfinfo_in.frames;
+#endif
 
 	if (sample_rate == 16000) {
     	nframe = 256;
 		fftlen = 512;
+#ifdef AUDIO_ALGO_DEBUG
 		half_fftlen = 256;
+#endif
 	} else if  (sample_rate == 48000) {
 		nframe = 1024;
 		fftlen = 2048;
+#ifdef AUDIO_ALGO_DEBUG
 		half_fftlen = 1024;
+#endif
 	} else {
 		printf("not supported sample rate\n");
 		return -1;
 	}
-    /*  #<{(| limit length |)}># */
+    /* limit length */
     /* frame_stop = 5000; */
     /* total_length = min(total_length, frame_stop * nframe); */
 
+#ifdef AUDIO_ALGO_DEBUG
     total_frame = total_length / nframe;
     tfbmp_size = bmp_size(total_frame, half_fftlen);
+#endif
 
     memcpy(&sfinfo_out, &sfinfo_in, sizeof(SF_INFO));
     sfinfo_out.channels = NCH_OUTPUT;
@@ -153,6 +169,8 @@ int32_t simulator(char* input_filename) {
 
     int readcount = nframe * nchannel;
     frame_cnt = 0;
+
+	clock_t tick = clock();
     while ((readcount = sf_read_short(infile, input_q15, readcount)) == nframe*nchannel) {
         SpeechEnhance_Process(hSpeechEnhance, input_q15, output_q15);
 		for (int idx_l = 0;  idx_l < nframe; ++idx_l) {
@@ -252,6 +270,8 @@ int32_t simulator(char* input_filename) {
 #endif // AUDIO_ALGO_DEBUG
         frame_cnt++;
     }
+	tick = clock() - tick;
+	printf("total tick: %ld, times: %fsec\n", tick, ((float)tick / CLOCKS_PER_SEC));
 
     SpeechEnhance_Release(hSpeechEnhance);
     free(input_q15);
