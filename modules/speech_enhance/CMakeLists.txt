@@ -15,7 +15,7 @@ endif()
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include
-    # ${SOURCES_ROOT}/${PROJECT_NAME}/src
+    ${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/include
     ${SOURCES_ROOT}/version/
 )
 
