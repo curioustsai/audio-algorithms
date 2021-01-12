@@ -1,0 +1,134 @@
+t1fv_3.lo: t1fv_3.c /usr/include/stdc-predef.h ../common/t1fv_3.c \
+ ../../../dft/codelet-dft.h ../../../kernel/ifftw.h ../../../config.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/stdlib.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/features.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/uClibc_config.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/sys/cdefs.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/stddef.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/sys/types.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/types.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/wordsize.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/typesizes.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/pthreadtypes.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/endian.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/endian.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/byteswap.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/byteswap.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/byteswap-common.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/time.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/sys/select.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/select.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/sigset.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/time.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/sys/sysmacros.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/alloca.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/stdarg.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include-fixed/limits.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include-fixed/syslimits.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/limits.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/posix1_lim.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/local_lim.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/linux/limits.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/uClibc_local_lim.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/posix2_lim.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/stdint.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/stdint.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/wchar.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/inttypes.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/sys/time.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/include/bits/uClibc_clk_tck.h \
+ ../../../dft/simd/t1f.h ../../../simd-support/simd-neon.h \
+ /home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/arm_neon.h \
+ ../../../simd-support/simd-common.h
+
+/usr/include/stdc-predef.h:
+
+../common/t1fv_3.c:
+
+../../../dft/codelet-dft.h:
+
+../../../kernel/ifftw.h:
+
+../../../config.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/stdlib.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/features.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/uClibc_config.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/sys/cdefs.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/stddef.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/sys/types.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/types.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/wordsize.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/typesizes.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/pthreadtypes.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/endian.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/endian.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/byteswap.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/byteswap.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/byteswap-common.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/time.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/sys/select.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/select.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/sigset.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/time.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/sys/sysmacros.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/alloca.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/stdarg.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include-fixed/limits.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include-fixed/syslimits.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/limits.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/posix1_lim.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/local_lim.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/linux/limits.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/uClibc_local_lim.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/posix2_lim.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/stdint.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/stdint.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/wchar.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/inttypes.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/sys/time.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/include/bits/uClibc_clk_tck.h:
+
+../../../dft/simd/t1f.h:
+
+../../../simd-support/simd-neon.h:
+
+/home/richard/.ubnt/cache/gen3l/toolchains/lib/gcc/arm-openwrt-linux-uclibcgnueabi/4.8.3/include/arm_neon.h:
+
+../../../simd-support/simd-common.h:
