@@ -30,11 +30,11 @@ add_library(
     ${C_SOURCES}
 )
 
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/goertzel.h DESTINATION /include)
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/alarm_detector.h DESTINATION /include)
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/co_detector.h DESTINATION /include)
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/smoke_detector.h DESTINATION /include)
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/loudness_detector.h DESTINATION /include)
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_events.h DESTINATION /include)
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_event_type.h DESTINATION /include)
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/goertzel.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/alarm_detector.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/co_detector.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/smoke_detector.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/loudness_detector.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_events.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_event_type.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)

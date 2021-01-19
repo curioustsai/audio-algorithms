@@ -18,18 +18,25 @@ public:
     void Release();
     void ResetStates();
     AudioEventType Detect(float* data, int numSample);
-    void SetLevelThreshold(int levelThreshold);
+    void SetDynamicHigh(float dynamicHigh);
+    void SetDynamicLow(float dynamicLow);
     void SetThresholdLoud(float thresholdLoud);
     void SetThresholdQuiet(float thresholdQuiet);
+    void SetLoudCntThr(int loudCntThr);
     void SetQuietCntThr(int quietCntThr);
     void SetModel(std::string model);
 
+    float GetDynamicHigh() const;
+    float GetDynamicLow() const;
     float GetThresholdLoud() const;
     float GetThresholdQuiet() const;
     float GetPowerAvg() const;
     float GetPowerAvgdB() const;
+    int GetLevel() const;
     int GetQuietCntThr() const;
     int GetLevelThreshold() const;
+
+    void ShowConfig();
 
 private:
     std::string _model{"g4dome"};
@@ -38,10 +45,10 @@ private:
 
     float _powerAvg{0.0};
     float _powerAvgdB{0.0};
-    float _thresholdLoud{-20.0};
-    float _thresholdQuiet{-90.0};
-    int _levelThreshold{50};
+    float _thresholdLoud{50};
+    float _thresholdQuiet{1};
 
+    int _level{0};
     int _loudCnt{0};
     int _loudCntThr{38};
     int _quietCnt{0};

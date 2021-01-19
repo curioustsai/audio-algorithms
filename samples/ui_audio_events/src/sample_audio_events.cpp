@@ -19,6 +19,9 @@ int main(int argc, char** argv) {
     std::string outputFilePath;
     float smoke_threshold = -20.0f;
     float co_threshold = -20.0f;
+    float levelUpperBound = -20.0f;
+    float levelLowerBound = -70.0f;
+    float loudThreshold = 50.0f;
 
     app.add_option("-i,--inFile", inputFilePath, "specify an input file")
         ->required()
@@ -26,6 +29,12 @@ int main(int argc, char** argv) {
     app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
     app.add_option("--smokeThreshold", smoke_threshold, "threshold for smoke")->check(CLI::Number);
     app.add_option("--coThreshold", co_threshold, "threshold for co")->check(CLI::Number);
+    app.add_option("--levelUpperBound", levelUpperBound, "level upper bound for loudness detector")
+        ->check(CLI::Number);
+    app.add_option("--levelLowerBound", levelLowerBound, "level lower bound for loudness detector")
+        ->check(CLI::Number);
+    app.add_option("--loudThreshold", loudThreshold, "loud threshold for loudness detector")
+        ->check(CLI::Number);
 
     try {
         app.parse(argc, argv);
@@ -72,7 +81,11 @@ int main(int argc, char** argv) {
 
     smokeDetector.Init(configSmoke, targetFrequencies, numTargetFreq);
     coDetector.Init(configCo, targetFrequencies, numTargetFreq);
-    loudnessDetector.Init("g4dome", -20.0, -95.0);
+    loudnessDetector.Init("g4dome", 50.0, 0.0);
+    loudnessDetector.SetDynamicHigh(levelUpperBound);
+    loudnessDetector.SetDynamicLow(levelLowerBound);
+    loudnessDetector.SetThresholdLoud(loudThreshold);
+    loudnessDetector.ShowConfig();
 
     for (int windowCount = 0; windowCount < numTotalWindows; ++windowCount) {
         if (numSamplesPerWin != inFile.read(buffer, numSamplesPerWin)) {
