@@ -25,7 +25,6 @@ include_directories(
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PROJECT_ROOT}/thirdparty/CLI11/include
-	${PROJECT_ROOT}/thirdparty/spdlog/include
 	${PROJECT_ROOT}/thirdparty/ubnt_speexdsp/build/${UBNT_PLATFORM_NAME}/include/speex
 	${LIBSNDFILE_INCLUDE_DIRS}
 )
@@ -41,7 +40,7 @@ add_executable(
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
-message(${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib)
+# message(${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib)
 
 #define the list of library dependencies
 target_link_libraries(
@@ -49,8 +48,8 @@ target_link_libraries(
 	-L${PROJECT_ROOT}/thirdparty/ubnt_speexdsp/build/${UBNT_PLATFORM_NAME}/lib
 	-L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
 	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
-	-lfftw3f
     -lspeexdsp
+	-lfftw3f
 	-lsndfile
     -lpthread
     -lm

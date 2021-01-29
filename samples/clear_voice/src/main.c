@@ -1,14 +1,15 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include <sndfile.h>
 
 #include "SpeechEnhance.h"
-#include "SpeechEnhance_Internal.h"
 
 #ifdef AUDIO_ALGO_DEBUG
+#include "SpeechEnhance_Internal.h"
 #include "bmp.h"
 #endif
 
@@ -60,34 +61,27 @@ int32_t simulator(char* input_filename) {
 
     sample_rate = sfinfo_in.samplerate;
     nchannel = sfinfo_in.channels;
-#ifdef AUDIO_ALGO_DEBUG
-    total_length = sfinfo_in.frames;
-#endif
 
 	if (sample_rate == 16000) {
     	nframe = 256;
 		fftlen = 512;
-#ifdef AUDIO_ALGO_DEBUG
-		half_fftlen = 256;
-#endif
 	} else if  (sample_rate == 48000) {
 		nframe = 1024;
 		fftlen = 2048;
-#ifdef AUDIO_ALGO_DEBUG
-		half_fftlen = 1024;
-#endif
 	} else {
 		printf("not supported sample rate\n");
 		return -1;
 	}
-    /* limit length */
-    /* frame_stop = 5000; */
-    /* total_length = min(total_length, frame_stop * nframe); */
 
 #ifdef AUDIO_ALGO_DEBUG
+	half_fftlen = fftlen >> 1;
+    total_length = sfinfo_in.frames;
     total_frame = total_length / nframe;
     tfbmp_size = bmp_size(total_frame, half_fftlen);
 #endif
+    /* limit length */
+    /* frame_stop = 5000; */
+    /* total_length = min(total_length, frame_stop * nframe); */
 
     memcpy(&sfinfo_out, &sfinfo_in, sizeof(SF_INFO));
     sfinfo_out.channels = NCH_OUTPUT;
@@ -212,12 +206,12 @@ int32_t simulator(char* input_filename) {
             nr_buf[NCH_NR * idx_l + 1] = (int16_t)(ptr->stSnrEst.speech_frame * 16384);
             nr_buf[NCH_NR * idx_l + 2] = (int16_t)(ptr->stSnrEst.noise_frame * 16384);
 			nr_buf[NCH_NR * idx_l + 3] = (int16_t)(ptr->stSnrEst.snr_max * 100);
-			nr_buf[NCH_NR * idx_l + 4] = (int16_t)(ptr->stPostFilt.snr_max * 100);
 
-            // AutoGainCtrl
+#ifdef _AGC_ENABLE
             agc_buf[NCH_AGC * idx_l] = output_q15[idx_l];
             agc_buf[NCH_AGC * idx_l + 1] = (int16_t)(ptr->stAGC.pka_fp);
             agc_buf[NCH_AGC * idx_l + 2] = (int16_t)(ptr->stAGC.last_g_fp * 3276.8f);
+#endif
         }
         sf_write_short(doa_file, doa_buf, nframe * NCH_DOA);
         sf_write_short(cluster_file, cluster_buf, nframe * NCH_CLUSTER);
@@ -317,6 +311,11 @@ int32_t simulator(char* input_filename) {
 #endif
 
     return 0;
+}
+
+void printHelp(int argc, char* argv[]) {
+	printf("Usage: %s filelist.txt\n", argv[0]);
+	printf("%s\n", argv[0]);
 }
 
 int32_t main(int argc, char* argv[]) {

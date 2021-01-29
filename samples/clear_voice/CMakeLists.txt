@@ -17,12 +17,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DAUDIO_ALGO_DEBUG)
+	include_directories(AFTER 
+		${SOURCES_ROOT}/speech_enhance/src/
+		)
 endif()
 
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
-	# TODO clear include path
     ${SOURCES_ROOT}/speech_enhance/include/
     ${SOURCES_ROOT}/speech_enhance/src/
     ${SOURCES_ROOT}/version
