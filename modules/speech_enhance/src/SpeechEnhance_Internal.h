@@ -17,19 +17,22 @@
 
 // #define _FFT_ONLY
 #define _DC_REMOVAL
-#define _BF_ENABLE
-#define _NS_ENABLE
+// #define _NS_ENABLE
 // #define _AGC_ENABLE
 
 typedef struct _SpeechEnhance {
     CepstrumVAD stCepstrumVAD;
-    SpecFlatVAD stSpecFlatVAD;
     NoiseReduce stSnrEst;
     Beamformer stBeamformer;
-    NoiseReduce stPostFilt;
-    AutoGainCtrl stAGC;
     SoundLocater stSoundLocater;
 	BiquadFilter stBiquad;
+
+#ifdef _NS_ENABLE
+    NoiseReduce stPostFilt;
+#endif
+#ifdef _AGC_ENABLE
+    AutoGainCtrl stAGC;
+#endif
 
     void* fft_lookup;
     float alpha_dc; // 0.98
@@ -48,7 +51,9 @@ typedef struct _SpeechEnhance {
     float* beamformed;  // sizeof(float) * half_fftlen * 2
     float* beamformed_power; // sizeof(float) * half_fftlen 
     float* output_ifft; // sizeof(float) * fftlen
+#ifdef _AGC_ENABLE
 	float* agc_out;		// sizeof(float) * nframe
+#endif
 
     uint32_t frame_cnt;
     uint16_t sample_rate;

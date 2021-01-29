@@ -37,32 +37,30 @@ int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchann
     uiv_fill_f32(0, handle->overlap, nshift);
 
     /* Can be optimized as scratch memory */
-    handle->dc_remove =
-        (float*)malloc(nframe * nchannel * sizeof(float));     // dc_remove(nframe * nchannel)
+    handle->dc_remove = (float*)malloc(nframe * nchannel * sizeof(float));     // dc_remove(nframe * nchannel)
     handle->inputs_t = (float*)malloc(fftlen * sizeof(float)); // inputs_t(fftlen)
-    handle->inputs_f = (float*)malloc(half_fftlen * 2 * nchannel *
-                                      sizeof(float)); // inputs_f(half_fftlen * 2 * nchannel)
+    handle->inputs_f = (float*)malloc(half_fftlen * 2 * nchannel * sizeof(float)); // inputs_f(half_fftlen * 2 * nchannel)
     handle->ref_power = (float*)malloc(half_fftlen * sizeof(float)); // ref_power(half_fftlen)
-    handle->X_itr = (float*)malloc(half_fftlen * 2 * nchannel *
-                                   sizeof(float)); // X_itr(half_fftlen * 2 * nchannel)
-    handle->beamformed =
-        (float*)malloc(half_fftlen * 2 * sizeof(float)); // beamformed(half_fftlen * 2)
-    handle->beamformed_power =
-        (float*)malloc(half_fftlen * sizeof(float));              // beamformed_power(half_fftlen)
+    handle->X_itr = (float*)malloc(half_fftlen * 2 * nchannel * sizeof(float)); // X_itr(half_fftlen * 2 * nchannel)
+    handle->beamformed = (float*)malloc(half_fftlen * 2 * sizeof(float)); // beamformed(half_fftlen * 2)
+    handle->beamformed_power = (float*)malloc(half_fftlen * sizeof(float));              // beamformed_power(half_fftlen)
     handle->output_ifft = (float*)malloc(fftlen * sizeof(float)); // output_ifft(fftlen)
+#ifdef _AGC_ENABLE
     handle->agc_out = (float*)malloc(nframe * sizeof(float));     // AGC (nframe)
+#endif
 
     CepstrumVAD_Init(&handle->stCepstrumVAD, fftlen, sample_rate);
     SoundLocater_Init(&handle->stSoundLocater, sample_rate, fftlen, nchannel);
     NoiseReduce_Init(&handle->stSnrEst, sample_rate, fftlen, 0);
     Beamformer_Init(&handle->stBeamformer, fftlen, nchannel);
+    Biquad_Init(&handle->stBiquad);
 
 #ifdef _NS_ENABLE
     NoiseReduce_Init(&handle->stPostFilt, sample_rate, fftlen, 1);
 #endif
-
-    Biquad_Init(&handle->stBiquad);
+#ifdef _AGC_ENABLE
     AutoGainCtrl_Init(&handle->stAGC, 32767.0f / 2.0f, nframe, 1.0f / 8.0f, 2.0f);
+#endif
     *pHandle = handle;
 
     return STATUS_SUCCESS;
@@ -72,9 +70,7 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
     uint16_t idx_l, idx_c;
     uint8_t vad;
     uint8_t speech_status, noise_status;
-#ifdef _BF_ENABLE
     uint8_t update_speech, update_noise;
-#endif
 #ifdef _AGC_ENABLE
     float spp_mean;
 #endif
@@ -147,8 +143,6 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
 
     /* Cepstrum VAD */
     vad = CepstrumVAD_Process(&handle->stCepstrumVAD, ref_power);
-    /* vad &= SpecFlatVAD_Process(&handle->stSpecFlatVAD, ref_power); */
-    /* vad = SpecFlatVAD_Process(&handle->stSpecFlatVAD, ref_power); */
 
     /* Noise Estimation */
     NoiseReduce_EstimateNoise(&handle->stSnrEst, ref_power, handle->frame_cnt, vad);
@@ -178,7 +172,6 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
 
     uiv_cmplx_mag_squared_f32(beamformed, handle->beamformed_power, half_fftlen);
     ref_input = beamformed;
-    /* #endif */
 
 #ifdef _NS_ENABLE
     NoiseReduce_EstimateNoise(&handle->stPostFilt, handle->beamformed_power, handle->frame_cnt,
@@ -235,14 +228,20 @@ int32_t SpeechEnhance_Release(void* hSpeechEnhance) {
     free(handle->beamformed);
     free(handle->beamformed_power);
     free(handle->output_ifft);
+#ifdef _AGC_ENABLE
     free(handle->agc_out);
+#endif
 
     CepstrumVAD_Release(&handle->stCepstrumVAD);
     NoiseReduce_Release(&handle->stSnrEst);
-    NoiseReduce_Release(&handle->stPostFilt);
     Beamformer_Release(&handle->stBeamformer);
-    AutoGainCtrl_Release(&handle->stAGC);
     SoundLocater_Release(&handle->stSoundLocater);
+#ifdef _NS_ENABLE
+    NoiseReduce_Release(&handle->stPostFilt);
+#endif
+#ifdef _AGC_ENABLE
+    AutoGainCtrl_Release(&handle->stAGC);
+#endif
 
     return STATUS_SUCCESS;
 }
