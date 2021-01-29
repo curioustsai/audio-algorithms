@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-extern const float kBlocks160w512[512];
-extern const float kBlocks256w512[512];
 
 int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchannel, uint16_t fftlen,
                            uint16_t nframe) {
@@ -21,10 +19,9 @@ int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchann
     handle->nshift = nshift;
     handle->ref_ch = 0;
     handle->frame_cnt = 0;
-    /* handle->fftwin = kBlocks256w512; */
     handle->fftwin = (float*)calloc(fftlen, sizeof(float));
     for (int i = 0; i < fftlen; i++) {
-        handle->fftwin[i] = sqrtf(0.5f - 0.5f * cosf(2.f * M_PI * i / (fftlen - 1)));
+        handle->fftwin[i] = sqrtf(0.5f - 0.5f * cosf(2.f * M_PI * i / fftlen));
     }
     handle->fft_lookup = uiv_fft_init(fftlen);
 
@@ -156,8 +153,6 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
     /* Noise Estimation */
     NoiseReduce_EstimateNoise(&handle->stSnrEst, ref_power, handle->frame_cnt, vad);
     NoiseReduce_SnrVAD(&handle->stSnrEst);
-
-    /* #ifdef _BF_ENABLE */
 
     /* SoundLocater Doa */
     uint32_t angle_deg;
