@@ -9,12 +9,12 @@
 #define ANGLE_UNVALID 1000
 
 void update_buffer_f32(float *data_buf, float new_data, int buf_len) {
-    for (int index = 0; index < buf_len - 1; index++) { data_buf[index + 1] = data_buf[index]; }
+    for (int index = buf_len - 1; index > 0; index--) { data_buf[index] = data_buf[index - 1]; }
     data_buf[0] = new_data;
 }
 
 void update_buffer_int32(int32_t *data_buf, uint32_t new_data, int buf_len) {
-    for (int index = 0; index < buf_len - 1; index++) { data_buf[index + 1] = data_buf[index]; }
+    for (int index = buf_len - 1; index > 0; index--) { data_buf[index] = data_buf[index - 1]; }
     data_buf[0] = new_data;
 }
 

@@ -152,33 +152,35 @@ void uiv_mean_f32(const uiv_f32_t *pSrc, uint32_t block_size, uiv_f32_t *mean) {
     *mean = sum / block_size;
 }
 
-void uiv_cmplx_mag_squared_f32( const uiv_f32_t * pSrc, uiv_f32_t * pDst, uint32_t numSamples){
-	uint32_t n;
-	for (n = 0; n < numSamples; n++) {
-		pDst[n] = pSrc[(2*n)+0]*pSrc[(2*n)+0] + pSrc[(2*n)+1]*pSrc[(2*n)+1];
-	}
+void uiv_cmplx_mag_squared_f32(const uiv_f32_t *pSrc, uiv_f32_t *pDst, uint32_t numSamples) {
+    uint32_t n;
+    for (n = 0; n < numSamples; n++) {
+        pDst[n] = pSrc[(2 * n) + 0] * pSrc[(2 * n) + 0];
+        pDst[n] += pSrc[(2 * n) + 1] * pSrc[(2 * n) + 1];
+    }
 }
 
-void uiv_cmplx_mag_f32( const uiv_f32_t * pSrc, uiv_f32_t * pDst, uint32_t numSamples){
+void uiv_cmplx_mag_f32(const uiv_f32_t *pSrc, uiv_f32_t *pDst, uint32_t numSamples) {
     uint32_t n;
     uiv_f32_t square;
     for (n = 0; n < numSamples; n++) {
-        square = pSrc[(2*n)+0]*pSrc[(2*n)+0] + pSrc[(2*n)+1]*pSrc[(2*n)+1];
+        square = pSrc[(2 * n) + 0] * pSrc[(2 * n) + 0];
+        square += pSrc[(2 * n) + 1] * pSrc[(2 * n) + 1];
         pDst[n] = sqrtf(square);
     }
 }
 
-void uiv_max_f32(const uiv_f32_t *buf, uint32_t size, uiv_f32_t * max_value , uint32_t *max_idx) {
-	uint32_t idx = 0;
-	uint32_t maxIdx_ = 0;
-	uiv_f32_t maxValue_ = buf[0];
+void uiv_max_f32(const uiv_f32_t *buf, uint32_t size, uiv_f32_t *max_value, uint32_t *max_idx) {
+    uint32_t idx = 0;
+    uint32_t maxIdx_ = 0;
+    uiv_f32_t maxValue_ = buf[0];
 
-	for (idx = 1; idx < size; idx++) {
-		if (buf[idx] > maxValue_) {
-			maxValue_ = buf[idx];
-			maxIdx_  = idx;
-		}
-	}
-	*max_value = maxValue_;
-	*max_idx = maxIdx_;
+    for (idx = 1; idx < size; idx++) {
+        if (buf[idx] > maxValue_) {
+            maxValue_ = buf[idx];
+            maxIdx_ = idx;
+        }
+    }
+    *max_value = maxValue_;
+    *max_idx = maxIdx_;
 }
