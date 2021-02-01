@@ -37,6 +37,8 @@ void uiv_fft_destroy(void *table) {
     free(table);
 }
 
+#ifndef _SPEEX_FFT_
+
 void uiv_fft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
     int i;
     struct fftw_config *t = (struct fftw_config *)table;
@@ -65,6 +67,64 @@ void uiv_ifft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
 
     for (i = 0; i < N; ++i) out[i] = optr[i] * m;
 }
+
+void uiv_fft_shift(void* table, uiv_f32_t *ptr){}
+void uiv_ifft_shift(void* table, uiv_f32_t *ptr){}
+
+#else
+void uiv_fft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
+    int i;
+    struct fftw_config *t = (struct fftw_config *)table;
+    const int N = t->N;
+    float *iptr = t->in;
+    float *optr = t->out;
+    const float m = 1.0 / N;
+
+    for (i = 0; i < N; ++i) iptr[i] = in[i] * m;
+
+    fftwf_execute(t->fft);
+
+    out[0] = optr[0];
+    for (i = 1; i < N; ++i) out[i] = optr[i + 1];
+}
+
+void uiv_fft_shift(void* table, uiv_f32_t *ptr) {
+	int i;
+    struct fftw_config *t = (struct fftw_config *)table;
+	const int N = t-> N;
+	ptr[N+1] = 0.0;
+	for (i = N; i > 1; i--) { ptr[i] = ptr[i - 1] * N; };
+	ptr[1] = 0.0;
+    ptr[0] *= N;
+}
+
+void uiv_ifft_shift(void* table, uiv_f32_t *ptr) {
+	int i;
+    struct fftw_config *t = (struct fftw_config *)table;
+	const int N = t-> N;
+    const float m = 1.0f / N;
+    ptr[0] *= m;
+	for (i = 1; i < N; i++) { ptr[i] = ptr[i + 1] * m; };
+	ptr[N] = 0.0;
+}
+
+void uiv_ifft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
+    int i;
+    struct fftw_config *t = (struct fftw_config *)table;
+    const int N = t->N;
+    float *iptr = t->in;
+    float *optr = t->out;
+
+    iptr[0] = in[0];
+    iptr[1] = 0.0f;
+    for (i = 1; i < N; ++i) iptr[i + 1] = in[i];
+    iptr[N + 1] = 0.0f;
+
+    fftwf_execute(t->ifft);
+
+    for (i = 0; i < N; ++i) out[i] = optr[i];
+}
+#endif
 
 uint32_t uiv_half_fftlen(uint32_t fftlen) {
 	return (fftlen >> 1U) + 1U;
