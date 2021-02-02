@@ -1,8 +1,7 @@
 #ifndef __CEPSTRUM_VAD_H__
 #define __CEPSTRUM_VAD_H__
 
-#include "basic_def.h"
-#include "basic_op.h"
+#include <stdint.h>
 
 typedef struct _CepstrumVAD {
     uint32_t fftlen;

@@ -1,8 +1,6 @@
 #ifndef __SPEECH_ENHANCE_INTERNAL_H__
 #define __SPEECH_ENHANCE_INTERNAL_H__
 
-#include <stdlib.h>
-
 #include "AutoGainCtrl.h"
 #include "Beamformer.h"
 #include "CepstrumVAD.h"
@@ -56,12 +54,12 @@ typedef struct _SpeechEnhance {
 #endif
 
     uint32_t frame_cnt;
-    uint16_t sample_rate;
-    uint16_t nframe;
-    uint16_t nchannel;
-    uint16_t nshift;
-    uint16_t fftlen;
-    uint16_t ref_ch;
+    uint32_t sample_rate;
+    uint32_t nframe;
+    uint32_t nchannel;
+    uint32_t nshift;
+    uint32_t fftlen;
+    uint32_t ref_ch;
 } SpeechEnhance;
 
-#endif
+#endif // __SPEECH_ENHANCE_INTERNAL_H__

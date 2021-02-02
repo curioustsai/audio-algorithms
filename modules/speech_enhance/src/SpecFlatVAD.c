@@ -1,7 +1,8 @@
+#include "basic_op.h"
 #include "SpecFlatVAD.h"
 
 
-int32_t SpecFlatVAD_Init(SpecFlatVAD* handle, uint16_t fftlen, uint16_t sample_rate)
+int32_t SpecFlatVAD_Init(SpecFlatVAD* handle, uint32_t fftlen, uint32_t sample_rate)
 {
 	handle->thrd_1kHz = 0.3f;
 	handle->thrd_4kHz = 0.4f;
@@ -19,15 +20,15 @@ int32_t SpecFlatVAD_Init(SpecFlatVAD* handle, uint16_t fftlen, uint16_t sample_r
 
 	handle->vad = 0;
 
-	return STATUS_SUCCESS;
+	return 0;
 }
 
 int32_t SpecFlatVAD_Release(SpecFlatVAD* handle)
 {
-	return STATUS_SUCCESS;
+	return 0;
 }
 
-uint8_t SpecFlatVAD_Process(SpecFlatVAD* handle, float* ref_pow)
+uint32_t SpecFlatVAD_Process(SpecFlatVAD* handle, float* ref_pow)
 {
 	uint16_t idx;
 	float alpha = 0.3f;

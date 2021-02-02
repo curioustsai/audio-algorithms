@@ -1,4 +1,5 @@
 #include "CepstrumVAD.h"
+#include "basic_op.h"
 #include "fftwrap.h"
 #include <stdlib.h>
 
@@ -28,7 +29,7 @@ int32_t CepstrumVAD_Init(CepstrumVAD* handle, uint16_t fftlen, uint16_t sample_r
     for (int i = 0; i < handle->cepIdxLen; i++) { handle->cepIdxBuf[i] = 0; }
     for (int i = 0; i < handle->pitchBufLen; i++) { handle->pitchBuf[i] = 0; }
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t CepstrumVAD_Release(CepstrumVAD* handle) {
@@ -42,7 +43,7 @@ int32_t CepstrumVAD_Release(CepstrumVAD* handle) {
 
     uiv_fft_destroy(handle->fft_lookup);
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 uint32_t CepstrumVAD_Process(CepstrumVAD* handle, float* ref_pow) {
@@ -56,7 +57,7 @@ uint32_t CepstrumVAD_Process(CepstrumVAD* handle, float* ref_pow) {
     uint32_t idx_dist_sum;
     uint32_t pitch_dist;
     uint32_t max_idx;
-    int32_t max_idx_q15;
+    int32_t max_idx_q31;
 
     float alpha = 0.5f;
     float cepMax_thrd = 0.09f;
@@ -87,32 +88,32 @@ uint32_t CepstrumVAD_Process(CepstrumVAD* handle, float* ref_pow) {
 
     for (int i = 0; i < cep_size; i++) { handle->cepData_sm[i] = cepData_sm_max[i]; }
     uiv_max_f32(handle->cepData_sm, cep_size, &cepData_max, &max_idx);
-    max_idx_q15 = (uiv_q15_t)max_idx;
+    max_idx_q31 = (int32_t)max_idx;
 
-    idx_dist_sum = abs(max_idx_q15 - handle->cepIdxBuf[idx]) < 5;
+    idx_dist_sum = abs(max_idx_q31 - handle->cepIdxBuf[idx]) < 5;
     for (idx = 1; idx < handle->cepIdxLen; ++idx) {
-        idx_dist_sum += abs(max_idx_q15 - handle->cepIdxBuf[idx]) < 5;
+        idx_dist_sum += abs(max_idx_q31 - handle->cepIdxBuf[idx]) < 5;
     }
 
     for (int i = 1; i < handle->cepIdxLen; i++) { handle->cepIdxBuf[i] = handle->cepIdxBuf[i - 1]; }
-    handle->cepIdxBuf[0] = max_idx_q15;
+    handle->cepIdxBuf[0] = max_idx_q31;
 
     handle->vad = 0;
-    pitch_dist = abs((int)max_idx_q15 - (int)handle->pitch);
+    pitch_dist = abs((int)max_idx_q31 - (int)handle->pitch);
 
     if (cepData_max > cepMax_thrd) {
         handle->vad = 1;
-        handle->pitch = max_idx_q15;
+        handle->pitch = max_idx_q31;
     } else if ((pitch_dist < 15) && handle->pitch != 0) {
         handle->vad = 1;
-        if (cepData_max > cepMax_thrdLow) handle->pitch = max_idx_q15;
+        if (cepData_max > cepMax_thrdLow) handle->pitch = max_idx_q31;
     } else if ((idx_dist_sum > 4) && (cepData_max > cepMax_thrdLow)) {
         handle->vad = 1;
-        handle->pitch = max_idx_q15;
+        handle->pitch = max_idx_q31;
     }
 
     for (int i = 1; i < handle->pitchBufLen; i++) { handle->pitchBuf[i] = handle->pitchBuf[i - 1]; }
-    handle->cepIdxBuf[0] = max_idx_q15;
+    handle->cepIdxBuf[0] = max_idx_q31;
 
     if (handle->vad)
         handle->pitchBuf[0] = handle->pitch;

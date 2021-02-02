@@ -1,8 +1,8 @@
 #ifndef __SOUNDLOCATOR_H__
 #define __SOUNDLOCATOR_H__
 
-#include "basic_def.h"
 #include "basic_op.h"
+#include <stdint.h>
 #include <complex.h>
 
 typedef struct _SoundLocater {

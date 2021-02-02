@@ -1,17 +1,18 @@
+#include "SpeechEnhance.h"
+
+#ifdef AUDIO_ALGO_DEBUG
+#include "bmp.h"
+#include "math.h"
+#include "SpeechEnhance_Internal.h"
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
 #include <sndfile.h>
 
-#include "SpeechEnhance.h"
-
-#ifdef AUDIO_ALGO_DEBUG
-#include "SpeechEnhance_Internal.h"
-#include "bmp.h"
-#endif
 
 #define LEN_FILENAME 256
 #define NCH_OUTPUT 2

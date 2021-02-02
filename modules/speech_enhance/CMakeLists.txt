@@ -32,7 +32,6 @@ add_library(
 )
 
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/SpeechEnhance.h DESTINATION /include/${PROJECT_NAME})
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/basic_def.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
 
 if(UBNT_WITH_TESTS)

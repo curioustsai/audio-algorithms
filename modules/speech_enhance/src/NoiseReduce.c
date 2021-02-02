@@ -1,12 +1,13 @@
 #include "NoiseReduce.h"
 #include "fftwrap.h"
+#include "basic_op.h"
 #include <stdlib.h>
 
 /**
  * Implementation of "Unbiased MMSE-Based Noise Power Estimation With Low Complexity and Low Tracking Delay"
  */
-int32_t NoiseReduce_Init(NoiseReduce* handle, uint16_t sample_rate, uint16_t fftlen,
-                         uint8_t bPostFilt) {
+int32_t NoiseReduce_Init(NoiseReduce* handle, uint32_t sample_rate, uint32_t fftlen,
+                         uint32_t bPostFilt) {
     uint32_t half_fftlen = uiv_half_fftlen(fftlen);
 
     handle->sample_rate = sample_rate;
@@ -33,7 +34,7 @@ int32_t NoiseReduce_Init(NoiseReduce* handle, uint16_t sample_rate, uint16_t fft
         handle->post_snr = (float*)calloc(half_fftlen, sizeof(float));
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t NoiseReduce_Release(NoiseReduce* handle) {
@@ -49,13 +50,13 @@ int32_t NoiseReduce_Release(NoiseReduce* handle) {
         free(handle->post_snr);
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t NoiseReduce_EstimateNoise(NoiseReduce* handle, float* ref_power, uint32_t frame_cnt,
-                                  uint8_t cep_vad) {
-    uint16_t idx;
-    uint16_t half_fftlen = handle->half_fftlen;
+                                  uint32_t cep_vad) {
+    uint32_t idx;
+    uint32_t half_fftlen = handle->half_fftlen;
 
     const float ax = 0.8f;
     const float axc = 1 - ax; // noise output smoothing time constant(8)
@@ -113,18 +114,18 @@ int32_t NoiseReduce_EstimateNoise(NoiseReduce* handle, float* ref_power, uint32_
         }
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t NoiseReduce_SnrVAD(NoiseReduce* handle) {
-    uint16_t idx;
-    uint16_t sample_rate = handle->sample_rate;
-    uint16_t fftlen = (handle->half_fftlen) << 1;
-    uint16_t half_fftlen = handle->half_fftlen;
+    uint32_t idx;
+    uint32_t sample_rate = handle->sample_rate;
+    uint32_t fftlen = (handle->half_fftlen) << 1;
+    uint32_t half_fftlen = handle->half_fftlen;
 
-    uint16_t f1 = 50 * fftlen / sample_rate;
-    uint16_t f2 = 1000 * fftlen / sample_rate;
-    uint16_t f3 = 2000 * fftlen / sample_rate;
+    uint32_t f1 = (uint32_t)(50.f * fftlen / sample_rate);
+    uint32_t f2 = (uint32_t)(1000.f * fftlen / sample_rate);
+    uint32_t f3 = (uint32_t)(2000.f * fftlen / sample_rate);
 
     float snr_thrd_H = handle->snr_thrd_H;
     float snr_thrd_L = handle->snr_thrd_L;
@@ -181,7 +182,7 @@ int32_t NoiseReduce_SnrVAD(NoiseReduce* handle) {
         if (handle->bPostFilt) handle->post_snr[idx] = snr_db;
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t NoiseReduce_WienerFilter(NoiseReduce* handle, float* input, float* output) {
@@ -189,8 +190,8 @@ int32_t NoiseReduce_WienerFilter(NoiseReduce* handle, float* input, float* outpu
     float g_min = handle->g_min;
     float prior_snr, snr, gain;
 
-    uint16_t idx;
-    uint16_t half_fftlen = handle->half_fftlen;
+    uint32_t idx;
+    uint32_t half_fftlen = handle->half_fftlen;
 
     for (idx = 0; idx < half_fftlen; ++idx) {
         prior_snr = handle->last_Ypw[idx] / (handle->last_Npw[idx] + 1e-12f);
@@ -205,5 +206,5 @@ int32_t NoiseReduce_WienerFilter(NoiseReduce* handle, float* input, float* outpu
             (output[2 * idx] * output[2 * idx] + output[2 * idx + 1] * output[2 * idx + 1]);
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }

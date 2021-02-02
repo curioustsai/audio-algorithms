@@ -1,11 +1,10 @@
 #include "SpeechEnhance_Internal.h"
-#include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 
-int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchannel, uint16_t fftlen,
-                           uint16_t nframe) {
-    uint16_t idx;
-    uint16_t nshift = fftlen - nframe;
+int32_t SpeechEnhance_Init(void** pHandle, uint32_t sample_rate, uint32_t nchannel, uint32_t fftlen,
+                           uint32_t nframe) {
+    uint32_t idx;
+    uint32_t nshift = fftlen - nframe;
     uint32_t half_fftlen = uiv_half_fftlen(fftlen);
     SpeechEnhance* handle;
 
@@ -62,25 +61,25 @@ int32_t SpeechEnhance_Init(void** pHandle, uint16_t sample_rate, uint16_t nchann
 #endif
     *pHandle = handle;
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* output) {
-    uint16_t idx_l, idx_c;
-    uint8_t vad;
-    uint8_t speech_status, noise_status;
-    uint8_t update_speech, update_noise;
+    uint32_t idx_l, idx_c;
+    uint32_t vad;
+    uint32_t speech_status, noise_status;
+    uint32_t update_speech, update_noise;
 #ifdef _AGC_ENABLE
     float spp_mean;
 #endif
 
     SpeechEnhance* const handle = hSpeechEnance;
-    const uint16_t nchannel = handle->nchannel;
-    const uint16_t nframe = handle->nframe;
-    const uint16_t nshift = handle->nshift;
-    const uint16_t fftlen = handle->fftlen;
-    const uint16_t half_fftlen = uiv_half_fftlen(fftlen);
-    const uint16_t ref_ch = handle->ref_ch;
+    const uint32_t nchannel = handle->nchannel;
+    const uint32_t nframe = handle->nframe;
+    const uint32_t nshift = handle->nshift;
+    const uint32_t fftlen = handle->fftlen;
+    const uint32_t half_fftlen = uiv_half_fftlen(fftlen);
+    const uint32_t ref_ch = handle->ref_ch;
 
     float* const dc_remove = handle->dc_remove;
     float* const inputs_t = handle->inputs_t;
@@ -211,7 +210,7 @@ DEBUG_LOOP:
     Biquad_Process(&handle->stBiquad, ref_output, ref_output, nframe);
     for (idx_l = 0; idx_l < nframe; ++idx_l) output[idx_l] = (int16_t)roundf(ref_output[idx_l]);
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t SpeechEnhance_Release(void* hSpeechEnhance) {
@@ -245,5 +244,5 @@ int32_t SpeechEnhance_Release(void* hSpeechEnhance) {
     AutoGainCtrl_Release(&handle->stAGC);
 #endif
 
-    return STATUS_SUCCESS;
+    return 0;
 }

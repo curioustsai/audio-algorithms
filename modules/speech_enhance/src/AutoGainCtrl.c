@@ -1,6 +1,7 @@
 #include "AutoGainCtrl.h"
+#include "basic_op.h"
 
-int32_t AutoGainCtrl_Init(AutoGainCtrl* handle, float tpka_fp, uint16_t nframe, float g_min, float g_max)
+int32_t AutoGainCtrl_Init(AutoGainCtrl* handle, float tpka_fp, uint32_t nframe, float g_min, float g_max)
 {
 	handle->tpka_fp = tpka_fp;
 	handle->g_min_fp = g_min;
@@ -11,15 +12,15 @@ int32_t AutoGainCtrl_Init(AutoGainCtrl* handle, float tpka_fp, uint16_t nframe, 
 	handle->last_g_fp = g_max; // 1.0;
 	handle->pka_fp = 1024.0f;
 
-	return STATUS_SUCCESS;
+	return 0;
 }
 
 int32_t AutoGainCtrl_Release(AutoGainCtrl* handle)
 {
-	return STATUS_SUCCESS;
+	return 0;
 }
 
-int32_t AutoGainCtrl_Process(AutoGainCtrl* handle, float* input, uint8_t speech_frame, float spp, float* output)
+int32_t AutoGainCtrl_Process(AutoGainCtrl* handle, float* input, uint32_t speech_frame, float spp, float* output)
 {
 	float max_abs_y;
 	float mu;
@@ -63,5 +64,5 @@ int32_t AutoGainCtrl_Process(AutoGainCtrl* handle, float* input, uint8_t speech_
 
 	handle->last_g_fp = g_fp;
 
-	return STATUS_SUCCESS;
+	return 0;
 }

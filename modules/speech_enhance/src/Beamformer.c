@@ -1,6 +1,8 @@
 #include "Beamformer.h"
 #include "cmatrix.h"
 #include "fftwrap.h"
+#include <math.h>
+#include <stdlib.h>
 
 int32_t Beamformer_Init(Beamformer *handle, uint32_t fftlen, uint32_t nchannel) {
     uint32_t i, c;
@@ -33,7 +35,7 @@ int32_t Beamformer_Init(Beamformer *handle, uint32_t fftlen, uint32_t nchannel) 
         }
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t Beamformer_Release(Beamformer *handle) {
@@ -42,15 +44,15 @@ int32_t Beamformer_Release(Beamformer *handle) {
     free(handle->bf_coef);
     free(handle->steering);
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
-uint8_t Beamformer_UpdateSpeechMatrix(Beamformer *handle, complex float *X_itr,
-                                      uint8_t speech_status) {
+uint32_t Beamformer_UpdateSpeechMatrix(Beamformer *handle, complex float *X_itr,
+                                      uint32_t speech_status) {
     uint32_t half_fftlen = handle->half_fftlen;
     uint32_t nchannel = handle->nchannel;
     float alpha;
-    uint8_t update_speech;
+    uint32_t update_speech;
 
     handle->fn++;
     update_speech = 0;
@@ -84,12 +86,12 @@ uint8_t Beamformer_UpdateSpeechMatrix(Beamformer *handle, complex float *X_itr,
     return update_speech;
 }
 
-uint8_t Beamformer_UpdateNoiseMatrix(Beamformer *handle, complex float *X_itr, uint8_t noise_status,
+uint32_t Beamformer_UpdateNoiseMatrix(Beamformer *handle, complex float *X_itr, uint32_t noise_status,
                                      float *spp) {
     uint32_t half_fftlen = handle->half_fftlen;
     uint32_t nchannel = handle->nchannel;
     float alpha;
-    uint8_t update_noise;
+    uint32_t update_noise;
 
     update_noise = 0;
     if (noise_status == 0) { return update_noise; }
@@ -124,8 +126,8 @@ uint8_t Beamformer_UpdateNoiseMatrix(Beamformer *handle, complex float *X_itr, u
     return update_noise;
 }
 
-void Beamformer_UpdateSteeringVector(Beamformer *handle, uint8_t update_speech,
-                                     uint8_t update_noise) {
+void Beamformer_UpdateSteeringVector(Beamformer *handle, uint32_t update_speech,
+                                     uint32_t update_noise) {
     if ((update_speech == 0) && (update_noise == 0)) return;
 
     uint32_t half_fftlen = handle->half_fftlen;
@@ -175,8 +177,8 @@ void Beamformer_UpdateSteeringVector(Beamformer *handle, uint8_t update_speech,
     }
 }
 
-int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint8_t update_speech,
-                                    uint8_t update_noise) {
+int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint32_t update_speech,
+                                    uint32_t update_noise) {
     uint32_t half_fftlen = handle->half_fftlen;
     uint32_t nchannel = handle->nchannel;
 
@@ -188,7 +190,7 @@ int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint8_t update_speech,
     complex float *steering_hmt = calloc(nchannel * 1, sizeof(complex float));
     complex float den;
 
-    if ((0 == update_speech) && (0 == update_noise)) { return STATUS_FAIL; }
+    if ((0 == update_speech) && (0 == update_noise)) { return -1; }
 
     for (int k = 0; k < half_fftlen; k++) {
         complex float *steering = &handle->steering[k * nchannel];
@@ -219,7 +221,7 @@ int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint8_t update_speech,
     free(steering_hmt);
     free(num);
 
-    return STATUS_SUCCESS;
+    return 0;
 }
 
 int32_t Beamformer_DoFilter(Beamformer *handle, complex float *X_itr, complex float *beamformed) {
@@ -235,5 +237,5 @@ int32_t Beamformer_DoFilter(Beamformer *handle, complex float *X_itr, complex fl
         beamformed[k] /= sqrtf(nchannel);
     }
 
-    return STATUS_SUCCESS;
+    return 0;
 }

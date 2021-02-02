@@ -39,7 +39,7 @@ void uiv_fft_destroy(void *table) {
 
 #ifndef _SPEEX_FFT_
 
-void uiv_fft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
+void uiv_fft(void *table, float *in, float *out) {
     int i;
     struct fftw_config *t = (struct fftw_config *)table;
     const int N = t->N;
@@ -53,7 +53,7 @@ void uiv_fft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
     for (i = 0; i < N+2; ++i) out[i] = optr[i];
 }
 
-void uiv_ifft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
+void uiv_ifft(void *table, float *in, float *out) {
     int i;
     struct fftw_config *t = (struct fftw_config *)table;
     const int N = t->N;
@@ -68,11 +68,11 @@ void uiv_ifft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
     for (i = 0; i < N; ++i) out[i] = optr[i] * m;
 }
 
-void uiv_fft_shift(void* table, uiv_f32_t *ptr){}
-void uiv_ifft_shift(void* table, uiv_f32_t *ptr){}
+void uiv_fft_shift(void* table, float *ptr){}
+void uiv_ifft_shift(void* table, float *ptr){}
 
 #else
-void uiv_fft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
+void uiv_fft(void *table, float *in, float *out) {
     int i;
     struct fftw_config *t = (struct fftw_config *)table;
     const int N = t->N;
@@ -88,7 +88,7 @@ void uiv_fft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
     for (i = 1; i < N; ++i) out[i] = optr[i + 1];
 }
 
-void uiv_fft_shift(void* table, uiv_f32_t *ptr) {
+void uiv_fft_shift(void* table, float *ptr) {
 	int i;
     struct fftw_config *t = (struct fftw_config *)table;
 	const int N = t-> N;
@@ -98,7 +98,7 @@ void uiv_fft_shift(void* table, uiv_f32_t *ptr) {
     ptr[0] *= N;
 }
 
-void uiv_ifft_shift(void* table, uiv_f32_t *ptr) {
+void uiv_ifft_shift(void* table, float *ptr) {
 	int i;
     struct fftw_config *t = (struct fftw_config *)table;
 	const int N = t-> N;
@@ -108,7 +108,7 @@ void uiv_ifft_shift(void* table, uiv_f32_t *ptr) {
 	ptr[N] = 0.0;
 }
 
-void uiv_ifft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
+void uiv_ifft(void *table, float *in, float *out) {
     int i;
     struct fftw_config *t = (struct fftw_config *)table;
     const int N = t->N;
@@ -126,6 +126,3 @@ void uiv_ifft(void *table, uiv_f32_t *in, uiv_f32_t *out) {
 }
 #endif
 
-uint32_t uiv_half_fftlen(uint32_t fftlen) {
-	return (fftlen >> 1U) + 1U;
-}

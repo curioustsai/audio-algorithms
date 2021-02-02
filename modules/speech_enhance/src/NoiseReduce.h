@@ -1,17 +1,16 @@
 #ifndef __NOISE_REDUCE_H__
 #define __NOISE_REDUCE_H__
 
-#include "basic_def.h"
-#include "basic_op.h"
+#include <stdint.h>
 
 #define MAX_NBAND	3
 
 typedef struct _NoiseReduce {
-	uint16_t sample_rate;
-	uint16_t half_fftlen;
-	uint8_t speech_frame;
-	uint8_t noise_frame;
-	uint8_t bPostFilt;
+	uint32_t sample_rate;
+	uint32_t half_fftlen;
+	uint32_t speech_frame;
+	uint32_t noise_frame;
+	uint32_t bPostFilt;
 
 	float snr_thrd_H;
 	float snr_thrd_L;
@@ -32,8 +31,8 @@ typedef struct _NoiseReduce {
 } NoiseReduce;
 
 // int32_t NoiseReduce_QueryMemSize(MemMgr* hMemMgr, uint16_t fftlen, uint8_t bPostFilt);
-int32_t NoiseReduce_Init(NoiseReduce* handle, uint16_t sample_rate, uint16_t fftlen, uint8_t bPostFilt);
-int32_t NoiseReduce_EstimateNoise(NoiseReduce* handle, float* power, uint32_t frame_cnt, uint8_t cep_vad);
+int32_t NoiseReduce_Init(NoiseReduce* handle, uint32_t sample_rate, uint32_t fftlen, uint32_t bPostFilt);
+int32_t NoiseReduce_EstimateNoise(NoiseReduce* handle, float* power, uint32_t frame_cnt, uint32_t cep_vad);
 int32_t NoiseReduce_SnrVAD(NoiseReduce* handle);
 int32_t NoiseReduce_WienerFilter(NoiseReduce* handle, float* input, float* output);
 int32_t NoiseReduce_Release(NoiseReduce* handle);

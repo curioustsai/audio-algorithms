@@ -1,4 +1,7 @@
 #include "cmatrix.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 void show_matrix(complex float *A, int M, int N) {
     for (int i = 0; i < M; i++) {
