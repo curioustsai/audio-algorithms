@@ -1,5 +1,5 @@
 #Set the name of the project
-project(speech_enhance)
+project(mic_array)
 
 #detect the source files
 glob_source_files()
@@ -31,7 +31,7 @@ add_library(
     ${C_SOURCES}
 )
 
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/SpeechEnhance.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/MicArray.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
 
 if(UBNT_WITH_TESTS)

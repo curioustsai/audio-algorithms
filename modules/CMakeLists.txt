@@ -8,5 +8,5 @@ endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "x86")
 add_subdirectory(audio_events)
-add_subdirectory(speech_enhance)
+add_subdirectory(mic_array)
 endif()

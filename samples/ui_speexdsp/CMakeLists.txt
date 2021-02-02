@@ -26,7 +26,7 @@ include_directories(
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PROJECT_ROOT}/thirdparty/CLI11/include
 	${PROJECT_ROOT}/thirdparty/ubnt_speexdsp/build/${UBNT_PLATFORM_NAME}/include/speex
-    ${SOURCES_ROOT}/speech_enhance/include/
+    ${SOURCES_ROOT}/mic_array/include/
 	${LIBSNDFILE_INCLUDE_DIRS}
 )
 
@@ -48,7 +48,7 @@ target_link_libraries(
 	-L${PROJECT_ROOT}/thirdparty/ubnt_speexdsp/build/${UBNT_PLATFORM_NAME}/lib
 	-L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
 	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
-    speech_enhance
+    mic_array
     -lspeexdsp
 	-lfftw3f
 	-lsndfile

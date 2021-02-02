@@ -1,12 +1,11 @@
-#ifndef __SPEECH_ENHANCE_INTERNAL_H__
-#define __SPEECH_ENHANCE_INTERNAL_H__
+#ifndef __MIC_ARRAY_INTERNAL_H__
+#define __MIC_ARRAY_INTERNAL_H__
 
 #include "AutoGainCtrl.h"
 #include "Beamformer.h"
 #include "CepstrumVAD.h"
 #include "NoiseReduce.h"
 #include "SoundLocater.h"
-#include "SpecFlatVAD.h"
 #include "Biquad.h"
 #include "basic_op.h"
 #include "fftwrap.h"
@@ -18,7 +17,7 @@
 // #define _NS_ENABLE
 // #define _AGC_ENABLE
 
-typedef struct _SpeechEnhance {
+typedef struct _MicArray {
     CepstrumVAD stCepstrumVAD;
     NoiseReduce stSnrEst;
     Beamformer stBeamformer;
@@ -60,6 +59,6 @@ typedef struct _SpeechEnhance {
     uint32_t nshift;
     uint32_t fftlen;
     uint32_t ref_ch;
-} SpeechEnhance;
+} MicArray;
 
-#endif // __SPEECH_ENHANCE_INTERNAL_H__
+#endif // __MIC_ARRAY_INTERNAL_H__

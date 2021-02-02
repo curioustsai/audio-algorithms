@@ -1,14 +1,14 @@
-#include "SpeechEnhance_Internal.h"
+#include "MicArray_Internal.h"
 #include <stdlib.h>
 
-int32_t SpeechEnhance_Init(void** pHandle, uint32_t sample_rate, uint32_t nchannel, uint32_t fftlen,
+int32_t MicArray_Init(void** pHandle, uint32_t sample_rate, uint32_t nchannel, uint32_t fftlen,
                            uint32_t nframe) {
     uint32_t idx;
     uint32_t nshift = fftlen - nframe;
     uint32_t half_fftlen = uiv_half_fftlen(fftlen);
-    SpeechEnhance* handle;
+    MicArray* handle;
 
-    handle = calloc(1, sizeof(SpeechEnhance));
+    handle = calloc(1, sizeof(MicArray));
 
     handle->sample_rate = sample_rate;
     handle->fftlen = fftlen;
@@ -64,7 +64,7 @@ int32_t SpeechEnhance_Init(void** pHandle, uint32_t sample_rate, uint32_t nchann
     return 0;
 }
 
-int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* output) {
+int32_t MicArray_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* output) {
     uint32_t idx_l, idx_c;
     uint32_t vad;
     uint32_t speech_status, noise_status;
@@ -73,7 +73,7 @@ int32_t SpeechEnhance_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t*
     float spp_mean;
 #endif
 
-    SpeechEnhance* const handle = hSpeechEnance;
+    MicArray* const handle = hSpeechEnance;
     const uint32_t nchannel = handle->nchannel;
     const uint32_t nframe = handle->nframe;
     const uint32_t nshift = handle->nshift;
@@ -213,8 +213,8 @@ DEBUG_LOOP:
     return 0;
 }
 
-int32_t SpeechEnhance_Release(void* hSpeechEnhance) {
-    SpeechEnhance* handle = (SpeechEnhance*)hSpeechEnhance;
+int32_t MicArray_Release(void* hMicArray) {
+    MicArray* handle = (MicArray*)hMicArray;
 
     uiv_fft_destroy(handle->fft_lookup);
     free(handle->fftwin);

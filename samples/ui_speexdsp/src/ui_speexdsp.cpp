@@ -1,4 +1,4 @@
-#include "SpeechEnhance.h"
+#include "MicArray.h"
 #include "speex/speex_echo.h"
 #include "speex/speex_preprocess.h"
 
@@ -12,7 +12,7 @@
 int main(int argc, char **argv) {
     SpeexPreprocessState *den_st;
     SpeexEchoState *echo_st;
-    void *hSpeechEnhance;
+    void *hMicArray;
 
     std::string inputFilePath, outputFilePath, refFilePath;
     short *data, *mic_data, *ref_data, *echo_out, *bf_out;
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     }
 
     if (enable_bf) {
-        SpeechEnhance_Init(&hSpeechEnhance, sample_rate, num_channel, fftlen, frame_size);
+        MicArray_Init(&hMicArray, sample_rate, num_channel, fftlen, frame_size);
     }
 
     /* denoise */
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
         }
 
         if (num_channel >= 2) {
-            SpeechEnhance_Process(hSpeechEnhance, data, bf_out);
+            MicArray_Process(hMicArray, data, bf_out);
             data = bf_out;
         }
 
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
         count++;
     }
 
-    if (enable_bf) SpeechEnhance_Release(hSpeechEnhance);
+    if (enable_bf) MicArray_Release(hMicArray);
     if (enable_aec) speex_echo_state_destroy(echo_st);
     speex_preprocess_state_destroy(den_st);
 

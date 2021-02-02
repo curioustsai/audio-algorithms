@@ -1,9 +1,9 @@
-#include "SpeechEnhance.h"
+#include "MicArray.h"
 
 #ifdef AUDIO_ALGO_DEBUG
 #include "bmp.h"
 #include "math.h"
-#include "SpeechEnhance_Internal.h"
+#include "MicArray_Internal.h"
 #endif
 
 #include <stdint.h>
@@ -40,7 +40,7 @@ char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, ch
 int32_t simulator(char* input_filename) {
     char filename[LEN_FILENAME];
 
-    void* hSpeechEnhance;
+    void* hMicArray;
     uint32_t sample_rate, nchannel, nframe, fftlen;
 #ifdef AUDIO_ALGO_DEBUG
     uint32_t tfbmp_size, total_frame;
@@ -160,14 +160,14 @@ int32_t simulator(char* input_filename) {
     if (NULL == input_q15 || NULL == output_q15) return -1;
 
     /* Internal Memory */
-    SpeechEnhance_Init(&hSpeechEnhance, sample_rate, nchannel, fftlen, nframe);
+    MicArray_Init(&hMicArray, sample_rate, nchannel, fftlen, nframe);
 
     int readcount = nframe * nchannel;
     frame_cnt = 0;
 
 	clock_t tick = clock();
     while ((readcount = sf_read_short(infile, input_q15, readcount)) == nframe*nchannel) {
-        SpeechEnhance_Process(hSpeechEnhance, input_q15, output_q15);
+        MicArray_Process(hMicArray, input_q15, output_q15);
 		for (int idx_l = 0;  idx_l < nframe; ++idx_l) {
             out_buf[NCH_OUTPUT * idx_l + 0] = input_q15[idx_l*nchannel];
             out_buf[NCH_OUTPUT * idx_l + 1] = output_q15[idx_l];
@@ -178,7 +178,7 @@ int32_t simulator(char* input_filename) {
 		/**
 		 * sndfile
 		 */
-        SpeechEnhance* ptr = (SpeechEnhance*)hSpeechEnhance;
+        MicArray* ptr = (MicArray*)hMicArray;
         for (int idx_l = 0; idx_l < nframe; ++idx_l) {
             // DOA
             doa_buf[NCH_DOA * idx_l + 0] = input_q15[idx_l*nchannel];
@@ -268,7 +268,7 @@ int32_t simulator(char* input_filename) {
 	tick = clock() - tick;
 	printf("total tick: %ld, times: %fsec\n", tick, ((float)tick / CLOCKS_PER_SEC));
 
-    SpeechEnhance_Release(hSpeechEnhance);
+    MicArray_Release(hMicArray);
     free(input_q15);
     free(output_q15);
     free(out_buf);
