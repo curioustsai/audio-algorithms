@@ -1,6 +1,10 @@
 #ifndef __CEPSTRUM_VAD_H__
 #define __CEPSTRUM_VAD_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #include <stdint.h>
 
 typedef struct _CepstrumVAD {
@@ -24,8 +28,12 @@ typedef struct _CepstrumVAD {
     void* fft_lookup;
 } CepstrumVAD;
 
-int32_t CepstrumVAD_Init(CepstrumVAD* handle, uint16_t fftlen, uint16_t sample_rate);
+int32_t CepstrumVAD_Init(CepstrumVAD* handle, uint32_t fftlen, uint32_t sample_rate);
 uint32_t CepstrumVAD_Process(CepstrumVAD* handle, float* input);
 int32_t CepstrumVAD_Release(CepstrumVAD* handle);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif

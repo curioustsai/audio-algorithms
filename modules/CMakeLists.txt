@@ -10,3 +10,7 @@ if (${UBNT_PLATFORM_NAME} STREQUAL "x86")
 add_subdirectory(audio_events)
 add_subdirectory(mic_array)
 endif()
+
+if(UBNT_WITH_TESTS)
+    add_subdirectory(test)
+endif()

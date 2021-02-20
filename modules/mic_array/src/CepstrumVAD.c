@@ -3,7 +3,7 @@
 #include "fftwrap.h"
 #include <stdlib.h>
 
-int32_t CepstrumVAD_Init(CepstrumVAD* handle, uint16_t fftlen, uint16_t sample_rate) {
+int32_t CepstrumVAD_Init(CepstrumVAD* handle, uint32_t fftlen, uint32_t sample_rate) {
     uint32_t cep_size;
     uint32_t half_fftlen = uiv_half_fftlen(fftlen);
 
