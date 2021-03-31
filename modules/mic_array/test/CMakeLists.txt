@@ -8,7 +8,6 @@ function(
     TEST_NAME
     SRCS
 )
-    message(${SRCS})
     add_executable(${TEST_NAME} ${SRCS})
     target_compile_options(${TEST_NAME} PRIVATE -g)
     target_include_directories(
@@ -20,7 +19,7 @@ function(
 
     target_link_libraries(
         ${TEST_NAME}
-	    -L${PROJECT_ROOT}/thirdparty/ubnt_speexdsp/build/${UBNT_PLATFORM_NAME}/lib
+        mic_array
 	    -lfftw3f
         gmock
         gmock_main
@@ -29,15 +28,14 @@ function(
         pthread
         )
 
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
 endfunction()
 
 file(
     GLOB
     SRCS_test_mic_array
-    ${SOURCES_ROOT}/mic_array/test/test_mic_array.cpp
-    ${SOURCES_ROOT}/mic_array/src/*.c
+    ${SOURCES_ROOT}/mic_array/test/*.cpp
 )
 
 register_test(

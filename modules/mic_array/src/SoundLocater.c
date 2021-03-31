@@ -33,9 +33,61 @@ float amax_f32(float *array, int len, int *index) {
     return max_value;
 }
 
+int SoundLocater_ParamCtrl(SoundLocater *handle, int request, void *ptr) {
+    int nchannel = handle->nchannel;
+
+    switch (request) {
+        case SOUNDLOCATOR_SET_MICARRAY:
+            if (ptr == NULL) return -1;
+
+            float *setMicPos = (float *)ptr;
+
+            for (int mic_index = 0; mic_index < nchannel; mic_index++) {
+                handle->micPos[mic_index][0] = setMicPos[3 * mic_index];
+                handle->micPos[mic_index][1] = setMicPos[3 * mic_index + 1];
+                handle->micPos[mic_index][2] = setMicPos[3 * mic_index + 2];
+            }
+            break;
+
+        case SOUNDLOCATOR_GET_MICARRAY:
+            if (ptr == NULL) return -1;
+
+            float *retMicPos = (float *)ptr;
+
+            for (int mic_index = 0; mic_index < nchannel; mic_index++) {
+                retMicPos[3 * mic_index + 0] = handle->micPos[mic_index][0];
+                retMicPos[3 * mic_index + 1] = handle->micPos[mic_index][1];
+                retMicPos[3 * mic_index + 2] = handle->micPos[mic_index][2];
+            }
+
+            break;
+
+        case SOUNDLOCATOR_SET_FREETRACK:
+            handle->free_tracking_mode = (*(uint32_t *)ptr);
+            break;
+
+        case SOUNDLOCATOR_GET_FREETRACK:
+            (*(uint32_t *)ptr) = handle->free_tracking_mode;
+            break;
+
+        case SOUNDLOCATOR_SET_TARGETANGLE:
+            handle->target_angle = (*(int *)ptr);
+            break;
+
+        case SOUNDLOCATOR_GET_TARGETANGLE:
+            (*(int *)ptr) = handle->target_angle;
+            break;
+
+        default:
+            printf("not support request\n");
+            return -1;
+    }
+    return 1;
+}
+
 void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint32_t nchannel) {
-	int i, j, q;
-	int axis, pair_id;
+    int i, j, q;
+    int axis, pair_id;
 
     handle->fn = 0;
     handle->fs = fs;
@@ -71,39 +123,48 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     /**
 	 * Projection
 	 */
-    handle->micPos = calloc(handle->num_pair, sizeof(float[3]));
-    handle->basis = calloc(handle->num_pair, sizeof(float[3]));
 
-#if 1
-    handle->micPos[0][0] = 0.02f;
-    handle->micPos[0][1] = 0.f;
-    handle->micPos[0][2] = 0.f;
+    handle->micPos = (float **)malloc(handle->nchannel * sizeof(float *));
+    for (i = 0; i < handle->nchannel; i++) {
+        handle->micPos[i] = (float *)malloc(sizeof(float) * 3);
+    }
+    handle->basis = (float **)malloc(handle->num_pair * sizeof(float *));
+    for (i = 0; i < handle->num_pair; i++) {
+        handle->basis[i] = (float *)malloc(sizeof(float) * 3);
+    }
 
-    handle->micPos[1][0] = -0.02f;
-    handle->micPos[1][1] = 0.f;
-    handle->micPos[1][2] = 0.f;
+    /* handle->micPos = calloc(handle->nchannel, sizeof(float[3])); */
+    /* handle->basis = calloc(handle->num_pair, sizeof(float[3])); */
 
-    handle->micPos[2][0] = 0.f;
-    handle->micPos[2][1] = 0.0523f;
-    handle->micPos[2][2] = 0.f;
-#else
-    handle->micPos[0][0] = 0.043f * cosf(60.f / 180.f * M_PI);
-    handle->micPos[0][1] = 0.043f * sinf(60.f / 180.f * M_PI);
-    handle->micPos[0][2] = 0.f;
+    if (handle->nchannel == 3) {
+        handle->micPos[0][0] = 0.02f;
+        handle->micPos[0][1] = 0.f;
+        handle->micPos[0][2] = 0.f;
 
-    handle->micPos[1][0] = 0.043f * cosf(120.f / 180.f * M_PI);
-    handle->micPos[1][1] = 0.043f * sinf(120.f / 180.f * M_PI);
-    handle->micPos[1][2] = 0.f;
+        handle->micPos[1][0] = -0.02f;
+        handle->micPos[1][1] = 0.f;
+        handle->micPos[1][2] = 0.f;
 
-    handle->micPos[2][0] = 0.043f * cosf(-120.f / 180.f * M_PI);
-    handle->micPos[2][1] = 0.043f * sinf(-120.f / 180.f * M_PI);
-    handle->micPos[2][2] = 0.f;
+        handle->micPos[2][0] = 0.f;
+        handle->micPos[2][1] = 0.0523f;
+        handle->micPos[2][2] = 0.f;
+    } else if (handle->nchannel == 4) {
+        handle->micPos[0][0] = 0.043f * cosf(60.f / 180.f * M_PI);
+        handle->micPos[0][1] = 0.043f * sinf(60.f / 180.f * M_PI);
+        handle->micPos[0][2] = 0.f;
 
-    handle->micPos[3][0] = 0.043f * cosf(-60.f / 180.f * M_PI);
-    handle->micPos[3][1] = 0.043f * sinf(-60.f / 180.f * M_PI);
-    handle->micPos[3][2] = 0.f;
+        handle->micPos[1][0] = 0.043f * cosf(120.f / 180.f * M_PI);
+        handle->micPos[1][1] = 0.043f * sinf(120.f / 180.f * M_PI);
+        handle->micPos[1][2] = 0.f;
 
-#endif
+        handle->micPos[2][0] = 0.043f * cosf(-120.f / 180.f * M_PI);
+        handle->micPos[2][1] = 0.043f * sinf(-120.f / 180.f * M_PI);
+        handle->micPos[2][2] = 0.f;
+
+        handle->micPos[3][0] = 0.043f * cosf(-60.f / 180.f * M_PI);
+        handle->micPos[3][1] = 0.043f * sinf(-60.f / 180.f * M_PI);
+        handle->micPos[3][2] = 0.f;
+    }
 
     handle->theta_rad = 0;
     handle->phi_rad = 0;
@@ -557,6 +618,7 @@ void SoundLocater_Cluster(SoundLocater *handle, uint32_t angle_deg, float gccVal
 }
 
 void SoundLocater_Release(SoundLocater *handle) {
+	int i;
     uiv_fft_destroy(handle->fft_lookup);
 
     free(handle->candidate_angle);
@@ -569,8 +631,10 @@ void SoundLocater_Release(SoundLocater *handle) {
     free(handle->gphat);
     free(handle->ifft);
 
-    free(handle->micPos);
-    free(handle->basis);
+    for (i = 0; i < handle->nchannel; i++) { free(handle->micPos[i]); }
+    for (i = 0; i < handle->nchannel; i++) { free(handle->basis[i]); }
+	free(handle->micPos);
+	free(handle->basis);
     free(handle->project_matrix);
 
     free(handle->vadBuf);

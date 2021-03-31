@@ -17,7 +17,7 @@
 #define LEN_FILENAME 256
 #define NCH_OUTPUT 2
 #define NCH_CEP 3
-#define NCH_NR 5
+#define NCH_NR 4
 #define NCH_AGC 3
 #define NCH_DOA 6
 #define NCH_CLUSTER 4

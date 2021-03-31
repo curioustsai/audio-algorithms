@@ -179,6 +179,9 @@ void Beamformer_UpdateSteeringVector(Beamformer *handle, uint32_t update_speech,
 
 int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint32_t update_speech,
                                     uint32_t update_noise) {
+
+    if ((0 == update_speech) && (0 == update_noise)) { return -1; }
+
     uint32_t half_fftlen = handle->half_fftlen;
     uint32_t nchannel = handle->nchannel;
 
@@ -189,8 +192,6 @@ int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint32_t update_speech,
     complex float *num = calloc(nchannel * 1, sizeof(complex float));
     complex float *steering_hmt = calloc(nchannel * 1, sizeof(complex float));
     complex float den;
-
-    if ((0 == update_speech) && (0 == update_noise)) { return -1; }
 
     for (int k = 0; k < half_fftlen; k++) {
         complex float *steering = &handle->steering[k * nchannel];
