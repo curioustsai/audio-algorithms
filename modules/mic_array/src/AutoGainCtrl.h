@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 typedef struct _AutoGainCtrl {
 	uint32_t nframe;
 	float tpka_fp;
@@ -16,5 +20,9 @@ typedef struct _AutoGainCtrl {
 int32_t AutoGainCtrl_Init(AutoGainCtrl* handle, float tpka_fp, uint32_t nframe, float g_min, float g_max);
 int32_t AutoGainCtrl_Process(AutoGainCtrl* handle, float* input, uint32_t speech_frame, float spp, float* output);
 int32_t AutoGainCtrl_Release(AutoGainCtrl* handle);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif

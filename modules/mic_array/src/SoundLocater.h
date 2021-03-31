@@ -1,9 +1,14 @@
 #ifndef __SOUNDLOCATOR_H__
 #define __SOUNDLOCATOR_H__
 
-#include "basic_op.h"
+// #include "basic_op.h"
 #include <stdint.h>
 #include <complex.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 
 typedef struct _SoundLocater {
     float sound_speed;
@@ -27,21 +32,21 @@ typedef struct _SoundLocater {
     uint32_t half_fftlen_interpl;
     float *candidate_angle; // length: num_angle_samples
     uint32_t *mapper;       // length: num_angle_samples * num_pair
-    complex float *xcorr;   // length: half_fftlen * num_pair
+    _Complex float *xcorr;   // length: half_fftlen * num_pair
     float *theta_pair_rad;
     float *theta_pair_deg;
     void *fft_lookup;
 
     // local use buffer, can be replace with scratch memory
-    complex float *xcorr_interpl;
+    _Complex float *xcorr_interpl;
     float *gphat;
     float *ifft;
 
     /**
 	 * Projection
 	 */
-    float (*micPos)[3]; // 0: x, 1: y, 2: z
-    float (*basis)[3];  // 0: x, 1: y, 2: z
+	float **micPos;		// nChannel * {x , y, z}
+	float **basis;		// num_pair * {x , y, z}
     float theta_rad;    // [-pi, pi]
     float theta_deg;    // [ 0, 180]
     float phi_rad;      // [-pi, pi]
@@ -97,11 +102,20 @@ typedef struct _SoundLocater {
 } SoundLocater;
 
 void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint32_t nchannel);
-void SoundLocater_FindDoa(SoundLocater *handle, complex float *X, uint32_t *angle_deg,
+void SoundLocater_FindDoa(SoundLocater *handle, _Complex float *X, uint32_t *angle_deg,
                           float *energy);
 void SoundLocater_Cluster(SoundLocater *handle, uint32_t angle_deg, float gccVal, uint32_t vad,
                           int *inbeam, int *outbeam);
 void SoundLocater_Release(SoundLocater *handle);
+
+int SoundLocater_ParamCtrl(SoundLocater *handle, int request, void *ptr);
+
+#define SOUNDLOCATOR_SET_MICARRAY 0
+#define SOUNDLOCATOR_GET_MICARRAY 1
+#define SOUNDLOCATOR_SET_FREETRACK 2
+#define SOUNDLOCATOR_GET_FREETRACK 3
+#define SOUNDLOCATOR_SET_TARGETANGLE 4
+#define SOUNDLOCATOR_GET_TARGETANGLE 5
 
 /*static function */
 // void SoundLocater_GccPhat();
@@ -111,5 +125,8 @@ void SoundLocater_Release(SoundLocater *handle);
 // void SoundLocater_RetainAngle();
 // void SoundLocater_InBeamDet();
 // void SoundLocater_OutBeamDet();
+#ifdef __cplusplus
+}
+#endif 
 
 #endif // __SOUNDLOCATOR_H__

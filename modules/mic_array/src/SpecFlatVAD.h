@@ -1,6 +1,10 @@
 #ifndef __SPECFLAT_VAD_H__
 #define __SPECFLAT_VAD_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #include <stdint.h>
 
 typedef struct _SpecFlatVAD {
@@ -24,5 +28,9 @@ typedef struct _SpecFlatVAD {
 int32_t SpecFlatVAD_Init(SpecFlatVAD* handle, uint32_t fftlen, uint32_t sample_rate);
 uint32_t SpecFlatVAD_Process(SpecFlatVAD* handle, float* input);
 int32_t SpecFlatVAD_Release(SpecFlatVAD* handle);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif // __SPECFLAT_VAD_H__

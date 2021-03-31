@@ -1,11 +1,11 @@
 #ifndef __CEPSTRUM_VAD_H__
 #define __CEPSTRUM_VAD_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif 
-
-#include <stdint.h>
 
 typedef struct _CepstrumVAD {
     uint32_t fftlen;

@@ -1,6 +1,10 @@
 #ifndef __BIQUAD_H__
 #define __BIQUAD_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 // #include <stdint.h>
 // typedef int16_t Word16;
 // typedef int32_t Word32;
@@ -18,6 +22,10 @@ typedef struct _BiquiadFilter {
 		
 void Biquad_Init(BiquadFilter *handle);
 void Biquad_Process(BiquadFilter *bqfilter, float *input, float *output, int num);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif // __BIQUAD_H__
 

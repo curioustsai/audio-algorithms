@@ -2,8 +2,11 @@
 #define __BASIC_OP_H__
 
 #include "stdint.h"
-#include "math.h"
-/* use sqrt in math */
+#include "math.h" /* use sqrt in math */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* arm_cmplx_dot_prod_f32 */
 
@@ -80,6 +83,10 @@ void uiv_mean_f32(const float *pSrc, uint32_t block_size, float *mean);
 void uiv_cmplx_mag_squared_f32( const float * pSrc, float * pDst, uint32_t numSamples);
 void uiv_cmplx_mag_f32( const float * pSrc, float * pDst, uint32_t numSamples);
 void uiv_max_f32(const float *buf, uint32_t size, float * max_value , uint32_t *max_idx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __BASIC_OP_H__
 

@@ -1,6 +1,10 @@
 #ifndef __NOISE_REDUCE_H__
 #define __NOISE_REDUCE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #include <stdint.h>
 
 #define MAX_NBAND	3
@@ -36,5 +40,9 @@ int32_t NoiseReduce_EstimateNoise(NoiseReduce* handle, float* power, uint32_t fr
 int32_t NoiseReduce_SnrVAD(NoiseReduce* handle);
 int32_t NoiseReduce_WienerFilter(NoiseReduce* handle, float* input, float* output);
 int32_t NoiseReduce_Release(NoiseReduce* handle);
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif // __NOISE_REDUCE_H__
