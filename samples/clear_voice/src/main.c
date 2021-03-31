@@ -119,7 +119,9 @@ int32_t simulator(char* input_filename) {
 
     int16_t* cep_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_cep.channels));
     int16_t* nr_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_nr.channels));
+#ifdef _AGC_ENABLE
     int16_t* agc_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_agc.channels));
+#endif
     int16_t* doa_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_doa.channels));
     int16_t* cluster_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_cluster.channels));
 
@@ -218,7 +220,9 @@ int32_t simulator(char* input_filename) {
         sf_write_short(cluster_file, cluster_buf, nframe * NCH_CLUSTER);
         sf_write_short(cep_file, cep_buf, nframe * NCH_CEP);
         sf_write_short(nr_file, nr_buf, nframe * NCH_NR);
+#ifdef _AGC_ENABLE
         sf_write_short(agc_file, agc_buf, nframe * NCH_AGC);
+#endif
 
 		/**
 		 * bmp
@@ -281,7 +285,9 @@ int32_t simulator(char* input_filename) {
 	 */
     free(doa_buf);
     free(cluster_buf);
+#ifdef _AGC_ENABLE
     free(agc_buf);
+#endif
     free(nr_buf);
     free(cep_buf);
     sf_close(doa_file);
