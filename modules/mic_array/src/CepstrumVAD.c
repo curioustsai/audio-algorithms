@@ -122,7 +122,7 @@ uint32_t CepstrumVAD_Process(CepstrumVAD* handle, float* ref_pow) {
 
     // all value in pitch buf is 0, set pitch to 0.
     idx = 0;
-    while ((handle->pitchBuf[idx] == 0) && (idx < (handle->pitchBufLen-1))) ++idx;
+    while ((idx < handle->pitchBufLen) && (handle->pitchBuf[idx] == 0)) ++idx;
     if (idx == handle->pitchBufLen) handle->pitch = 0;
 
     return handle->vad;

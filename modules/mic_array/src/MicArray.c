@@ -1,8 +1,16 @@
 #include "MicArray_Internal.h"
 #include <stdlib.h>
 
+#define _DUMP_FFT
+#ifdef _DUMP_FFT
+#include <stdio.h>
+FILE* fptr_fft;
+FILE* fptr_xiter;
+FILE* fptr_speech;
+#endif
+
 int32_t MicArray_Init(void** pHandle, uint32_t sample_rate, uint32_t nchannel, uint32_t fftlen,
-                           uint32_t nframe) {
+                      uint32_t nframe) {
     uint32_t idx;
     uint32_t nshift = fftlen - nframe;
     uint32_t half_fftlen = uiv_half_fftlen(fftlen);
@@ -60,6 +68,12 @@ int32_t MicArray_Init(void** pHandle, uint32_t sample_rate, uint32_t nchannel, u
     AutoGainCtrl_Init(&handle->stAGC, 32767.0f / 2.0f, nframe, 1.0f / 8.0f, 2.0f);
 #endif
     *pHandle = handle;
+
+#ifdef _DUMP_FFT
+    fptr_fft = fopen("fft.bin", "wb");
+    fptr_xiter = fopen("xiter.bin", "wb");
+	fptr_speech = fopen("speech.bin", "wb");
+#endif
 
     return 0;
 }
@@ -136,6 +150,11 @@ int32_t MicArray_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* outp
         }
     }
 
+#ifdef _DUMP_FFT
+    fwrite(inputs_f, half_fftlen * 2, sizeof(float), fptr_fft);
+    fwrite(X_itr, half_fftlen * 2 * nchannel, sizeof(float), fptr_xiter);
+#endif
+
     /* Calculate Ref-ch Power*/
     ref_input = inputs_f + ref_ch * fftlen;
     uiv_cmplx_mag_squared_f32(ref_input, ref_power, half_fftlen);
@@ -152,6 +171,9 @@ int32_t MicArray_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* outp
     float energy;
     int inbeam, outbeam;
 
+#ifdef _DUMP_FFT
+	fwrite(&handle->stSnrEst.speech_frame, 1, sizeof(uint32_t), fptr_speech);
+#endif
     SoundLocater_FindDoa(&handle->stSoundLocater, (complex float*)inputs_f, &angle_deg, &energy);
     SoundLocater_Cluster(&handle->stSoundLocater, angle_deg, energy, handle->stSnrEst.speech_frame,
                          &inbeam, &outbeam);
@@ -243,6 +265,14 @@ int32_t MicArray_Release(void* hMicArray) {
 #ifdef _AGC_ENABLE
     AutoGainCtrl_Release(&handle->stAGC);
 #endif
+
+#ifdef _DUMP_FFT
+    fclose(fptr_fft);
+    fclose(fptr_xiter);
+	fclose(fptr_speech);
+#endif
+
+	free(handle);
 
     return 0;
 }
