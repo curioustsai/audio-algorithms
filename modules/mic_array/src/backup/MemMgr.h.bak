@@ -1,0 +1,35 @@
+#ifndef __MEM_ALLOC_H__
+#define __MEM_ALLOC_H__
+
+#include <stdint.h>
+
+#define MEM_ALIGN       4
+
+typedef struct _MemMgr {
+	void* line_memory;
+	void* scratch_memory;
+	uint32_t line_size;
+	uint32_t line_used;
+	uint32_t scratch_size;
+	uint8_t interal_alloc;
+} MemMgr;
+
+void* MemMgr_alloc_line_8(MemMgr *hMemMgr, uint32_t length);
+void* MemMgr_alloc_line_16(MemMgr *hMemMgr, uint32_t length);
+void* MemMgr_alloc_line_32(MemMgr* hMemMgr, uint32_t length);
+
+uint32_t MemMgr_SzCnt_8(uint32_t length);
+uint32_t MemMgr_SzCnt_16(uint32_t length);
+uint32_t MemMgr_SzCnt_32(uint32_t length);
+
+void MemMgr_InitZero(MemMgr *hMemMgr);
+int32_t MemMgr_AllocMem(MemMgr *hMemMgr);
+int32_t MemMgr_AssignMem(MemMgr *hMemMgr, void* pMemBlock, uint32_t blockSize);
+uint32_t MemMgr_Release(MemMgr *hMemMgr);
+
+#ifdef AUDIO_ALGO_DEBUG
+void MemMgr_ShowSize(MemMgr* hMemMgr);
+#endif // AUDIO_ALGO_DEBUG
+
+
+#endif /* __MEM_ALLOC_H__ */

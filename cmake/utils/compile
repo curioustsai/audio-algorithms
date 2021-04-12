@@ -9,13 +9,14 @@ printHelp() {
 	echo ""
 	echo "    -p    Platform which can be: ${UBNT_PLATFORMS_LIST[*]}. There is no default value. This is mandatory."
 	echo "    -t    Build the tests."
-	echo "    -g    Build with log level debug."
+	echo "    -d    Build with log level debug."
 	echo "    -b    The build type which can be Debug, Release or MinSizeRel. Default is MinSizeRel."
 	echo "    -l    How the libraries will be built. Either STATIC or SHARED. Default is STATIC."
 	echo "    -j    How many compilation units will be done simultaneously. Default is 4."
 	echo "    -n    Skip all intermediate steps and perform the build directly"
 	echo "    -c    Do clean before build"
 	echo "    -v    Enable verbose build"
+	echo "    -g    Audio log level: 'debug', 'info', 'warn', 'off'. Default is 'warn'"
 	echo "    -h    Prints this help and exits."
 	echo ""
 }
@@ -126,6 +127,8 @@ then
 	exit 0
 fi
 
+echo "${UBNT_PLATFORM_TYPE}"
+
 if [ "${UBNT_PLATFORM_TYPE}" != "x86" ]
 then
 	#------------- initialize variables for various parts of the scripts -----------
@@ -173,3 +176,7 @@ cd ${UBNT_WORK_DIR} && \
 #------------------- post-build actions ----------------------------------------
 
 tree -s ${UBNT_ROOTFS_DIR}
+
+if [ "${UBNT_WITH_TESTS}" == "ON" ]; then
+    cd $UBNT_WORK_DIR && ctest
+fi

@@ -1,21 +1,23 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-
-#include <sndfile.h>
-
-#include "SpeechEnhance.h"
-#include "SpeechEnhance_Internal.h"
+#include "MicArray.h"
 
 #ifdef AUDIO_ALGO_DEBUG
 #include "bmp.h"
+#include "math.h"
+#include "MicArray_Internal.h"
 #endif
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <sndfile.h>
+
 
 #define LEN_FILENAME 256
 #define NCH_OUTPUT 2
 #define NCH_CEP 3
-#define NCH_NR 5
+#define NCH_NR 4
 #define NCH_AGC 3
 #define NCH_DOA 6
 #define NCH_CLUSTER 4
@@ -38,7 +40,7 @@ char* replace_subffix(char* str_in, char* str_out, int len_out, char* target, ch
 int32_t simulator(char* input_filename) {
     char filename[LEN_FILENAME];
 
-    void* hSpeechEnhance;
+    void* hMicArray;
     uint32_t sample_rate, nchannel, nframe, fftlen;
 #ifdef AUDIO_ALGO_DEBUG
     uint32_t tfbmp_size, total_frame;
@@ -60,34 +62,27 @@ int32_t simulator(char* input_filename) {
 
     sample_rate = sfinfo_in.samplerate;
     nchannel = sfinfo_in.channels;
-#ifdef AUDIO_ALGO_DEBUG
-    total_length = sfinfo_in.frames;
-#endif
 
 	if (sample_rate == 16000) {
     	nframe = 256;
 		fftlen = 512;
-#ifdef AUDIO_ALGO_DEBUG
-		half_fftlen = 256;
-#endif
 	} else if  (sample_rate == 48000) {
 		nframe = 1024;
 		fftlen = 2048;
-#ifdef AUDIO_ALGO_DEBUG
-		half_fftlen = 1024;
-#endif
 	} else {
 		printf("not supported sample rate\n");
 		return -1;
 	}
-    /* limit length */
-    /* frame_stop = 5000; */
-    /* total_length = min(total_length, frame_stop * nframe); */
 
 #ifdef AUDIO_ALGO_DEBUG
+	half_fftlen = fftlen >> 1;
+    total_length = sfinfo_in.frames;
     total_frame = total_length / nframe;
     tfbmp_size = bmp_size(total_frame, half_fftlen);
 #endif
+    /* limit length */
+    /* frame_stop = 5000; */
+    /* total_length = min(total_length, frame_stop * nframe); */
 
     memcpy(&sfinfo_out, &sfinfo_in, sizeof(SF_INFO));
     sfinfo_out.channels = NCH_OUTPUT;
@@ -124,7 +119,9 @@ int32_t simulator(char* input_filename) {
 
     int16_t* cep_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_cep.channels));
     int16_t* nr_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_nr.channels));
+#ifdef _AGC_ENABLE
     int16_t* agc_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_agc.channels));
+#endif
     int16_t* doa_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_doa.channels));
     int16_t* cluster_buf = (int16_t*)malloc((sizeof(int16_t) * nframe * sfinfo_cluster.channels));
 
@@ -165,14 +162,14 @@ int32_t simulator(char* input_filename) {
     if (NULL == input_q15 || NULL == output_q15) return -1;
 
     /* Internal Memory */
-    SpeechEnhance_Init(&hSpeechEnhance, sample_rate, nchannel, fftlen, nframe);
+    MicArray_Init(&hMicArray, sample_rate, nchannel, fftlen, nframe);
 
     int readcount = nframe * nchannel;
     frame_cnt = 0;
 
 	clock_t tick = clock();
     while ((readcount = sf_read_short(infile, input_q15, readcount)) == nframe*nchannel) {
-        SpeechEnhance_Process(hSpeechEnhance, input_q15, output_q15);
+        MicArray_Process(hMicArray, input_q15, output_q15);
 		for (int idx_l = 0;  idx_l < nframe; ++idx_l) {
             out_buf[NCH_OUTPUT * idx_l + 0] = input_q15[idx_l*nchannel];
             out_buf[NCH_OUTPUT * idx_l + 1] = output_q15[idx_l];
@@ -183,7 +180,7 @@ int32_t simulator(char* input_filename) {
 		/**
 		 * sndfile
 		 */
-        SpeechEnhance* ptr = (SpeechEnhance*)hSpeechEnhance;
+        MicArray* ptr = (MicArray*)hMicArray;
         for (int idx_l = 0; idx_l < nframe; ++idx_l) {
             // DOA
             doa_buf[NCH_DOA * idx_l + 0] = input_q15[idx_l*nchannel];
@@ -212,18 +209,20 @@ int32_t simulator(char* input_filename) {
             nr_buf[NCH_NR * idx_l + 1] = (int16_t)(ptr->stSnrEst.speech_frame * 16384);
             nr_buf[NCH_NR * idx_l + 2] = (int16_t)(ptr->stSnrEst.noise_frame * 16384);
 			nr_buf[NCH_NR * idx_l + 3] = (int16_t)(ptr->stSnrEst.snr_max * 100);
-			nr_buf[NCH_NR * idx_l + 4] = (int16_t)(ptr->stPostFilt.snr_max * 100);
 
-            // AutoGainCtrl
+#ifdef _AGC_ENABLE
             agc_buf[NCH_AGC * idx_l] = output_q15[idx_l];
             agc_buf[NCH_AGC * idx_l + 1] = (int16_t)(ptr->stAGC.pka_fp);
             agc_buf[NCH_AGC * idx_l + 2] = (int16_t)(ptr->stAGC.last_g_fp * 3276.8f);
+#endif
         }
         sf_write_short(doa_file, doa_buf, nframe * NCH_DOA);
         sf_write_short(cluster_file, cluster_buf, nframe * NCH_CLUSTER);
         sf_write_short(cep_file, cep_buf, nframe * NCH_CEP);
         sf_write_short(nr_file, nr_buf, nframe * NCH_NR);
+#ifdef _AGC_ENABLE
         sf_write_short(agc_file, agc_buf, nframe * NCH_AGC);
+#endif
 
 		/**
 		 * bmp
@@ -273,7 +272,7 @@ int32_t simulator(char* input_filename) {
 	tick = clock() - tick;
 	printf("total tick: %ld, times: %fsec\n", tick, ((float)tick / CLOCKS_PER_SEC));
 
-    SpeechEnhance_Release(hSpeechEnhance);
+    MicArray_Release(hMicArray);
     free(input_q15);
     free(output_q15);
     free(out_buf);
@@ -286,7 +285,9 @@ int32_t simulator(char* input_filename) {
 	 */
     free(doa_buf);
     free(cluster_buf);
+#ifdef _AGC_ENABLE
     free(agc_buf);
+#endif
     free(nr_buf);
     free(cep_buf);
     sf_close(doa_file);
@@ -317,6 +318,11 @@ int32_t simulator(char* input_filename) {
 #endif
 
     return 0;
+}
+
+void printHelp(int argc, char* argv[]) {
+	printf("Usage: %s filelist.txt\n", argv[0]);
+	printf("%s\n", argv[0]);
 }
 
 int32_t main(int argc, char* argv[]) {

@@ -17,14 +17,16 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DAUDIO_ALGO_DEBUG)
+	include_directories(AFTER 
+		${SOURCES_ROOT}/mic_array/src/
+		)
 endif()
 
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
-	# TODO clear include path
-    ${SOURCES_ROOT}/speech_enhance/include/
-    ${SOURCES_ROOT}/speech_enhance/src/
+    ${SOURCES_ROOT}/mic_array/include/
+    ${SOURCES_ROOT}/mic_array/src/
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PYTHON_INCLUDE_DIRS}
@@ -47,7 +49,7 @@ target_link_libraries(
     ${PROJECT_NAME}
 	-L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
 	${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib/libsndfile.a
-	speech_enhance
+	mic_array
 	-lfftw3f
     -lpthread
     -lm
