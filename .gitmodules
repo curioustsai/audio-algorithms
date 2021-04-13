@@ -10,3 +10,6 @@
 [submodule "thirdparty/ubnt_speexdsp"]
 	path = thirdparty/ubnt_speexdsp
 	url = git@github.com:ubiquiti/ubnt_speexdsp.git
+[submodule "thirdparty/soundtouch"]
+	path = thirdparty/soundtouch
+	url = https://gitlab.com/soundtouch/soundtouch.git
