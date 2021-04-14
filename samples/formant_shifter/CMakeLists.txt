@@ -1,5 +1,5 @@
 #Set the name of the project
-project(ui_sample_app)
+project(formant_shifter)
 
 #detect the source files
 file(
