@@ -3,6 +3,11 @@ project(formant_shift)
 
 #detect the source files
 glob_source_files()
+file (
+    GLOB_RECURSE
+    C_SOURCES
+    "${PROJECT_ROOT}/thirdparty/pffft/*.c"
+)
 
 add_definitions(-fexceptions)
 

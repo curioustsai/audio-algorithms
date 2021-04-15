@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "formant_shift.h"
+
+using namespace ubnt;
 
 int main(int argc, char **argv) {
     std::string inputFilePath, pitchFilePath, outputFilePath;
@@ -63,16 +66,33 @@ int main(int argc, char **argv) {
     ps_data = (short *)new short[frame_size];
     out_data = (short *)new short[frame_size];
 
+    float normalize = 1.0f / 32768.0f;
+    float *raw_data_f = (float *)new float[frame_size]();
+    float *ps_data_f = (float *)new float[frame_size]();
+    float *out_data_f = (float *)new float[frame_size]();
+
+    FormantShift formantShift;
+    formantShift.init();
+    formantShift.setShiftTone(3.0f);
     clock_t tick = clock();
 
     int count = 0;
+    while ((frame_size == sf_read_short(infile, raw_data, frame_size))
+				&& (frame_size == sf_read_short(psfile, ps_data, frame_size))) {
+        // Normalize input and pitch shifted data into range -1 ~ 1.
+        for (int i = 0; i < frame_size; i++) {
+            raw_data_f[i] = static_cast<float>(raw_data[i]) * normalize;
+            ps_data_f[i] = static_cast<float>(ps_data[i]) * normalize;
+            out_data_f[i] = 0.0f;
+        }
 
-    while ((frame_size != sf_read_short(infile, raw_data, frame_size))
-				|| (frame_size != sf_read_short(psfile, ps_data, frame_size))) {
-        /* run something here */
-        /* run something here */
-        /* run something here */
-        sf_write_short(outfile, raw_data, frame_size);
+        formantShift.process(ps_data_f, raw_data_f, out_data_f, frame_size);
+
+        for (int i = 0; i < frame_size; i++) {
+            out_data[i] = static_cast<short>(out_data_f[i] * 32768.0f);
+        }
+        
+        sf_write_short(outfile, out_data, frame_size);
         count++;
     }
 
@@ -87,6 +107,10 @@ int main(int argc, char **argv) {
     delete[] raw_data;
     delete[] ps_data;
     delete[] out_data;
+    delete[] raw_data_f;
+    delete[] ps_data_f;
+    delete[] out_data_f;
 
+    formantShift.release();
     return 0;
 }
