@@ -1,0 +1,32 @@
+/**
+ *  Copyright (C) 2021, Ubiquiti Networks, Inc,
+ */
+
+#pragma once
+#include "pffft.h"
+
+namespace ubnt {
+
+class Pffft {
+public:
+    enum class Transform {
+        REAL,
+        COMPLEX,
+    };
+    void init(unsigned int fftSize, Transform type);
+    void release();
+    void setSize(unsigned int fftSize);
+    void fft(float *signal, float *freqResponse, unsigned int frameSize);
+    void ifft(float *freqResponse, float *signal, unsigned int frameSize);
+    void fftOrder(float *signal, float *freqResponse, unsigned int frameSize);
+    void ifftOrder(float *freqResponse, float *signal, unsigned int frameSize);
+
+private:
+    PFFFT_Setup *setup{nullptr};
+    pffft_direction_t direction{PFFFT_FORWARD};
+    pffft_transform_t transform{PFFFT_REAL};
+    unsigned int fftSize{0};
+    float *inBuffer{nullptr};
+    float *outBuffer{nullptr};
+};
+}

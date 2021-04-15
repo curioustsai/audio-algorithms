@@ -16,6 +16,7 @@ include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include
     ${SOURCES_ROOT}/version/
+    ${PROJECT_ROOT}/thirdparty/pffft/
 )
 
 #print some debug info about the list of files and include folders
