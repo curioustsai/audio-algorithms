@@ -20,6 +20,7 @@ public:
     void ifft(float *freqResponse, float *signal, unsigned int frameSize);
     void fftOrder(float *signal, float *freqResponse, unsigned int frameSize);
     void ifftOrder(float *freqResponse, float *signal, unsigned int frameSize);
+    static void getSpectrum(float *freqeuncy, float *spectrum, unsigned int frameSize);
 
 private:
     PFFFT_Setup *setup{nullptr};

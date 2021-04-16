@@ -4,6 +4,7 @@
 #include <cstring>
 #include <algorithm>
 #include "formant_shift.h"
+#include "utils.h"
 
 using namespace ubnt;
 
@@ -59,20 +60,21 @@ void FormantShift::init() {
     cepstrum = new float[processSize]();
     logSpectrum = new float[processSize]();
 
-    // Buffer for windowing
-    window = new float[processSize]();
-    hanning(window, processSize);
-
     // Buffer for formant shift
     inBuffer = new float[processSize]();
-    inBufferWin = new float[processSize]();
     inFrequency = new float[processSize]();
     inSpectrum = new float[processSize]();
     oriBuffer = new float[processSize]();
-    oriBufferWin = new float[processSize]();
     oriSpectrum = new float[processSize]();
     outFrequency = new float[processSize]();
     outBuffer = new float[processSize]();
+
+    inOLA = new OverlapAdd(bufferSize, 
+                            OverlapAdd::WindowType::HANNING,
+                            OverlapAdd::WindowType::NONE);
+    oriOLA = new OverlapAdd(bufferSize, 
+                            OverlapAdd::WindowType::HANNING,
+                            OverlapAdd::WindowType::NONE);
 }
 
 void FormantShift::release() {
@@ -81,20 +83,23 @@ void FormantShift::release() {
     // Buffer for spectrum smoothing
     freeBuffer(&cepstrum);
     freeBuffer(&logSpectrum);
-    
-    // Buffer for windowing
-    freeBuffer(&window);
 
     // Buffer for formant shift
     freeBuffer(&inBuffer);
-    freeBuffer(&inBufferWin);
     freeBuffer(&inFrequency);
     freeBuffer(&inSpectrum);
     freeBuffer(&oriBuffer);
-    freeBuffer(&oriBufferWin);
     freeBuffer(&oriSpectrum);
     freeBuffer(&outFrequency);
     freeBuffer(&outBuffer);
+    
+    if (inOLA != nullptr) {
+        delete inOLA; inOLA = nullptr;
+    }
+
+    if (oriOLA != nullptr) {
+        delete oriOLA; oriOLA = nullptr;
+    }
 }
 
 int FormantShift::process(float* in, float *ori, float* out, unsigned int numSample) {
@@ -105,39 +110,26 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
         release(); init();
     }
 
-    // Very simple ring buffer behavior
-    memcpy(inBuffer, inBuffer + bufferSize, sizeof(float) * bufferSize);
-    memcpy(inBuffer + bufferSize, in, sizeof(float) * bufferSize);
-    memcpy(oriBuffer, oriBuffer + bufferSize, sizeof(float) * bufferSize);
-    memcpy(oriBuffer + bufferSize, ori, sizeof(float) * bufferSize);
-
-    // inBuffer windowing
-    for (unsigned int idx = 0; idx < processSize; idx++) {
-        inBufferWin[idx] = inBuffer[idx] * window[idx];
-        oriBufferWin[idx] = oriBuffer[idx] * window[idx];
-    }
+    // Ring buffer process. Put buffer in and get windowed buffer out
+    // with twice the buffer length.
+    inOLA->setInput(in, bufferSize);
+    inOLA->getInput(inBuffer, processSize);
+    oriOLA->setInput(ori, bufferSize);
+    oriOLA->getInput(oriBuffer, processSize);
 
     // Calculate frequency & spectrum of inBuffer(pitch shifted signal) and oriBuffer(original signal)
-    fft.fftOrder(inBufferWin, inFrequency, processSize);
-    fft.fftOrder(oriBufferWin, oriSpectrum, processSize);
+    fft.fftOrder(inBuffer, inFrequency, processSize);
+    fft.fftOrder(oriBuffer, oriSpectrum, processSize);
 
     // Get spectrum from frequency
-    inSpectrum[0] = fabsf(inFrequency[0]);
-    inSpectrum[1] = fabsf(inFrequency[1]);
-    oriSpectrum[0] = fabsf(oriSpectrum[0]);
-    oriSpectrum[1] = fabsf(oriSpectrum[1]);
-    for (unsigned int idx = 2; idx < processSize; idx+=2) {
-        inSpectrum[idx] = sqrt(inFrequency[idx] * inFrequency[idx] + inFrequency[idx + 1] * inFrequency[idx + 1]);
-        inSpectrum[idx + 1] = 0.0f;
-        oriSpectrum[idx] = sqrt(oriSpectrum[idx] * oriSpectrum[idx] + oriSpectrum[idx + 1] * oriSpectrum[idx + 1]);
-        oriSpectrum[idx + 1] = 0.0f;
-    }
+    Pffft::getSpectrum(inFrequency, inSpectrum, processSize);
+    Pffft::getSpectrum(oriSpectrum, oriSpectrum, processSize);
 
     // Get smoothed formant from spectrum, the output also saved in spectrum variables
     spectralSmooth(inSpectrum, inSpectrum, processSize);
     spectralSmooth(oriSpectrum, oriSpectrum, processSize);
 
-    // Calculate output frequency response
+    // Correct formant of the pitch shifted signal by morphing it into the formant of original signal
     outFrequency[0] = inFrequency[0] * oriSpectrum[0] / std::max<float>(inSpectrum[0], 0.000001f);
     outFrequency[1] = inFrequency[1] * oriSpectrum[1] / std::max<float>(inSpectrum[1], 0.000001f);
     for (unsigned int fIdx = 2; fIdx < processSize; fIdx += 2) {
@@ -147,24 +139,9 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
     }
 
     // Copy the previous half output, which is saved at the later half of outBuffer
-    memcpy(out, outBuffer + bufferSize, sizeof(float) * bufferSize);
     fft.ifftOrder(outFrequency, outBuffer, processSize);
-    for (unsigned int idx = 0; idx < bufferSize; idx++) {
-        out[idx] += outBuffer[idx];
-    }
-    return bufferSize;
-}
+    inOLA->setOutput(outBuffer, processSize);
+    inOLA->getOutput(out, bufferSize);
 
-void FormantShift::hanning(float *window, unsigned int numSample) {
-    const float PI_2 = M_PI + M_PI;
-    const float denom = 1.0f / static_cast<float>(numSample - 1);
-    const int halfSample = numSample >> 1;
-    for (unsigned int i = 0; i < numSample; i++) {
-        window[i] = 0.5f * (1.0f - cos(PI_2 * static_cast<float>(i) * denom));
-        window[numSample - i - 1] = window[i];
-    }
-    // If the numSample is odd number, the center index of window should be calculated
-    if ((numSample & 1) == 1) {
-        window[halfSample + 1] = 0.5f;
-    }
+    return bufferSize;
 }

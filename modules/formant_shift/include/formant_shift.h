@@ -3,7 +3,9 @@
  */
 
 #pragma once
+
 #include "pffftwrap.h"
+#include "overlapAdd.h"
 namespace ubnt {
 
 class FormantShift {
@@ -29,24 +31,14 @@ private:
     float shiftTone{0.0f};
 
     float *inBuffer{nullptr};
-    float *inBufferWin{nullptr};
     float *inFrequency{nullptr};
     float *inSpectrum{nullptr};
     float *oriBuffer{nullptr};
-    float *oriBufferWin{nullptr};
     float *oriSpectrum{nullptr};
     float *outFrequency{nullptr};
     float *outBuffer{nullptr};
-
-    // Generate hanning window
-    float *window{nullptr};
-    void hanning(float *window, unsigned int numSample);
-
-    inline void freeBuffer(float **buf) {
-        if (*buf != nullptr) { 
-            delete[] *buf; *buf = nullptr;
-        }
-    }
+    OverlapAdd *inOLA{nullptr};
+    OverlapAdd *oriOLA{nullptr};
 };
 
-}
+} // ubnt

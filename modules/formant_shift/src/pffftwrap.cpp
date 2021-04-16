@@ -1,25 +1,30 @@
 #include <cstring>
+#include <cmath>
 #include "pffftwrap.h"
 
 using namespace ubnt;
+
+void Pffft::getSpectrum(float *frequency, float *spectrum, unsigned int frameSize) {
+    spectrum[0] = fabsf(frequency[0]);
+    spectrum[1] = fabsf(frequency[1]);
+    for (unsigned int idx = 2; idx < frameSize; idx+=2) {
+        spectrum[idx] = sqrt(frequency[idx] * frequency[idx] + frequency[idx + 1] * frequency[idx + 1]);
+        spectrum[idx + 1] = 0.0f;
+    }
+}
 
 void Pffft::init(unsigned int fftSize, Transform type) {
     this->fftSize = fftSize;
     this->transform = (type == Transform::REAL) ? PFFFT_REAL : PFFFT_COMPLEX;
 
-    if (setup != nullptr) {
-        pffft_destroy_setup(setup);
+    if ((setup != nullptr) ||
+        (inBuffer != nullptr) ||
+        (outBuffer != nullptr))
+    {
+        release();
     }
     setup = pffft_new_setup(fftSize, transform);
-
-    if (inBuffer != nullptr) {
-        pffft_aligned_free(inBuffer); inBuffer = nullptr;
-    }
     inBuffer = (float *)pffft_aligned_malloc((size_t)(fftSize * sizeof(float)));
-
-    if (outBuffer != nullptr) {
-        pffft_aligned_free(outBuffer); outBuffer = nullptr;
-    }
     outBuffer = (float *)pffft_aligned_malloc((size_t)(fftSize * sizeof(float))); 
 }
 

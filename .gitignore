@@ -9,4 +9,4 @@
 /thirdparty/webrtc-audio-processing/
 .vscode
 *CMakeFiles*
-*.cmake
+*cmake_install.cmake
