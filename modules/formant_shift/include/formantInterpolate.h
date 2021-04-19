@@ -1,4 +1,9 @@
-#pragma once
+/**
+ *  Copyright (C) 2021, Ubiquiti Networks, Inc,
+ */
+
+#ifndef __FORMANT_INTERPOLATE_H__
+#define __FORMANT_INTERPOLATE_H__
 
 namespace ubnt {
 
@@ -17,3 +22,5 @@ private:
 };
 
 } // ubnt
+
+#endif // __FORMANT_INTERPOLATE_H__

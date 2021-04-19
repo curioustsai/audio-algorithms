@@ -1,4 +1,9 @@
-#pragma once
+/**
+ *  Copyright (C) 2021, Ubiquiti Networks, Inc,
+ */
+
+#ifndef __OVERLAPADD_H__
+#define __OVERLAPADD_H__
 
 namespace ubnt{
 
@@ -40,3 +45,5 @@ private:
 };
 
 } // ubnt
+
+#endif // __OVERLAPADD_H__

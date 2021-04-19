@@ -1,3 +1,7 @@
+/**
+ *  Copyright (C) 2021, Ubiquiti Networks, Inc,
+ */
+
 #include <cstring>
 #include <cmath>
 #include "pffftwrap.h"

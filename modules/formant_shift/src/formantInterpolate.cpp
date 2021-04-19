@@ -1,3 +1,7 @@
+/**
+ *  Copyright (C) 2021, Ubiquiti Networks, Inc,
+ */
+
 #include <cmath>
 #include <cstring>
 #include "formantInterpolate.h"

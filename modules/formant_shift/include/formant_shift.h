@@ -2,11 +2,13 @@
  *  Copyright (C) 2021, Ubiquiti Networks, Inc,
  */
 
-#pragma once
+#ifndef __FORMANT_SHIFT_H__
+#define __FORMANT_SHIFT_H__
 
 #include "pffftwrap.h"
 #include "overlapAdd.h"
 #include "formantInterpolate.h"
+
 namespace ubnt {
 
 class FormantShift {
@@ -44,3 +46,4 @@ private:
 };
 
 } // ubnt
+#endif // __FORMANT_SHIFT_H__

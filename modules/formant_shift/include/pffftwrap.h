@@ -2,7 +2,9 @@
  *  Copyright (C) 2021, Ubiquiti Networks, Inc,
  */
 
-#pragma once
+#ifndef __PFFFT_H__
+#define __PFFFT_H__
+
 #include "pffft.h"
 
 namespace ubnt {
@@ -31,3 +33,5 @@ private:
     float *outBuffer{nullptr};
 };
 }
+
+#endif // __PFFFT_H__
