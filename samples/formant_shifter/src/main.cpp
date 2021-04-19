@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <algorithm>
+#include <cctype>
 #include "formant_shift.h"
 
 using namespace ubnt;
@@ -11,6 +13,7 @@ using namespace ubnt;
 int main(int argc, char **argv) {
     std::string inputFilePath, pitchFilePath, outputFilePath;
     short *raw_data, *ps_data, *out_data;
+    float shiftTone = 0.0f;
     int frame_size = 1024;
 
     CLI::App app{"Formant Shifter"};
@@ -22,6 +25,9 @@ int main(int argc, char **argv) {
         ->required()
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
+    app.add_option("-s, --shift", shiftTone, "specify the formant shift in semi-tones")
+        ->required()
+        ->check(CLI::Number);
     app.add_option("--frameSize", frame_size, "frame size in samples")->check(CLI::Number);
 
     try {
@@ -73,7 +79,7 @@ int main(int argc, char **argv) {
 
     FormantShift formantShift;
     formantShift.init();
-    formantShift.setShiftTone(3.0f);
+    formantShift.setShiftTone(shiftTone);
     clock_t tick = clock();
 
     int count = 0;
@@ -89,7 +95,7 @@ int main(int argc, char **argv) {
         formantShift.process(ps_data_f, raw_data_f, out_data_f, frame_size);
 
         for (int i = 0; i < frame_size; i++) {
-            out_data[i] = static_cast<short>(out_data_f[i] * 32768.0f);
+            out_data[i] = static_cast<short>(out_data_f[i] * 32768.0f * 0.794328234724281f/* -2dB */);
         }
         
         sf_write_short(outfile, out_data, frame_size);

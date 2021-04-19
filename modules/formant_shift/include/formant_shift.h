@@ -6,16 +6,17 @@
 
 #include "pffftwrap.h"
 #include "overlapAdd.h"
+#include "formantInterpolate.h"
 namespace ubnt {
 
 class FormantShift {
 public:
     FormantShift()=default;
     ~FormantShift()=default;
-    void setShiftTone(float shiftTone);
-    float getShiftTone();
     void init();
     void release();
+    void setShiftTone(float shiftTone);
+    float getShiftTone();
     int process(float* in, float *ori, float* out, unsigned int numSample);
 private:
     Pffft fft;
@@ -28,6 +29,7 @@ private:
     float *cepstrum{nullptr};
 
     // formant shift amount in semi-tones
+    FormantInterpolate *oriFormantInterpo{nullptr};
     float shiftTone{0.0f};
 
     float *inBuffer{nullptr};

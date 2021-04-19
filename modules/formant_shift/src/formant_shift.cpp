@@ -43,11 +43,10 @@ void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigne
 
 void FormantShift::setShiftTone(float shiftTone) {
     this->shiftTone = shiftTone;
-    return;
 }
 
 float FormantShift::getShiftTone() {
-    return shiftTone;
+    return this->shiftTone;
 }
 
 void FormantShift::init() {
@@ -59,6 +58,8 @@ void FormantShift::init() {
     // Buffer for spectrum smoothing
     cepstrum = new float[processSize]();
     logSpectrum = new float[processSize]();
+
+    oriFormantInterpo = new FormantInterpolate(processSize);
 
     // Buffer for formant shift
     inBuffer = new float[processSize]();
@@ -92,6 +93,11 @@ void FormantShift::release() {
     freeBuffer(&oriSpectrum);
     freeBuffer(&outFrequency);
     freeBuffer(&outBuffer);
+
+    if (oriFormantInterpo != nullptr) {
+        delete oriFormantInterpo;
+        oriFormantInterpo = nullptr;
+    }
     
     if (inOLA != nullptr) {
         delete inOLA; inOLA = nullptr;
@@ -128,6 +134,7 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
     // Get smoothed formant from spectrum, the output also saved in spectrum variables
     spectralSmooth(inSpectrum, inSpectrum, processSize);
     spectralSmooth(oriSpectrum, oriSpectrum, processSize);
+    oriFormantInterpo->process(oriSpectrum, shiftTone, processSize);
 
     // Correct formant of the pitch shifted signal by morphing it into the formant of original signal
     outFrequency[0] = inFrequency[0] * oriSpectrum[0] / std::max<float>(inSpectrum[0], 0.000001f);
