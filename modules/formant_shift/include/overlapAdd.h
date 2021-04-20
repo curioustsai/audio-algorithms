@@ -4,6 +4,7 @@
 
 #ifndef __OVERLAPADD_H__
 #define __OVERLAPADD_H__
+#include "utils.h"
 
 namespace ubnt{
 

@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <cstring>
-#include "utils.h"
 #include "overlapAdd.h"
 
 using namespace ubnt;
