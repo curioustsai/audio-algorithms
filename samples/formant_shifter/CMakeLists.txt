@@ -25,9 +25,8 @@ include_directories(
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PROJECT_ROOT}/thirdparty/CLI11/include/
-    ${PROJECT_ROOT}/thirdparty/pffft
-    ${SOURCES_ROOT}/formant_shift/include
-	${LIBSNDFILE_INCLUDE_DIRS}
+    ${formant_shift_include_dirs}
+    ${LIBSNDFILE_INCLUDE_DIRS}
 )
 
 #print some debug info about the list of files and include folders
@@ -46,7 +45,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 target_link_libraries(
     ${PROJECT_NAME}
 	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
-    pffft
     formant_shift
 	-lsndfile
     -lpthread

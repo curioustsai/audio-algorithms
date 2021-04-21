@@ -10,20 +10,22 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DAUDIO_ALGO_DEBUG)
 endif()
 
-
+# Save project-releated include paths into variable
+set(
+    ${PROJECT_NAME}_include_dirs
+    ${pffft_include_dirs}
+    ${SOURCES_ROOT}/${PROJECT_NAME}/include
+    CACHE INTERNAL "" FORCE
+)
 #set the include folder search path
 include_directories(
     AFTER
-    ${SOURCES_ROOT}/${PROJECT_NAME}/include
     ${SOURCES_ROOT}/version/
-    ${PROJECT_ROOT}/thirdparty/pffft
+    ${${PROJECT_NAME}_include_dirs}
 )
 
 #print some debug info about the list of files and include folders
 show_include_and_src_files()
-
-link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-link_libraries(pffft)
 
 #define the executable
 add_library(
@@ -32,6 +34,11 @@ add_library(
     ${VERSION_SOURCES}
     ${CPP_SOURCES}
     ${C_SOURCES}
+)
+
+target_link_libraries(
+    ${PROJECT_NAME}
+    pffft
 )
 
 if(UBNT_WITH_TESTS)
