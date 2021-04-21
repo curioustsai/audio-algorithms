@@ -2,8 +2,8 @@
  *  Copyright (C) 2021, Ubiquiti Networks, Inc,
  */
 
-#ifndef __PFFFT_H__
-#define __PFFFT_H__
+#ifndef __PFFFT_WRAP_H__
+#define __PFFFT_WRAP_H__
 
 #include "pffft.h"
 
@@ -34,4 +34,4 @@ private:
 };
 }
 
-#endif // __PFFFT_H__
+#endif // __PFFFT_WRAP_H__

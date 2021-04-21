@@ -44,12 +44,16 @@ void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigne
     return;
 }
 
+/** Set the value which original spectrum would be shifted.
+ * @param shiftTone The value that original spectrum would be shifted (in semi-tone)
+ * @return  No return value
+ */
 void FormantShift::setShiftTone(float shiftTone) {
     this->shiftTone = shiftTone;
 }
 
 float FormantShift::getShiftTone() {
-    return this->shiftTone;
+    return shiftTone;
 }
 
 void FormantShift::init() {
@@ -96,7 +100,7 @@ void FormantShift::release() {
     freeBuffer(&oriSpectrum);
     freeBuffer(&outFrequency);
     freeBuffer(&outBuffer);
-
+    
     if (oriFormantInterpo != nullptr) {
         delete oriFormantInterpo;
         oriFormantInterpo = nullptr;
@@ -111,6 +115,10 @@ void FormantShift::release() {
     }
 }
 
+/** Set the value which original spectrum would be shifted.
+ * @param shiftTone The value that original spectrum would be shifted (in semi-tone)
+ * @return  No return value
+ */
 int FormantShift::process(float* in, float *ori, float* out, unsigned int numSample) {
     // If input buffer size changes, the corresponding fft size and buffer
     // should also be reallocated.
