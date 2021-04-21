@@ -6,6 +6,9 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <climits>
+#include <cassert>
+
 #include "formant_shift.h"
 #include "utils.h"
 
@@ -115,10 +118,6 @@ void FormantShift::release() {
     }
 }
 
-/** Set the value which original spectrum would be shifted.
- * @param shiftTone The value that original spectrum would be shifted (in semi-tone)
- * @return  No return value
- */
 int FormantShift::process(float* in, float *ori, float* out, unsigned int numSample) {
     // If input buffer size changes, the corresponding fft size and buffer
     // should also be reallocated.
@@ -162,4 +161,32 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
     inOLA->getOutput(out, bufferSize);
 
     return bufferSize;
+}
+
+int FormantShift::process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample) {
+    assert(numSample <= MAX_BUFFER_SIZE);
+
+    const float normalizeCoef = 1.0f / (float)SHRT_MAX;
+
+    for (unsigned int idx = 0; idx < numSample; idx++) {
+        in_buf_t[idx] = (float)in[idx] * normalizeCoef;
+        ori_buf_t[idx] = (float)ori[idx] * normalizeCoef;
+    }
+
+    process(in_buf_t, ori_buf_t, out_buf_t, numSample);
+
+    for (unsigned int idx = 0; idx < numSample; idx++) {
+        float out_f = out_buf_t[idx] * (float)SHRT_MAX;
+        if (out_f > (float)SHRT_MAX) {
+            out[idx] = (float)SHRT_MAX;
+        }
+        else if (out_f < (float)SHRT_MIN) {
+            out[idx] = SHRT_MIN;
+        }
+        else {
+            out[idx] = (int16_t)(out_f);
+        }
+    }
+
+    return numSample;
 }

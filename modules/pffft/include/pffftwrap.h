@@ -31,6 +31,8 @@ private:
     unsigned int fftSize{0};
     float *inBuffer{nullptr};
     float *outBuffer{nullptr};
+
+    bool IsValidFftSize(size_t fft_size, Transform fft_type);
 };
 }
 

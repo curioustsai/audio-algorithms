@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <cassert>
 #include "pffftwrap.h"
 
 using namespace ubnt;
@@ -45,9 +46,31 @@ void Pffft::release() {
 }
 
 void Pffft::setSize(unsigned int fftSize) {
+    assert(IsValidFftSize(fftSize, transform));
+
     if (this->fftSize != fftSize) {
         init(fftSize, (transform == PFFFT_REAL ? Transform::REAL : Transform::COMPLEX));
     }
+}
+
+bool Pffft::IsValidFftSize(size_t fft_size, Transform fft_type) {
+  if (fft_size == 0) {
+    return false;
+  }
+  // PFFFT only supports transforms for inputs of length N of the form
+  // N = (2^a)*(3^b)*(5^c) where b >=0 and c >= 0 and a >= 5 for the real FFT
+  // and a >= 4 for the complex FFT.
+  constexpr int kFactors[] = {2, 3, 5};
+  int factorization[] = {0, 0, 0};
+  int n = static_cast<int>(fft_size);
+  for (int i = 0; i < 3; ++i) {
+    while (n % kFactors[i] == 0) {
+      n = n / kFactors[i];
+      factorization[i]++;
+    }
+  }
+  int a_min = (fft_type == Transform::REAL) ? 5 : 4;
+  return factorization[0] >= a_min && n == 1;
 }
 
 void Pffft::fft(float *signal, float *freqResponse, unsigned int frameSize) {

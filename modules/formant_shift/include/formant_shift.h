@@ -5,6 +5,7 @@
 #ifndef __FORMANT_SHIFT_H__
 #define __FORMANT_SHIFT_H__
 
+#include <cstdint>
 #include "pffftwrap.h"
 #include "overlapAdd.h"
 #include "formantInterpolate.h"
@@ -20,6 +21,7 @@ public:
     void setShiftTone(float shiftTone);
     float getShiftTone();
     int process(float* in, float *ori, float* out, unsigned int numSample);
+    int process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample);
 private:
     Pffft fft;
     unsigned int bufferSize{0U};
@@ -43,6 +45,11 @@ private:
     float *outBuffer{nullptr};
     OverlapAdd *inOLA{nullptr};
     OverlapAdd *oriOLA{nullptr};
+
+    static constexpr unsigned int MAX_BUFFER_SIZE = 16384;
+    float in_buf_t[MAX_BUFFER_SIZE];
+    float ori_buf_t[MAX_BUFFER_SIZE];
+    float out_buf_t[MAX_BUFFER_SIZE];
 };
 
 } // ubnt
