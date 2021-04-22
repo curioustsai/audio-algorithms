@@ -23,7 +23,7 @@ public:
     int getOutput(float *output, unsigned int frameSize);
     
 private:
-    const unsigned int Capacity = 20;
+    const unsigned int Capacity = 21;
     float *inWindow{nullptr};
     float *outWindow{nullptr};
     unsigned int halfBufferSize;

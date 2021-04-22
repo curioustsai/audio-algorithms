@@ -18,6 +18,7 @@ public:
     ~FormantShift();
     void init();
     void release();
+    void setDelay(unsigned int delayInSample);
     void setShiftTone(float shiftTone);
     float getShiftTone();
     int process(float* in, float *ori, float* out, unsigned int numSample);

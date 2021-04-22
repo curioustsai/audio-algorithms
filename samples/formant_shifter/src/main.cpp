@@ -75,6 +75,7 @@ int main(int argc, char **argv) {
 
     FormantShift formantShift;
     formantShift.setShiftTone(shiftTone);
+    formantShift.setDelay(19456);
     clock_t tick = clock();
 
     int count = 0;

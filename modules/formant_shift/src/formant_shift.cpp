@@ -53,6 +53,18 @@ void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigne
     
     return;
 }
+/** Generate signal delay of input signals. It would put desired peroid of
+ * silence in front of input, which could protect the system from output exhaust.
+ * This function should be called after formantShift init() and before process().
+ * @param delayInSample The desired delay in samples, which can't be larger than 20480 by default.
+ * @return  No return value
+ */
+void FormantShift::setDelay(unsigned int delayInSample) {
+    if ((inOLA == nullptr) || (oriOLA == nullptr)) return;
+    float *silence = new float[delayInSample]();
+    inOLA->setInput(silence, delayInSample);
+    oriOLA->setInput(silence, delayInSample);
+}
 
 /** Set the value which original spectrum would be shifted.
  * @param shiftTone The value that original spectrum would be shifted (in semi-tone)
