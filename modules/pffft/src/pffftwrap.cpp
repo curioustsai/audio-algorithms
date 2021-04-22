@@ -19,8 +19,10 @@ void Pffft::getSpectrum(float *frequency, float *spectrum, unsigned int frameSiz
 }
 
 void Pffft::init(unsigned int fftSize, Transform type) {
+    assert(IsValidFftSize(fftSize, transform));
+
     this->fftSize = fftSize;
-    this->transform = (type == Transform::REAL) ? PFFFT_REAL : PFFFT_COMPLEX;
+    transform = type;
 
     if ((setup != nullptr) ||
         (inBuffer != nullptr) ||
@@ -28,7 +30,7 @@ void Pffft::init(unsigned int fftSize, Transform type) {
     {
         release();
     }
-    setup = pffft_new_setup(fftSize, transform);
+    setup = pffft_new_setup(fftSize, (transform == Transform::REAL ? PFFFT_REAL : PFFFT_COMPLEX));
     inBuffer = (float *)pffft_aligned_malloc((size_t)(fftSize * sizeof(float)));
     outBuffer = (float *)pffft_aligned_malloc((size_t)(fftSize * sizeof(float))); 
 }
@@ -46,13 +48,14 @@ void Pffft::release() {
 }
 
 void Pffft::setSize(unsigned int fftSize) {
-    assert(IsValidFftSize(fftSize, transform));
-
     if (this->fftSize != fftSize) {
-        init(fftSize, (transform == PFFFT_REAL ? Transform::REAL : Transform::COMPLEX));
+        init(fftSize, transform);
     }
 }
 
+/** Copied from WebRTC utility folder and change fft transform 
+ *  structure to ubnt::Pffft::Transform
+ */
 bool Pffft::IsValidFftSize(size_t fft_size, Transform fft_type) {
   if (fft_size == 0) {
     return false;

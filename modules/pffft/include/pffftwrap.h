@@ -27,7 +27,7 @@ public:
 private:
     PFFFT_Setup *setup{nullptr};
     pffft_direction_t direction{PFFFT_FORWARD};
-    pffft_transform_t transform{PFFFT_REAL};
+    Transform transform{Transform::REAL};
     unsigned int fftSize{0};
     float *inBuffer{nullptr};
     float *outBuffer{nullptr};

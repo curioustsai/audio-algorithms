@@ -14,8 +14,8 @@ namespace ubnt {
 
 class FormantShift {
 public:
-    FormantShift()=default;
-    ~FormantShift()=default;
+    FormantShift();
+    ~FormantShift();
     void init();
     void release();
     void setShiftTone(float shiftTone);
@@ -24,6 +24,7 @@ public:
     int process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample);
 private:
     Pffft fft;
+    static constexpr unsigned int DefaultBufferSize = 1024;
     unsigned int bufferSize{0U};
     unsigned int processSize{0U};
     

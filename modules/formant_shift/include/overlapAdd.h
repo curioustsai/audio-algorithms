@@ -23,8 +23,10 @@ public:
     int getOutput(float *output, unsigned int frameSize);
     
 private:
+    const unsigned int Capacity = 20;
     float *inWindow{nullptr};
     float *outWindow{nullptr};
+    unsigned int halfBufferSize;
     unsigned int bufferSize;
     unsigned int bufPoolSize;
     float *inputPool{nullptr};
@@ -32,8 +34,10 @@ private:
 
     unsigned int inPoolReadIdx{0U};
     unsigned int inPoolWriteIdx{0U};
+    unsigned int inBufferedSize{0U};
     unsigned int outPoolReadIdx{0U};
     unsigned int outPoolWriteIdx{0U};
+    unsigned int outBufferedSize{0U};
 
     void init();
     void release();

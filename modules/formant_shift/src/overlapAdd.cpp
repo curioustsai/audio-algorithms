@@ -12,8 +12,9 @@ OverlapAdd::OverlapAdd(
     unsigned int frameSize,
     WindowType inType,
     WindowType outType) :
-    bufferSize(frameSize),
-    bufPoolSize(frameSize * 2),
+    halfBufferSize(frameSize),
+    bufferSize(frameSize * 2),
+    bufPoolSize(frameSize * Capacity),
     inWindowType(inType),
     outWindowType(outType)
 {
@@ -43,9 +44,11 @@ void OverlapAdd::init() {
     inputPool = new float[bufPoolSize]();
     outputPool = new float[bufPoolSize]();
     inPoolReadIdx = 0U;
-    inPoolWriteIdx = bufferSize;
+    inPoolWriteIdx = halfBufferSize;
+    inBufferedSize = halfBufferSize;
     outPoolReadIdx = 0;
     outPoolWriteIdx = 0;
+    outBufferedSize = 0;
 }
 
 void OverlapAdd::release() {
@@ -58,10 +61,10 @@ void OverlapAdd::release() {
 void OverlapAdd::setWindow(float *window, WindowType type) {
     switch (type) {
     case WindowType::HANNING:
-        hanning(window, bufPoolSize);
+        hanning(window, bufferSize);
         break;
     default:
-        for (unsigned int idx = 0; idx < bufPoolSize; idx++) {
+        for (unsigned int idx = 0; idx < bufferSize; idx++) {
             window[idx] = 1.0f;
         }
         break;
@@ -83,51 +86,64 @@ void OverlapAdd::hanning(float *window, unsigned int numSample) {
 }
 
 int OverlapAdd::setInput(float *input, unsigned int frameSize) {
-    if(bufferSize != frameSize) return -1;
+    if (inBufferedSize + frameSize > bufPoolSize) {
+        return -1;
+    }
 
-    if (inPoolWriteIdx <= (bufPoolSize - bufferSize)) {
-        memcpy(&(inputPool[inPoolWriteIdx]), input, sizeof(float) * bufferSize);
-        inPoolWriteIdx = circIndex(inPoolWriteIdx  + bufferSize, bufPoolSize);
+    if (inPoolWriteIdx <= (bufPoolSize - frameSize)) {
+        memcpy(&(inputPool[inPoolWriteIdx]), input, sizeof(float) * frameSize);
+        inPoolWriteIdx = circIndex(inPoolWriteIdx  + frameSize, bufPoolSize);
     }
     else {
         memcpy(&(inputPool[inPoolWriteIdx]), input, sizeof(float) * (bufPoolSize - inPoolWriteIdx));
-        memcpy(inputPool, &(input[bufPoolSize - inPoolWriteIdx]), sizeof(float) * (bufferSize - (bufPoolSize - inPoolWriteIdx)));
-        inPoolWriteIdx = circIndex(bufferSize - (bufPoolSize - inPoolWriteIdx), bufPoolSize);
+        memcpy(inputPool, &(input[bufPoolSize - inPoolWriteIdx]), sizeof(float) * (frameSize - (bufPoolSize - inPoolWriteIdx)));
+        inPoolWriteIdx = circIndex(frameSize - (bufPoolSize - inPoolWriteIdx), bufPoolSize);
     }
-    return bufferSize;
+    inBufferedSize += frameSize;
+    return frameSize;
 }
 
 int OverlapAdd::getInput(float *input, unsigned int frameSize) {
-    if (bufPoolSize != frameSize) return -1;
+    if (bufferSize != frameSize) return -1;
+    if (inBufferedSize < frameSize) return -1;
 
     if (inWindowType != WindowType::NONE) {
         unsigned int idx = 0;
         unsigned int inIdx = inPoolReadIdx;
-        while (idx < bufPoolSize) {
+        while (idx < bufferSize) {
             input[idx] = inputPool[inIdx] * inWindow[idx];
             idx++;
             inIdx = circIndex(inIdx + 1, bufPoolSize);
         }
     }
     else {
-        memcpy(input, &(inputPool[inPoolReadIdx]), sizeof(float) * (bufPoolSize - inPoolReadIdx));
-        memcpy(&(input[bufPoolSize - inPoolReadIdx]), inputPool, sizeof(float) * inPoolReadIdx);
+        if (inPoolReadIdx + bufferSize <= bufPoolSize) {
+            memcpy(input, &(inputPool[inPoolReadIdx]), sizeof(float) * bufferSize);
     }
-    inPoolReadIdx = circIndex(inPoolReadIdx + bufferSize, bufPoolSize);
+        else {
+            memcpy(input, &(inputPool[inPoolReadIdx]),
+                sizeof(float) * (bufPoolSize - inPoolReadIdx));
+            memcpy(&(input[bufPoolSize - inPoolReadIdx]), inputPool,
+                sizeof(float) * (bufferSize - (bufPoolSize - inPoolReadIdx)));
+        }
+    }
+    inPoolReadIdx = circIndex(inPoolReadIdx + halfBufferSize, bufPoolSize);
+    inBufferedSize -= halfBufferSize;
 
-    return bufPoolSize;
+    return bufferSize;
 }
 
 int OverlapAdd::setOutput(float *output, unsigned int frameSize) {
-    if (frameSize != bufPoolSize) return -1;
+    if (frameSize != bufferSize) return -1;
+    if (outBufferedSize + frameSize > bufPoolSize) return -1;
 
     unsigned int idx = 0;
     unsigned int outIdx = outPoolWriteIdx;
-    while (idx < bufPoolSize) {
+    while (idx < bufferSize) {
         float out = 
             (outWindowType == WindowType::NONE) ? output[idx] : output[idx] * outWindow[idx];
 
-        if (idx < bufPoolSize - bufferSize) {
+        if (idx < halfBufferSize) {
             outputPool[outIdx] += out;
         }
         else {
@@ -136,26 +152,27 @@ int OverlapAdd::setOutput(float *output, unsigned int frameSize) {
         idx++;
         outIdx = circIndex(outIdx + 1, bufPoolSize);
     }
-    
-    outPoolWriteIdx = circIndex(outPoolWriteIdx + bufPoolSize - bufferSize, bufPoolSize);
+    outPoolWriteIdx = circIndex(outPoolWriteIdx + halfBufferSize, bufPoolSize);
+    outBufferedSize += halfBufferSize;
 
-    return bufPoolSize;
+    return bufferSize;
 }
 
 int OverlapAdd::getOutput(float *output, unsigned int frameSize) {
-    if (frameSize != bufferSize) return -1;
+    if (outBufferedSize < frameSize) return -1;
 
-    if (outPoolReadIdx <= (bufPoolSize - bufferSize)) {
-        memcpy(output, &(outputPool[outPoolReadIdx]), sizeof(float) * bufferSize);
-        outPoolReadIdx = circIndex(outPoolReadIdx + bufferSize, bufPoolSize);
+    if (outPoolReadIdx <= (bufPoolSize - frameSize)) {
+        memcpy(output, &(outputPool[outPoolReadIdx]), sizeof(float) * frameSize);
+        outPoolReadIdx = circIndex(outPoolReadIdx + frameSize, bufPoolSize);
     }
     else {
         memcpy(output, &(outputPool[outPoolReadIdx]), 
             sizeof(float) * (bufPoolSize - outPoolReadIdx));
         memcpy(&(output[bufPoolSize - outPoolReadIdx]), outputPool,
-            sizeof(float) * (bufferSize - (bufPoolSize - outPoolReadIdx)));
-        outPoolReadIdx = circIndex(bufferSize - (bufPoolSize - outPoolReadIdx), bufPoolSize);
+            sizeof(float) * (frameSize - (bufPoolSize - outPoolReadIdx)));
+        outPoolReadIdx = circIndex(frameSize - (bufPoolSize - outPoolReadIdx), bufPoolSize);
     }
+    outBufferedSize -= frameSize;
 
-    return bufferSize;
+    return frameSize;
 }
