@@ -51,8 +51,11 @@ target_link_libraries(
     pffft-ori
 )
 
-#install(FILES ${PROJECT_ROOT}/thirdparty/pffft.h DESTINATION /include/${PROJECT_NAME})
-#install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/pffftwrap.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${PROJECT_ROOT}/thirdparty/pffft/pffft.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
+install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}-ori.a DESTINATION /lib)
+
 
 if(UBNT_WITH_TESTS)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")

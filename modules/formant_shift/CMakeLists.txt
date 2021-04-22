@@ -36,6 +36,12 @@ add_library(
     ${C_SOURCES}
 )
 
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/formant_shift.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/formantInterpolate.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/overlapAdd.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/utils.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
+
 target_link_libraries(
     ${PROJECT_NAME}
     pffft
