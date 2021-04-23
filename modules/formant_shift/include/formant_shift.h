@@ -52,6 +52,11 @@ private:
     float in_buf_t[MAX_BUFFER_SIZE];
     float ori_buf_t[MAX_BUFFER_SIZE];
     float out_buf_t[MAX_BUFFER_SIZE];
+
+    inline float awayFromZero(float input) {
+        const float Epsilon = 1e-6f;
+        return std::max<float>(input, Epsilon);
+    }
 };
 
 } // ubnt

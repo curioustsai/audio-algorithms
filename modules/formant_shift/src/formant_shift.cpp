@@ -29,10 +29,10 @@ FormantShift::~FormantShift() {
  * @return NULL No return value
  */
 void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigned int frameSize) {
-    logSpectrum[0] = logf(inSpectrum[0]);
-    logSpectrum[1] = logf(inSpectrum[1]);
+    logSpectrum[0] = logf(awayFromZero(inSpectrum[0]));
+    logSpectrum[1] = logf(awayFromZero(inSpectrum[1]));
     for (unsigned int i = 2; i < frameSize; i+=2) {
-        logSpectrum[i] = log(inSpectrum[i]);
+        logSpectrum[i] = logf(awayFromZero(inSpectrum[i]));
         logSpectrum[i + 1] = 0.0f;
     }
     fft.ifftOrder(logSpectrum, cepstrum, frameSize);
@@ -100,12 +100,12 @@ void FormantShift::init() {
     outBuffer = new float[processSize]();
 
     inOLA = new OverlapAdd(bufferSize, 
-                            OverlapAdd::WindowType::HANNING,
-                            OverlapAdd::WindowType::NONE);
+                            OverlapAdd::WindowType::NONE,
+                            OverlapAdd::WindowType::HANNING);
 
     oriOLA = new OverlapAdd(bufferSize, 
-                            OverlapAdd::WindowType::HANNING,
-                            OverlapAdd::WindowType::NONE);
+                            OverlapAdd::WindowType::NONE,
+                            OverlapAdd::WindowType::HANNING);
 }
 
 void FormantShift::release() {
