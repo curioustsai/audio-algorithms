@@ -5,6 +5,7 @@
 #ifndef __FORMANT_SHIFT_H__
 #define __FORMANT_SHIFT_H__
 
+#include <algorithm>
 #include <cstdint>
 #include "pffftwrap.h"
 #include "overlapAdd.h"
