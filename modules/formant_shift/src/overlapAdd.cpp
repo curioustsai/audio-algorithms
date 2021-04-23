@@ -36,8 +36,8 @@ void OverlapAdd::init() {
             release();
     }
 
-    inWindow = new float[bufPoolSize]();
-    outWindow = new float[bufPoolSize]();
+    inWindow = new float[bufferSize]();
+    outWindow = new float[bufferSize]();
     setWindow(inWindow, inWindowType);
     setWindow(outWindow, outWindowType);
 
@@ -75,7 +75,7 @@ void OverlapAdd::hanning(float *window, unsigned int numSample) {
     const float PI_2 = M_PI + M_PI;
     const float denom = 1.0f / static_cast<float>(numSample - 1);
     const int halfSample = numSample >> 1;
-    for (unsigned int i = 0; i < numSample; i++) {
+    for (unsigned int i = 0; i < halfSample; i++) {
         window[i] = 0.5f * (1.0f - cos(PI_2 * static_cast<float>(i) * denom));
         window[numSample - i - 1] = window[i];
     }
@@ -119,7 +119,7 @@ int OverlapAdd::getInput(float *input, unsigned int frameSize) {
     else {
         if (inPoolReadIdx + bufferSize <= bufPoolSize) {
             memcpy(input, &(inputPool[inPoolReadIdx]), sizeof(float) * bufferSize);
-    }
+        }
         else {
             memcpy(input, &(inputPool[inPoolReadIdx]),
                 sizeof(float) * (bufPoolSize - inPoolReadIdx));
