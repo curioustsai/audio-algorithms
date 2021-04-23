@@ -74,7 +74,7 @@ void OverlapAdd::setWindow(float *window, WindowType type) {
 void OverlapAdd::hanning(float *window, unsigned int numSample) {
     const float PI_2 = M_PI + M_PI;
     const float denom = 1.0f / static_cast<float>(numSample - 1);
-    const int halfSample = numSample >> 1;
+    const unsigned int halfSample = numSample >> 1;
     for (unsigned int i = 0; i < halfSample; i++) {
         window[i] = 0.5f * (1.0f - cos(PI_2 * static_cast<float>(i) * denom));
         window[numSample - i - 1] = window[i];
