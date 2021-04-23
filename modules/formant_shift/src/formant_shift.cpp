@@ -64,6 +64,10 @@ void FormantShift::setDelay(unsigned int delayInSample) {
     float *silence = new float[delayInSample]();
     inOLA->setInput(silence, delayInSample);
     oriOLA->setInput(silence, delayInSample);
+
+	if (silence != nullptr) {
+		delete[] silence; silence = nullptr;
+	}
 }
 
 /** Set the value which original spectrum would be shifted.
