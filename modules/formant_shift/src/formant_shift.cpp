@@ -64,10 +64,7 @@ void FormantShift::setDelay(unsigned int delayInSample) {
     float *silence = new float[delayInSample]();
     inOLA->setInput(silence, delayInSample);
     oriOLA->setInput(silence, delayInSample);
-
-	if (silence != nullptr) {
-		delete[] silence; silence = nullptr;
-	}
+	freeBuffer(&silence);
 }
 
 /** Set the value which original spectrum would be shifted.
@@ -165,22 +162,19 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
         oriFormantInterpo->process(oriSpectrum, shiftTone, processSize);
 
         // Correct formant of the pitch shifted signal by morphing it into the formant of original signal
-        outFrequency[0] = inFrequency[0] * oriSpectrum[0] / std::max<float>(inSpectrum[0], 0.000001f);
-        outFrequency[1] = inFrequency[1] * oriSpectrum[1] / std::max<float>(inSpectrum[1], 0.000001f);
+        outFrequency[0] = inFrequency[0] * oriSpectrum[0] / awayFromZero(inSpectrum[0]);
+        outFrequency[1] = inFrequency[1] * oriSpectrum[1] / awayFromZero(inSpectrum[1]);
         for (unsigned int fIdx = 2; fIdx < processSize; fIdx += 2) {
-            const float coef = oriSpectrum[fIdx] / std::max<float>(inSpectrum[fIdx], 0.000001f);
+            const float coef = oriSpectrum[fIdx] / awayFromZero(inSpectrum[fIdx]);
             outFrequency[fIdx] = inFrequency[fIdx] * coef;
             outFrequency[fIdx + 1] = inFrequency[fIdx + 1] * coef; 
         }
 
-        // Copy the previous half output, which is saved at the later half of outBuffer
         fft.ifftOrder(outFrequency, outBuffer, processSize);
         inOLA->setOutput(outBuffer, processSize);
     }
 
-    int outSample = inOLA->getOutput(out, numSample);
-
-    return outSample;
+    return inOLA->getOutput(out, numSample);
 }
 
 int FormantShift::process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample) {
