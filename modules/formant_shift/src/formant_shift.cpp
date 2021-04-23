@@ -14,8 +14,8 @@
 
 using namespace ubnt;
 
-FormantShift::FormantShift() {
-    init();
+FormantShift::FormantShift(unsigned int sampleRate) {
+    init(sampleRate);
 }
 FormantShift::~FormantShift() {
     release();
@@ -79,8 +79,15 @@ float FormantShift::getShiftTone() {
     return shiftTone;
 }
 
-void FormantShift::init() {
-    bufferSize = DefaultBufferSize;
+void FormantShift::init(unsigned int sampleRate) {
+    this->sampleRate = sampleRate;
+    const unsigned int DefaultSampleRate = 48000U;
+    const unsigned int DefaultBufferSize = 1024;
+
+    float targetBufferSize = (float)DefaultBufferSize * (float)sampleRate / (float)DefaultSampleRate;
+    // The smallest power of 2 that is larger than target buffer size
+    bufferSize = (float)pow(2.0, ceil(log2(targetBufferSize)));
+    printf("bufferSize: %d\n", bufferSize);
     processSize = bufferSize * 2;
 
     fft.init(processSize, Pffft::Transform::REAL);

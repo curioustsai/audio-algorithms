@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     ps_data = (short *)new short[MaxFrameSize]();
     out_data = (short *)new short[MaxFrameSize]();
 
-    FormantShift formantShift;
+    FormantShift formantShift(sample_rate);
     formantShift.setShiftTone(shiftTone);
     formantShift.setDelay(19456);
     clock_t tick = clock();

@@ -14,9 +14,10 @@ namespace ubnt {
 
 class FormantShift {
 public:
-    FormantShift();
+    FormantShift() = delete;
+    FormantShift(unsigned int sampleRate);
     ~FormantShift();
-    void init();
+    void init(unsigned int sampleRate);
     void release();
     void setDelay(unsigned int delayInSample);
     void setShiftTone(float shiftTone);
@@ -25,7 +26,7 @@ public:
     int process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample);
 private:
     Pffft fft;
-    static constexpr unsigned int DefaultBufferSize = 1024;
+    unsigned int sampleRate{48000U};
     unsigned int bufferSize{0U};
     unsigned int processSize{0U};
     
