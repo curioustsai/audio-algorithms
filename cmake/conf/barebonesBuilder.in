@@ -1,12 +1,12 @@
 # default to uvc-develop and all configs use same build
 job_name=unifi-protect/uvc/uvc-firmware/develop
-job_number=1204
+job_number=1232
 default_barebones_path=${job_name}/$job_number
 
 # gen2
 NAME_gen2_barebones=openwrt-gen2-rel.tar.gz
 PATH_gen2_barebones=$default_barebones_path
-HASH_gen2_barebones=8a102ebc211e68fd11175a01ff9855b5
+HASH_gen2_barebones=d825d075a206a212da9a222daa7933eb
 
 NAME_gen2_toolchains=toolchain-arm_v6k_gcc-4.7-linaro_uClibc-0.9.33.2_eabi.tar.xz
 PATH_gen2_toolchains=7
@@ -15,7 +15,7 @@ HASH_gen2_toolchains=ac7e6f84130ac486c5a6713d82898e01
 # gen3l
 NAME_gen3l_barebones=openwrt-gen3l-rel.tar.gz
 PATH_gen3l_barebones=$default_barebones_path
-HASH_gen3l_barebones=d159d41eb34f159aeab7bb5b72ef8533
+HASH_gen3l_barebones=ea2eddd811384638fe4b3db81ab15435
 
 NAME_gen3l_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
 PATH_gen3l_toolchains=7
@@ -24,7 +24,7 @@ HASH_gen3l_toolchains=995f57d765f9e077ab68b8c2881fdfe5
 # gen3m
 NAME_gen3m_barebones=openwrt-gen3m-rel.tar.gz
 PATH_gen3m_barebones=$default_barebones_path
-HASH_gen3m_barebones=f493e6b209bfdc396a42c07fcc554185
+HASH_gen3m_barebones=3e74cc78f8f75d500137b1ed957c5d63
 
 NAME_gen3m_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
 PATH_gen3m_toolchains=7
@@ -42,7 +42,7 @@ HASH_gen3b_toolchains=995f57d765f9e077ab68b8c2881fdfe5
 # gen3s
 NAME_gen3s_barebones=openwrt-gen3s-rel.tar.gz
 PATH_gen3s_barebones=$default_barebones_path
-HASH_gen3s_barebones=63cb581b292eaa454c5789c172aab750
+HASH_gen3s_barebones=506c799c0094652afd4e599ca334f428
 
 NAME_gen3s_toolchains=gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.xz
 PATH_gen3s_toolchains=9
@@ -51,7 +51,7 @@ HASH_gen3s_toolchains=dc7455746d90259337fb88c3e67f8855
 # gen4l
 NAME_gen4l_barebones=openwrt-gen4l-rel.tar.gz
 PATH_gen4l_barebones=$default_barebones_path
-HASH_gen4l_barebones=39f6de4c1b06c78ee21df59a8584a8ea
+HASH_gen4l_barebones=f4cbcd4b35cdac74dcdb9b3b37d7b9cb
 
 NAME_gen4l_toolchains=linaro-aarch64-2017.02-gcc6.3.tar.xz
 PATH_gen4l_toolchains=7
