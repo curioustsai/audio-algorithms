@@ -8,7 +8,11 @@ glob_source_files()
 file (
     GLOB_RECURSE
     PFFFT_C_SOURCES
-    "${PROJECT_ROOT}/thirdparty/pffft/*.c"
+    "${PROJECT_ROOT}/thirdparty/pffft/fftpack.c"
+    "${PROJECT_ROOT}/thirdparty/pffft/pffft.c"
+    "${PROJECT_ROOT}/thirdparty/pffft/pffastconv.c"
+    "${PROJECT_ROOT}/thirdparty/pffft/pffft_common.c"
+    "${PROJECT_ROOT}/thirdparty/pffft/pffft_double.c"
 )
 
 add_definitions(-fexceptions)
@@ -34,13 +38,13 @@ show_include_and_src_files()
 #define the executable
 add_library(
     pffft-ori
-    ${UBNT_LIBRARIES_TYPE}
+    STATIC
     ${PFFFT_C_SOURCES}
 )
 
 add_library(
     ${PROJECT_NAME}
-    ${UBNT_LIBRARIES_TYPE}
+    STATIC
     ${VERSION_SOURCES}
     ${CPP_SOURCES}
     ${C_SOURCES}
