@@ -82,7 +82,7 @@ float FormantShift::getShiftTone() {
 void FormantShift::init(unsigned int sampleRate) {
     this->sampleRate = sampleRate;
     const unsigned int DefaultSampleRate = 48000U;
-    const unsigned int DefaultBufferSize = 1024;
+    const unsigned int DefaultBufferSize = 2048;
 
     float targetBufferSize = (float)DefaultBufferSize * (float)sampleRate / (float)DefaultSampleRate;
     // The smallest power of 2 that is larger than target buffer size
