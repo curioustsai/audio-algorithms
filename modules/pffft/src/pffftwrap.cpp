@@ -31,8 +31,9 @@ void Pffft::init(unsigned int fftSize, Transform type) {
         release();
     }
     setup = pffft_new_setup(fftSize, (transform == Transform::REAL ? PFFFT_REAL : PFFFT_COMPLEX));
-    inBuffer = (float *)pffft_aligned_malloc((size_t)(fftSize * sizeof(float)));
-    outBuffer = (float *)pffft_aligned_malloc((size_t)(fftSize * sizeof(float))); 
+    size_t Nbyte = fftSize * sizeof(float) * (transform == Transform::REAL? 1 : 2);
+    inBuffer = (float *)pffft_aligned_malloc(Nbyte);
+    outBuffer = (float *)pffft_aligned_malloc(Nbyte); 
 }
 
 void Pffft::release() {
@@ -79,22 +80,25 @@ bool Pffft::IsValidFftSize(size_t fft_size, Transform fft_type) {
 void Pffft::fft(float *signal, float *freqResponse, unsigned int frameSize) {
     if (frameSize != fftSize) return;
 
-    memcpy(inBuffer, signal, sizeof(float) * frameSize);
-    memset(outBuffer, 0, sizeof(float) * frameSize);
+    size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
+    memcpy(inBuffer, signal, sizeof(float) * bufferSize);
+    memset(outBuffer, 0, sizeof(float) * bufferSize);
 
     pffft_transform(setup, inBuffer, outBuffer, nullptr, PFFFT_FORWARD);
-    memcpy(freqResponse, outBuffer, sizeof(float) * PFFFT_BACKWARD);
+    memcpy(freqResponse, outBuffer, sizeof(float) * bufferSize);
 }
 
 void Pffft::ifft(float *freqResponse, float *signal, unsigned int frameSize) {
     if (frameSize != fftSize) return;
+
+    size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
     float normalize = 1.0f / frameSize;
-    memcpy(inBuffer, freqResponse, sizeof(float) * frameSize);
-    memset(outBuffer, 0, sizeof(float) * frameSize);
+    memcpy(inBuffer, freqResponse, sizeof(float) * bufferSize);
+    memset(outBuffer, 0, sizeof(float) * bufferSize);
 
     pffft_transform(setup, inBuffer, outBuffer, nullptr, PFFFT_BACKWARD);
-    memcpy(signal, outBuffer, sizeof(float) * PFFFT_BACKWARD);
-    for (unsigned int i = 0; i < fftSize; i++) {
+    memcpy(signal, outBuffer, sizeof(float) * bufferSize);
+    for (unsigned int i = 0; i < bufferSize; i++) {
         signal[i] *= normalize;
     }
 }
@@ -102,23 +106,26 @@ void Pffft::ifft(float *freqResponse, float *signal, unsigned int frameSize) {
 void Pffft::fftOrder(float *signal, float *freqResponse, unsigned int frameSize) {
     if (frameSize != fftSize) return;
 
-    memcpy(inBuffer, signal, sizeof(float) * frameSize);
-    memset(outBuffer, 0, sizeof(float) * frameSize);
+    size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
+    memcpy(inBuffer, signal, sizeof(float) * bufferSize);
+    memset(outBuffer, 0, sizeof(float) * bufferSize);
 
     pffft_transform_ordered(setup, inBuffer, outBuffer, nullptr, PFFFT_FORWARD);
-    memcpy(freqResponse, outBuffer, sizeof(float) * fftSize);
+    memcpy(freqResponse, outBuffer, sizeof(float) * bufferSize);
 }
 
 void Pffft::ifftOrder(float *freqResponse, float *signal, unsigned int frameSize) {
     if (frameSize != fftSize) return;
+    
+    size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
     float normalize = 1.0f / fftSize;
-    memcpy(inBuffer, freqResponse, sizeof(float) * frameSize);
-    memset(outBuffer, 0, sizeof(float) * frameSize);
+    memcpy(inBuffer, freqResponse, sizeof(float) * bufferSize);
+    memset(outBuffer, 0, sizeof(float) * bufferSize);
 
     pffft_transform_ordered(setup, inBuffer, outBuffer, nullptr, PFFFT_BACKWARD);
-    memcpy(signal, outBuffer, sizeof(float) * fftSize);
+    memcpy(signal, outBuffer, sizeof(float) * bufferSize);
 
-    for (unsigned int i = 0; i < fftSize; i++) {
+    for (unsigned int i = 0; i < bufferSize; i++) {
         signal[i] *= normalize;
     }
 }
