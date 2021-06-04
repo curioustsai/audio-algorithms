@@ -38,7 +38,7 @@ int FormantInterpolate::process(float *spectrum, const float shiftTone, unsigned
         const int i = (idx == freqSize) ? 1 : idx * 2;
         const int inI = (inIdx >= freqSize) ? 1 : inIdx * 2;
 
-        if ((inIdx > numSample) || (inIdx == numSample && pos > inIdx)) {
+        if ((inIdx > freqSize) || (inIdx == freqSize && pos > inIdx)) {
             spectrum[i] = 0;
         }
         else {
