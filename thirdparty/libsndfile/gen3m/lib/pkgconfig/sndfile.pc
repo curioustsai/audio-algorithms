@@ -1,0 +1,13 @@
+prefix=/home/richard/workspace/libsndfile/build/gen3m
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: sndfile
+Description: A library for reading and writing audio files
+Requires:
+Requires.private:  
+Version: 1.0.31
+Libs: -L${libdir} -lsndfile
+Libs.private: @EXTERNAL_MPEG_LIBS@
+Cflags: -I${includedir}
