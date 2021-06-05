@@ -1,11 +1,8 @@
 if(${UBNT_PLATFORM_NAME} MATCHES "gen3.")
 endif()
 
-if(${UBNT_PLATFORM_NAME} MATCHES "gen4.")
-	add_subdirectory(ui_audio_events)
-endif()
-
 if(${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
+	add_subdirectory(ui_audio_events)
 	add_subdirectory(clear_voice)
 	add_subdirectory(formant_shifter)
 endif()
