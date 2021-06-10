@@ -24,7 +24,7 @@ include_directories(
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
-	${PROJECT_ROOT}/thirdparty/CLI11/include/
+    ${PROJECT_ROOT}/thirdparty/CLI11/include/
     ${formant_shift_include_dirs}
     ${LIBSNDFILE_INCLUDE_DIRS}
 )
@@ -44,9 +44,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 #define the list of library dependencies
 target_link_libraries(
     ${PROJECT_NAME}
-	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
+    -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
     formant_shift
-	-lsndfile
+    -lsndfile
     -lpthread
     -lm
     -lz
