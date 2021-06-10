@@ -4,7 +4,7 @@ project(mic_array)
 #detect the source files
 glob_source_files()
 
-add_definitions(-fexceptions)
+add_definitions(-fexceptions -D_USE_MATH_DEFINES)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DAUDIO_ALGO_DEBUG)

@@ -1,5 +1,5 @@
 #Set the name of the project
-project(ui_sample_app)
+project(formant_shifter)
 
 #detect the source files
 file(
@@ -24,8 +24,9 @@ include_directories(
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
-	${PROJECT_ROOT}/thirdparty/CLI11/include
-	${LIBSNDFILE_INCLUDE_DIRS}
+    ${PROJECT_ROOT}/thirdparty/CLI11/include/
+    ${formant_shift_include_dirs}
+    ${LIBSNDFILE_INCLUDE_DIRS}
 )
 
 #print some debug info about the list of files and include folders
@@ -43,8 +44,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 #define the list of library dependencies
 target_link_libraries(
     ${PROJECT_NAME}
-	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
-	-lsndfile
+    -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
+    formant_shift
+    -lsndfile
     -lpthread
     -lm
     -lz
