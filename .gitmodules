@@ -13,9 +13,6 @@
 [submodule "thirdparty/speexdsp"]
 	path = thirdparty/speexdsp
 	url = https://github.com/xiph/speexdsp
-[submodule "pffft"]
-	path = pffft
-	url = https://bitbucket.org/jpommier/pffft.git
 [submodule "thirdparty/pffft"]
 	path = thirdparty/pffft
 	url = https://bitbucket.org/jpommier/pffft.git
