@@ -18,23 +18,23 @@ public:
     void Release();
     void ResetStates();
     AudioEventType Detect(float* data, int numSample);
-    void SetDynamicHigh(float dynamicHigh);
-    void SetDynamicLow(float dynamicLow);
-    void SetThresholdLoud(float thresholdLoud);
-    void SetThresholdQuiet(float thresholdQuiet);
-    void SetLoudCntThr(int loudCntThr);
-    void SetQuietCntThr(int quietCntThr);
-    void SetModel(std::string model);
 
-    float GetDynamicHigh() const;
-    float GetDynamicLow() const;
-    float GetThresholdLoud() const;
-    float GetThresholdQuiet() const;
-    float GetPowerAvg() const;
-    float GetPowerAvgdB() const;
-    int GetLevel() const;
-    int GetQuietCntThr() const;
-    int GetLevelThreshold() const;
+    void SetDynamicHigh(float dynamicHigh) { _dynRngHigh = dynamicHigh; }
+    void SetDynamicLow(float dynamicLow) { _dynRngLow = dynamicLow; }
+    void SetThresholdLoud(float thresholdLoud) { _thresholdLoud = thresholdLoud; }
+    void SetThresholdQuiet(float thresholdQuiet) { _thresholdQuiet = thresholdQuiet; }
+    void SetLoudCntThr(int loudCntThr) { _loudCntThr = loudCntThr; }
+    void SetQuietCntThr(int quietCntThr) { _quietCntThr = quietCntThr; }
+    void SetModel(std::string model) { _model = model; };
+
+    float GetDynamicHigh() const { return _dynRngHigh; }
+    float GetDynamicLow() const { return _dynRngLow; }
+    float GetThresholdLoud() const { return _thresholdLoud; }
+    float GetThresholdQuiet() const { return _thresholdQuiet; }
+    float GetPowerAvg() const { return _powerAvg; }
+    float GetPowerAvgdB() const { return _powerAvgdB; };
+    int GetLevel() const { return _level; }
+    int GetQuietCntThr() const { return _quietCntThr; }
 
     void ShowConfig();
 
