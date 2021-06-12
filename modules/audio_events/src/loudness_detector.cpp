@@ -48,14 +48,23 @@ AudioEventType LoudnessDetector::Detect(float* data, int numSamples) {
 
     if (_level > _thresholdLoud) {
         _loudCnt++;
+        _quietCnt = 0;
         if (_loudCnt > _loudCntThr) {
             detected = AUDIO_EVENT_LOUD;
             _loudCnt = 0;
         }
-    } else if (_powerAvgdB < _thresholdQuiet) {
+    } else if (_level <= _thresholdQuiet) {
         _quietCnt++;
+        _loudCnt = 0;
         if (_quietCnt > _quietCntThr) {
             detected = AUDIO_EVENT_QUIET;
+            _quietCnt = 0;
+        }
+    } else {
+        _idleCnt++;
+        if (_idleCnt > _idleCntThr) {
+            _idleCnt = 0;
+            _loudCnt = 0;
             _quietCnt = 0;
         }
     }
@@ -65,8 +74,9 @@ AudioEventType LoudnessDetector::Detect(float* data, int numSamples) {
 
 void LoudnessDetector::ResetStates() {
     _powerAvg = 0;
-    _powerAvgdB = 0;
+    _powerAvgdB = -70;
     _level = 0;
+    _idleCnt = 0;
     _loudCnt = 0;
     _quietCnt = 0;
 }

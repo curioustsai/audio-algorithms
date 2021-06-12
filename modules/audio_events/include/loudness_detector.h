@@ -25,6 +25,7 @@ public:
     void SetThresholdQuiet(float thresholdQuiet) { _thresholdQuiet = thresholdQuiet; }
     void SetLoudCntThr(int loudCntThr) { _loudCntThr = loudCntThr; }
     void SetQuietCntThr(int quietCntThr) { _quietCntThr = quietCntThr; }
+    void SetIdleCntThr(int idleCntThr) { _idleCntThr = idleCntThr; }
     void SetModel(std::string model) { _model = model; };
 
     float GetDynamicHigh() const { return _dynRngHigh; }
@@ -34,7 +35,9 @@ public:
     float GetPowerAvg() const { return _powerAvg; }
     float GetPowerAvgdB() const { return _powerAvgdB; };
     int GetLevel() const { return _level; }
+    int GetLoudCntThr() const { return _loudCntThr; }
     int GetQuietCntThr() const { return _quietCntThr; }
+    int GetIdleCntThr() const { return _idleCntThr; }
 
     void ShowConfig();
 
@@ -45,7 +48,7 @@ private:
 
     float _powerAvg{0.0};
     float _powerAvgdB{0.0};
-    float _thresholdLoud{50};
+    float _thresholdLoud{80};
     float _thresholdQuiet{1};
 
     int _level{0};
@@ -53,6 +56,8 @@ private:
     int _loudCntThr{38};
     int _quietCnt{0};
     int _quietCntThr{1000};
+    int _idleCnt{0};
+    int _idleCntThr{1000};
 };
 
 } // namespace smartaudio
