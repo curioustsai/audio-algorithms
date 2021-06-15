@@ -5,13 +5,15 @@
 #ifndef __FORMANT_SHIFT_H__
 #define __FORMANT_SHIFT_H__
 
+#include <memory>
 #include <algorithm>
 #include <cstdint>
-#include "pffftwrap.h"
-#include "overlapAdd.h"
-#include "formantInterpolate.h"
 
 namespace ubnt {
+
+class Pffft;
+class FormantInterpolate;
+class OverlapAdd; 
 
 class FormantShift {
 public:
@@ -26,7 +28,7 @@ public:
     int process(float* in, float *ori, float* out, unsigned int numSample);
     int process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample);
 private:
-    Pffft fft;
+    std::unique_ptr<Pffft> fft;
     unsigned int sampleRate{48000U};
     unsigned int bufferSize{0U};
     unsigned int processSize{0U};
