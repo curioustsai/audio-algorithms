@@ -32,6 +32,8 @@ FormantShift::~FormantShift() {
  * @return NULL No return value
  */
 void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigned int frameSize) {
+    static constexpr float spectralSmoothRatio{1.0f/16.0f};
+    
     logSpectrum[0] = logf(awayFromZero(inSpectrum[0]));
     logSpectrum[1] = logf(awayFromZero(inSpectrum[1]));
     for (unsigned int i = 2; i < frameSize; i+=2) {
@@ -78,7 +80,7 @@ void FormantShift::setShiftTone(float shiftTone) {
     this->shiftTone = shiftTone;
 }
 
-float FormantShift::getShiftTone() {
+float FormantShift::getShiftTone() const {
     return shiftTone;
 }
 
