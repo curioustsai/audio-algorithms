@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
     float levelUpperBound = -20.0f;
     float levelLowerBound = -70.0f;
     float loudThreshold = 50.0f;
+    float quietThreshold = 0.0f;
 
     app.add_option("-i,--inFile", inputFilePath, "specify an input file")
         ->required()
@@ -34,6 +35,8 @@ int main(int argc, char** argv) {
     app.add_option("--levelLowerBound", levelLowerBound, "level lower bound for loudness detector")
         ->check(CLI::Number);
     app.add_option("--loudThreshold", loudThreshold, "loud threshold for loudness detector")
+        ->check(CLI::Number);
+    app.add_option("--quietThreshold", quietThreshold, "quiet threshold for loudness detector")
         ->check(CLI::Number);
 
     try {
@@ -85,6 +88,7 @@ int main(int argc, char** argv) {
     loudnessDetector.SetDynamicHigh(levelUpperBound);
     loudnessDetector.SetDynamicLow(levelLowerBound);
     loudnessDetector.SetThresholdLoud(loudThreshold);
+    loudnessDetector.SetThresholdQuiet(quietThreshold);
     loudnessDetector.ShowConfig();
 
     for (int windowCount = 0; windowCount < numTotalWindows; ++windowCount) {

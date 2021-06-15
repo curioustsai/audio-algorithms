@@ -65,12 +65,14 @@ $AudioAlgoRoot/cmake/utils/compile "-p gen3l -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p gen3m -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p gen3s -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p gen4l -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p gen4c -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p gen4s -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p x86"
 
-cp "$AudioAlgoPath"/include/*"" $MWPath"/include/ubnt_smart_audio/"
+cp -r "$AudioAlgoPath"/include/*"" $MWPath"/include/"
 
 
-for plat in gen3l gen3m gen3s gen4l x86; do
+for plat in gen3l gen3m gen3s gen4l gen4c gen4s; do
 	if [ ! -d $MWPath"/lib/${plat}/" ]
 	then
 		mkdir $MWPath"/lib/${plat}/"
