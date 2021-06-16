@@ -3,21 +3,6 @@
 #bail out on the first error
 set -e
 
-#if there is no UBNT_CMAKE_DIR, or is wrongfully positioned, than bail out.
-#for now, we just look for the CMakeLists.txt and that one must have a project
-#called `all` inside it
-if [ ! -f ${UBNT_CMAKE_DIR}/CMakeLists.txt ]
-then
-	echo "UBNT_CMAKE_DIR is mandatory but is not defined or it has the wrong value"
-	exit 1
-fi
-
-if ! cat ${UBNT_CMAKE_DIR}/CMakeLists.txt|grep "project(all)" >/dev/null
-then
-	echo "Detected CMakeLists.txt file does not contain the proper project name"
-	exit 1
-fi
-
 #local variables used to compute various defaults when they are missing
 if [ -z ${UBNT_BASE_FOLDER} ]
 then
