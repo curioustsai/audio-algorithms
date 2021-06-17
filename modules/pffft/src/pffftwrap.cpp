@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cassert>
 #include "pffftwrap.h"
+#include "pffft.h"
 
 using namespace ubnt;
 
@@ -44,7 +45,7 @@ void Pffft::release() {
         pffft_aligned_free(outBuffer);
     }
     if (setup != nullptr) {
-        pffft_destroy_setup(setup);
+        pffft_destroy_setup(reinterpret_cast<PFFFT_Setup*>(setup));
     }
 }
 
@@ -84,7 +85,7 @@ void Pffft::fft(float *signal, float *freqResponse, unsigned int frameSize) {
     memcpy(inBuffer, signal, sizeof(float) * bufferSize);
     memset(outBuffer, 0, sizeof(float) * bufferSize);
 
-    pffft_transform(setup, inBuffer, outBuffer, nullptr, PFFFT_FORWARD);
+    pffft_transform(reinterpret_cast<PFFFT_Setup*>(setup), inBuffer, outBuffer, nullptr, PFFFT_FORWARD);
     memcpy(freqResponse, outBuffer, sizeof(float) * bufferSize);
 }
 
@@ -96,7 +97,7 @@ void Pffft::ifft(float *freqResponse, float *signal, unsigned int frameSize) {
     memcpy(inBuffer, freqResponse, sizeof(float) * bufferSize);
     memset(outBuffer, 0, sizeof(float) * bufferSize);
 
-    pffft_transform(setup, inBuffer, outBuffer, nullptr, PFFFT_BACKWARD);
+    pffft_transform(reinterpret_cast<PFFFT_Setup*>(setup), inBuffer, outBuffer, nullptr, PFFFT_BACKWARD);
     memcpy(signal, outBuffer, sizeof(float) * bufferSize);
     for (unsigned int i = 0; i < bufferSize; i++) {
         signal[i] *= normalize;
@@ -110,7 +111,7 @@ void Pffft::fftOrder(float *signal, float *freqResponse, unsigned int frameSize)
     memcpy(inBuffer, signal, sizeof(float) * bufferSize);
     memset(outBuffer, 0, sizeof(float) * bufferSize);
 
-    pffft_transform_ordered(setup, inBuffer, outBuffer, nullptr, PFFFT_FORWARD);
+    pffft_transform_ordered(reinterpret_cast<PFFFT_Setup*>(setup), inBuffer, outBuffer, nullptr, PFFFT_FORWARD);
     memcpy(freqResponse, outBuffer, sizeof(float) * bufferSize);
 }
 
@@ -122,7 +123,7 @@ void Pffft::ifftOrder(float *freqResponse, float *signal, unsigned int frameSize
     memcpy(inBuffer, freqResponse, sizeof(float) * bufferSize);
     memset(outBuffer, 0, sizeof(float) * bufferSize);
 
-    pffft_transform_ordered(setup, inBuffer, outBuffer, nullptr, PFFFT_BACKWARD);
+    pffft_transform_ordered(reinterpret_cast<PFFFT_Setup*>(setup), inBuffer, outBuffer, nullptr, PFFFT_BACKWARD);
     memcpy(signal, outBuffer, sizeof(float) * bufferSize);
 
     for (unsigned int i = 0; i < bufferSize; i++) {
