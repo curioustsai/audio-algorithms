@@ -10,7 +10,6 @@
 #include <cassert>
 
 #include "formant_shift.h"
-#include "pffftwrap.h"
 #include "overlapAdd.h"
 #include "formantInterpolate.h"
 #include "utils.h"
@@ -40,13 +39,13 @@ void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigne
         logSpectrum[i] = logf(awayFromZero(inSpectrum[i]));
         logSpectrum[i + 1] = 0.0f;
     }
-    fft->ifftOrder(logSpectrum, cepstrum, frameSize);
+    fft.ifftOrder(logSpectrum, cepstrum, frameSize);
 
     // Cut high-frequency part in cepstrum domain
     const unsigned int fCutIndex = 
         static_cast<unsigned int>(round(static_cast<float>(frameSize) * spectralSmoothRatio));
     memset(cepstrum + fCutIndex, 0, sizeof(float) * (frameSize - fCutIndex*2 + 1));
-    fft->fftOrder(cepstrum, logSpectrum, frameSize);
+    fft.fftOrder(cepstrum, logSpectrum, frameSize);
 
     // Calculate otuput spectrum by exponential of logSpectrum
     outSpectrum[0] = exp(logSpectrum[0]);
@@ -95,7 +94,7 @@ void FormantShift::init(unsigned int sampleRate) {
     printf("bufferSize: %d\n", bufferSize);
     processSize = bufferSize * 2;
 
-    fft->init(processSize, Pffft::Transform::REAL);
+    fft.init(processSize, Pffft::Transform::REAL);
 
     // Buffer for spectrum smoothing
     cepstrum = new float[processSize]();
@@ -122,7 +121,7 @@ void FormantShift::init(unsigned int sampleRate) {
 }
 
 void FormantShift::release() {
-    fft->release();
+    fft.release();
 
     // Buffer for spectrum smoothing
     freeBuffer(&cepstrum);
@@ -161,8 +160,8 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
         && (oriOLA->getInput(oriBuffer, processSize) > 0)
     ) {
         // Calculate frequency & spectrum of inBuffer(pitch shifted signal) and oriBuffer(original signal)
-        fft->fftOrder(inBuffer, inFrequency, processSize);
-        fft->fftOrder(oriBuffer, oriSpectrum, processSize);
+        fft.fftOrder(inBuffer, inFrequency, processSize);
+        fft.fftOrder(oriBuffer, oriSpectrum, processSize);
 
         // Get spectrum from frequency
         Pffft::getSpectrum(inFrequency, inSpectrum, processSize);
@@ -182,7 +181,7 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
             outFrequency[fIdx + 1] = inFrequency[fIdx + 1] * coef; 
         }
 
-        fft->ifftOrder(outFrequency, outBuffer, processSize);
+        fft.ifftOrder(outFrequency, outBuffer, processSize);
         inOLA->setOutput(outBuffer, processSize);
     }
 

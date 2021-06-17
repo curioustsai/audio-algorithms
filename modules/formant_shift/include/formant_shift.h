@@ -7,10 +7,9 @@
 #include <memory>
 #include <algorithm>
 #include <cstdint>
-
+#include "pffftwrap.h"
 namespace ubnt {
 
-class Pffft;
 class FormantInterpolate;
 class OverlapAdd; 
 
@@ -33,7 +32,7 @@ private:
         return std::max<float>(input, Epsilon);
     }
 
-    std::unique_ptr<Pffft> fft;
+    Pffft fft;
     FormantInterpolate *oriFormantInterpo{nullptr};
     OverlapAdd *inOLA{nullptr};
     OverlapAdd *oriOLA{nullptr};
