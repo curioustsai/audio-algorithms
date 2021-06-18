@@ -30,7 +30,7 @@ FormantShift::~FormantShift() {
  * 
  * @return NULL No return value
  */
-void FormantShift::spectralSmooth(float *inSpectrum, float *outSpectrum, unsigned int frameSize) {
+void FormantShift::spectralSmooth(const float *inSpectrum, float *outSpectrum, unsigned int frameSize) {
     static constexpr float spectralSmoothRatio{1.0f/16.0f};
     
     logSpectrum[0] = logf(awayFromZero(inSpectrum[0]));
@@ -150,7 +150,7 @@ void FormantShift::release() {
     }
 }
 
-int FormantShift::process(float* in, float *ori, float* out, unsigned int numSample) {
+int FormantShift::process(const float* in, const float *ori, float* out, unsigned int numSample) {
     // Ring buffer process. Put buffer in and get windowed buffer out
     // with twice the buffer length.
     inOLA->setInput(in, numSample);
@@ -188,7 +188,7 @@ int FormantShift::process(float* in, float *ori, float* out, unsigned int numSam
     return inOLA->getOutput(out, numSample);
 }
 
-int FormantShift::process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample) {
+int FormantShift::process(const int16_t* in, const int16_t *ori, int16_t* out, unsigned int numSample) {
     assert(numSample <= MAX_BUFFER_SIZE);
 
     const float normalizeCoef = 1.0f / (float)SHRT_MAX;

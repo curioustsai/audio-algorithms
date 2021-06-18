@@ -10,7 +10,7 @@
 
 using namespace ubnt;
 
-void Pffft::getSpectrum(float *frequency, float *spectrum, unsigned int frameSize) {
+void Pffft::getSpectrum(const float *frequency, float *spectrum, unsigned int frameSize) {
     spectrum[0] = fabsf(frequency[0]);
     spectrum[1] = fabsf(frequency[1]);
     for (unsigned int idx = 2; idx < frameSize; idx+=2) {
@@ -78,7 +78,7 @@ bool Pffft::IsValidFftSize(size_t fft_size, Transform fft_type) {
   return factorization[0] >= a_min && n == 1;
 }
 
-void Pffft::fft(float *signal, float *freqResponse, unsigned int frameSize) {
+void Pffft::fft(const float *signal, float *freqResponse, unsigned int frameSize) {
     if (frameSize != fftSize) return;
 
     size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
@@ -89,7 +89,7 @@ void Pffft::fft(float *signal, float *freqResponse, unsigned int frameSize) {
     memcpy(freqResponse, outBuffer, sizeof(float) * bufferSize);
 }
 
-void Pffft::ifft(float *freqResponse, float *signal, unsigned int frameSize) {
+void Pffft::ifft(const float *freqResponse, float *signal, unsigned int frameSize) {
     if (frameSize != fftSize) return;
 
     size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
@@ -104,7 +104,7 @@ void Pffft::ifft(float *freqResponse, float *signal, unsigned int frameSize) {
     }
 }
 
-void Pffft::fftOrder(float *signal, float *freqResponse, unsigned int frameSize) {
+void Pffft::fftOrder(const float *signal, float *freqResponse, unsigned int frameSize) {
     if (frameSize != fftSize) return;
 
     size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);
@@ -115,7 +115,7 @@ void Pffft::fftOrder(float *signal, float *freqResponse, unsigned int frameSize)
     memcpy(freqResponse, outBuffer, sizeof(float) * bufferSize);
 }
 
-void Pffft::ifftOrder(float *freqResponse, float *signal, unsigned int frameSize) {
+void Pffft::ifftOrder(const float *freqResponse, float *signal, unsigned int frameSize) {
     if (frameSize != fftSize) return;
     
     size_t bufferSize = frameSize * (transform == Transform::REAL ? 1 : 2);

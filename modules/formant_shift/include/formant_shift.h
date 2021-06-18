@@ -23,10 +23,10 @@ public:
     void setDelay(unsigned int delayInSample);
     void setShiftTone(float shiftTone);
     float getShiftTone() const;
-    int process(float* in, float *ori, float* out, unsigned int numSample);
-    int process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample);
+    int process(const float* in, const float *ori, float* out, unsigned int numSample);
+    int process(const int16_t* in, const int16_t *ori, int16_t* out, unsigned int numSample);
 private:
-    void spectralSmooth(float *inSpectrum, float *outSpectrum, unsigned int frameSize);
+    void spectralSmooth(const float *inSpectrum, float *outSpectrum, unsigned int frameSize);
     inline float awayFromZero(float input) {
         static constexpr float Epsilon = 1e-6f;
         return std::max<float>(input, Epsilon);
