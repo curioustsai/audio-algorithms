@@ -10,9 +10,6 @@ file (
     PFFFT_C_SOURCES
     "${PROJECT_ROOT}/thirdparty/pffft/fftpack.c"
     "${PROJECT_ROOT}/thirdparty/pffft/pffft.c"
-    "${PROJECT_ROOT}/thirdparty/pffft/pffastconv.c"
-    "${PROJECT_ROOT}/thirdparty/pffft/pffft_common.c"
-    "${PROJECT_ROOT}/thirdparty/pffft/pffft_double.c"
 )
 
 add_definitions(-fexceptions)
