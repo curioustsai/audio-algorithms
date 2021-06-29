@@ -85,7 +85,7 @@ void OverlapAdd::hanning(float *window, unsigned int numSample) {
     }
 }
 
-int OverlapAdd::setInput(float *input, unsigned int frameSize) {
+int OverlapAdd::setInput(const float *input, unsigned int frameSize) {
     if (inBufferedSize + frameSize > bufPoolSize) {
         return -1;
     }
@@ -133,7 +133,7 @@ int OverlapAdd::getInput(float *input, unsigned int frameSize) {
     return bufferSize;
 }
 
-int OverlapAdd::setOutput(float *output, unsigned int frameSize) {
+int OverlapAdd::setOutput(const float *output, unsigned int frameSize) {
     if (frameSize != bufferSize) return -1;
     if (outBufferedSize + frameSize > bufPoolSize) return -1;
 

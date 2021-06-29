@@ -60,7 +60,7 @@ HASH_gen4l_toolchains=ae21c0ad32874316819276f5ad1c233c
 # gen4c
 NAME_gen4c_barebones=openwrt-gen4c-rel.tar.gz
 PATH_gen4c_barebones=$default_barebones_path
-HASH_gen4c_barebones=c1cb1a4f9a76405acd97f5930210e95a
+HASH_gen4c_barebones=3e49062ca81c83df5eccc90d655b1ec9
 
 NAME_gen4c_toolchains=linaro-aarch64-2020.09-gcc10.2-linux5.4-x86_64.tar.xz
 PATH_gen4c_toolchains=11
@@ -69,7 +69,7 @@ HASH_gen4c_toolchains=fa5ac3139511ae7296c83893785160fa
 # gen4s
 NAME_gen4s_barebones=openwrt-gen4s-rel.tar.gz
 PATH_gen4s_barebones=$default_barebones_path
-HASH_gen4s_barebones=e6d9619a49dbc4dbb6724b6f92a6b904
+HASH_gen4s_barebones=d006ba4d792a5cf323abd921b9030b08
 
 NAME_gen4s_toolchains=gcc-sigmastar-9.1.0-2019.11-x86_64_arm-linux-gnueabihf.tar.xz
 PATH_gen4s_toolchains=12

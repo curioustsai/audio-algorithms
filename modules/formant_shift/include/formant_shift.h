@@ -2,16 +2,16 @@
  *  Copyright (C) 2021, Ubiquiti Networks, Inc,
  */
 
-#ifndef __FORMANT_SHIFT_H__
-#define __FORMANT_SHIFT_H__
+#pragma once
 
+#include <memory>
 #include <algorithm>
 #include <cstdint>
 #include "pffftwrap.h"
-#include "overlapAdd.h"
-#include "formantInterpolate.h"
-
 namespace ubnt {
+
+class FormantInterpolate;
+class OverlapAdd; 
 
 class FormantShift {
 public:
@@ -22,23 +22,20 @@ public:
     void release();
     void setDelay(unsigned int delayInSample);
     void setShiftTone(float shiftTone);
-    float getShiftTone();
-    int process(float* in, float *ori, float* out, unsigned int numSample);
-    int process(int16_t* in, int16_t *ori, int16_t* out, unsigned int numSample);
+    float getShiftTone() const;
+    int process(const float* in, const float *ori, float* out, unsigned int numSample);
+    int process(const int16_t* in, const int16_t *ori, int16_t* out, unsigned int numSample);
 private:
-    Pffft fft;
-    unsigned int sampleRate{48000U};
-    unsigned int bufferSize{0U};
-    unsigned int processSize{0U};
-    
-    void spectralSmooth(float *inSpectrum, float *outSpectrum, unsigned int frameSize);
-    const float spectralSmoothRatio{1.0f/16.0f};
-    float *logSpectrum{nullptr};
-    float *cepstrum{nullptr};
+    void spectralSmooth(const float *inSpectrum, float *outSpectrum, unsigned int frameSize);
+    inline float awayFromZero(float input) {
+        static constexpr float Epsilon = 1e-6f;
+        return std::max<float>(input, Epsilon);
+    }
 
-    // formant shift amount in semi-tones
+    Pffft fft;
     FormantInterpolate *oriFormantInterpo{nullptr};
-    float shiftTone{0.0f};
+    OverlapAdd *inOLA{nullptr};
+    OverlapAdd *oriOLA{nullptr};
 
     float *inBuffer{nullptr};
     float *inFrequency{nullptr};
@@ -47,19 +44,17 @@ private:
     float *oriSpectrum{nullptr};
     float *outFrequency{nullptr};
     float *outBuffer{nullptr};
-    OverlapAdd *inOLA{nullptr};
-    OverlapAdd *oriOLA{nullptr};
+    float *logSpectrum{nullptr};
+    float *cepstrum{nullptr};
 
     static constexpr unsigned int MAX_BUFFER_SIZE = 16384;
+    unsigned int sampleRate{48000U};
+    unsigned int bufferSize{0U};
+    unsigned int processSize{0U};    
+    float shiftTone{0.0f};
     float in_buf_t[MAX_BUFFER_SIZE];
     float ori_buf_t[MAX_BUFFER_SIZE];
     float out_buf_t[MAX_BUFFER_SIZE];
-
-    inline float awayFromZero(float input) {
-        const float Epsilon = 1e-6f;
-        return std::max<float>(input, Epsilon);
-    }
 };
 
 } // ubnt
-#endif // __FORMANT_SHIFT_H__

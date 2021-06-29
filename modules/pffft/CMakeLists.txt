@@ -10,9 +10,6 @@ file (
     PFFFT_C_SOURCES
     "${PROJECT_ROOT}/thirdparty/pffft/fftpack.c"
     "${PROJECT_ROOT}/thirdparty/pffft/pffft.c"
-    "${PROJECT_ROOT}/thirdparty/pffft/pffastconv.c"
-    "${PROJECT_ROOT}/thirdparty/pffft/pffft_common.c"
-    "${PROJECT_ROOT}/thirdparty/pffft/pffft_double.c"
 )
 
 add_definitions(-fexceptions)
@@ -35,30 +32,19 @@ include_directories(
 #print some debug info about the list of files and include folders
 show_include_and_src_files()
 
-#define the executable
-add_library(
-    pffft-ori
-    STATIC
-    ${PFFFT_C_SOURCES}
-)
-
 add_library(
     ${PROJECT_NAME}
     STATIC
+    ${PFFFT_C_SOURCES}
     ${VERSION_SOURCES}
     ${CPP_SOURCES}
     ${C_SOURCES}
 )
 
-target_link_libraries(
-    ${PROJECT_NAME}
-    pffft-ori
-)
-
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/pffftwrap.h DESTINATION /include/${PROJECT_NAME})
-install(FILES ${PROJECT_ROOT}/thirdparty/pffft/pffft.h DESTINATION /include/${PROJECT_NAME})
+# install(FILES ${PROJECT_ROOT}/thirdparty/pffft/pffft.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
-install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}-ori.a DESTINATION /lib)
+# install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}-ori.a DESTINATION /lib)
 
 
 if(UBNT_WITH_TESTS)

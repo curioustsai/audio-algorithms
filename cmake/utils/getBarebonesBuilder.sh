@@ -13,7 +13,8 @@ ARTIFACTORY_SERVER_DEFAULT=https://pdx-artifacts.rad.ubnt.com
 ARTIFACTORY_SERVER=${ARTIFACTORY_SERVER_CUSTOM:-$ARTIFACTORY_SERVER_DEFAULT}
 #download everything
 
-for gen in gen3l gen3m gen3s gen4l; do
+gen=$UBNT_PLATFORM_TYPE
+if [ "${gen}" != "x86" ] ; then
 	for what in barebones toolchains; do
 		${UBNT_CMAKE_DIR}/cmake/utils/getCachedArtifact.sh \
 			$ARTIFACTORY_SERVER/list/unifi-video-firmware-dev/fw/${what}/uvc/$(eval echo \$PATH_${gen}_${what}) \
@@ -21,4 +22,4 @@ for gen in gen3l gen3m gen3s gen4l; do
 			$(eval echo \$HASH_${gen}_${what}) \
 			${UBNT_FW_CACHE}/${gen}/${what}
 	done
-done
+fi

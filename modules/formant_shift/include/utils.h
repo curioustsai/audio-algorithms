@@ -2,8 +2,7 @@
  *  Copyright (C) 2021, Ubiquiti Networks, Inc,
  */
 
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#pragma once
 
 inline void freeBuffer(float **buf) {
     if (*buf != nullptr) { 
@@ -22,5 +21,3 @@ inline int circIndex(int idx, int boundary) {
 
     return idx;
 }
-
-#endif // __UTILS_H__
