@@ -9,7 +9,7 @@ if (${UBNT_PLATFORM_NAME} MATCHES "gen[34].")
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
-	add_subdirectory(mic_array)
+	# add_subdirectory(mic_array)
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "x86")
