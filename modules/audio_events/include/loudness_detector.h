@@ -26,7 +26,7 @@ public:
     void SetLoudCntThr(int loudCntThr) { _loudCntThr = loudCntThr; }
     void SetQuietCntThr(int quietCntThr) { _quietCntThr = quietCntThr; }
     void SetIdleCntThr(int idleCntThr) { _idleCntThr = idleCntThr; }
-    void SetModel(std::string model) { _model = model; };
+    void SetModel(std::string model) { _model = std::move(model); };
 
     float GetDynamicHigh() const { return _dynRngHigh; }
     float GetDynamicLow() const { return _dynRngLow; }

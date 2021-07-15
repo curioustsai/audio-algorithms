@@ -18,11 +18,11 @@ Goertzel::Goertzel(int sample_rate, int frame_size, int target_freq) {
 }
 
 float Goertzel::calculate(const float* data, int num_sample) const {
-    float state, state1 = 0, state2 = 0;
+    float state1 = 0, state2 = 0;
     float power;
 
     for (int i = 0; i < num_sample; i++) {
-        state = (_coefficient * state1) - state2 + data[i];
+        float state = (_coefficient * state1) - state2 + data[i];
         state2 = state1;
         state1 = state;
     }

@@ -4,12 +4,8 @@
 
 using namespace ubnt::smartaudio;
 
-inline float convertLvlThr(int levelThreshold, float high = -20, float low = -60) {
-    return (float)levelThreshold / 100 * (low - high) + high;
-}
-
 void LoudnessDetector::Init(std::string model, float thresholdLoud, float thresholdQuiet) {
-    _model = model;
+    _model = std::move(model);
     _thresholdLoud = thresholdLoud;
     _thresholdQuiet = thresholdQuiet;
 
