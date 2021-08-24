@@ -33,6 +33,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 #platform files or do other switching
 set(UBNT_PLATFORM_NAME "gen3b")
 set(UBNT_PLATFORM_CPU "s2lm")
+set(UBNT_PLATFORM_HOST "arm-openwrt-linux")
+set(UBNT_COMPILE_OPTION "-mthumb -march=armv7-a -mtune=cortex-a9 -mlittle-endian -mfloat-abi=hard -mfpu=neon -Wno-deprecated-declarations -Wa,-mimplicit-it=thumb -funwind-tables")
+string(REPLACE " " ";" UBNT_COMPILE_OPTION_LIST ${UBNT_COMPILE_OPTION})
 
 #definitions
 add_definitions(
@@ -43,17 +46,12 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 add_definitions(-DUBNT_USE_BACKTRACE)
 
 #compile flags
-add_compile_options(
-    -mthumb
-    -march=armv7-a
-    -mtune=cortex-a9
-    -mlittle-endian
-    -mfloat-abi=hard
-    -mfpu=neon
-    -Wno-deprecated-declarations
-    -Wa,-mimplicit-it=thumb
-    -funwind-tables
-)
+foreach(OPT ${UBNT_COMPILE_OPTION_LIST})
+    add_compile_options(
+        ${OPT}
+    )
+endforeach()
+
 
 #linker flags
 set(EXTRA_LINKER_FLAGS "-Wl,--hash-style=gnu")

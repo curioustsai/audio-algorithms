@@ -33,6 +33,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 #platform files or do other switching
 set(UBNT_PLATFORM_NAME "gen2")
 set(UBNT_PLATFORM_CPU "a5s")
+set(UBNT_PLATFORM_HOST "arm-openwrt-linux-uclibcgnueabi")
+set(UBNT_COMPILE_OPTION "-march=armv6k -mtune=arm1136j-s -msoft-float -funwind-tables -Wno-psabi")
+string(REPLACE " " ";" UBNT_COMPILE_OPTION_LIST ${UBNT_COMPILE_OPTION})
 
 #definitions
 add_definitions(-DGEN2)
@@ -40,13 +43,11 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 add_definitions(-DUBNT_USE_BACKTRACE)
 
 #compile flags
-add_compile_options(
-    -march=armv6k
-    -mtune=arm1136j-s
-    -msoft-float
-    -funwind-tables
-    -Wno-psabi
-)
+foreach(OPT ${UBNT_COMPILE_OPTION_LIST})
+    add_compile_options(
+        ${OPT}
+    )
+endforeach()
 
 #linker flags
 set(EXTRA_LINKER_FLAGS "-Wl,--hash-style=gnu")
