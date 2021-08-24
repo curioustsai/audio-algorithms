@@ -15,6 +15,10 @@ set(
     CMAKE_CXX_COMPILER
     ${UBNT_FW_CACHE}/gen4s/toolchains/bin/arm-linux-gnueabihf-g++
 )
+set(
+    CMAKE_AR_COMPILER
+    ${UBNT_FW_CACHE}/gen4s/toolchains/bin/arm-linux-gnueabihf-ar
+)
 
 #where is the sysroot
 set(
@@ -33,6 +37,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 #platform files or do other switching
 set(UBNT_PLATFORM_NAME "gen4s")
 set(UBNT_PLATFORM_CPU "sav530q")
+set(UBNT_PLATFORM_HOST "arm-linux-gnueabihf")
+set(UBNT_COMPILE_OPTION "-mthumb -march=armv7-a -mtune=cortex-a7 -mlittle-endian -mfloat-abi=hard -mfpu=neon-vfpv4 -Wno-deprecated-declarations -Wa,-mimplicit-it=thumb -Wno-psabi")
+string(REPLACE " " ";" UBNT_COMPILE_OPTION_LIST ${UBNT_COMPILE_OPTION})
 
 #definitions
 add_definitions(-DGEN4S)
@@ -41,17 +48,11 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 add_definitions(-DUBNT_USE_BACKTRACE)
 
 #compile flags
-add_compile_options(
-    -mthumb
-    -march=armv7-a
-    -mtune=cortex-a7
-    -mlittle-endian
-    -mfloat-abi=hard
-    -mfpu=neon-vfpv4
-    -Wno-deprecated-declarations
-    -Wa,-mimplicit-it=thumb
-    -Wno-psabi
-)
+foreach(OPT ${UBNT_COMPILE_OPTION_LIST})
+    add_compile_options(
+        ${OPT}
+    )
+endforeach()
 
 #linker flags
 set(EXTRA_LINKER_FLAGS "-Wl,--hash-style=gnu")

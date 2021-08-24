@@ -33,6 +33,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 #platform files or do other switching
 set(UBNT_PLATFORM_NAME "gen4l")
 set(UBNT_PLATFORM_CPU "s5l")
+set(UBNT_PLATFORM_HOST "aarch64-linux-gnu")
+set(UBNT_COMPILE_OPTION "-pipe -march=armv8-a -mcpu=cortex-a53+crypto -mlittle-endian -funwind-tables")
+string(REPLACE " " ";" UBNT_COMPILE_OPTION_LIST ${UBNT_COMPILE_OPTION})
 
 #definitions
 add_definitions(-DGEN4L)
@@ -42,13 +45,11 @@ add_definitions(-DCONFIG_AMBARELLA_MAX_CHANNEL_NUM=2)
 add_definitions(-DCONFIG_ARCH_S5L)
 
 #compile flags
-add_compile_options(
-    -pipe
-    -march=armv8-a
-    -mcpu=cortex-a53+crypto
-    -mlittle-endian
-    -funwind-tables
-)
+foreach(OPT ${UBNT_COMPILE_OPTION_LIST})
+    add_compile_options(
+        ${OPT}
+    )
+endforeach()
 
 #linker flags
 set(EXTRA_LINKER_FLAGS "-Wl,--hash-style=gnu")

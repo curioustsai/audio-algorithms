@@ -33,6 +33,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 #platform files or do other switching
 set(UBNT_PLATFORM_NAME "gen4c")
 set(UBNT_PLATFORM_CPU "cv2x")
+set(UBNT_PLATFORM_HOST "aarch64-linux-gnu")
+set(UBNT_COMPILE_OPTION "-pipe -march=armv8-a -mcpu=cortex-a53+crypto -mlittle-endian -funwind-tables")
+string(REPLACE " " ";" UBNT_COMPILE_OPTION_LIST ${UBNT_COMPILE_OPTION})
 
 #definitions
 add_definitions(-DGEN4C)
@@ -40,13 +43,11 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 add_definitions(-DUBNT_USE_BACKTRACE)
 
 #compile flags
-add_compile_options(
-    -pipe
-    -march=armv8-a
-    -mcpu=cortex-a53+crypto
-    -mlittle-endian
-    -funwind-tables
-)
+foreach(OPT ${UBNT_COMPILE_OPTION_LIST})
+    add_compile_options(
+        ${OPT}
+    )
+endforeach()
 
 #linker flags
 set(EXTRA_LINKER_FLAGS "-Wl,--hash-style=gnu")
