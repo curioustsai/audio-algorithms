@@ -34,8 +34,8 @@ add_library(
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/MicArray.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
 
-if(UBNT_WITH_TESTS)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")
-	add_subdirectory(test)
-endif()
-
+# if(UBNT_WITH_TESTS)
+# 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")
+# 	add_subdirectory(test)
+# endif()
+#
