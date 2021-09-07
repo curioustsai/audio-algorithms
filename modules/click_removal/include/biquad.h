@@ -8,14 +8,13 @@ class Biquad {
 public:
     Biquad();
     ~Biquad();
-
     /*
      * Init biquad filter with coef[5]
      * b0 = coef[0], b1 = coef[1], b2 = coef[2], a0 = 1, a1 = coef[3], a2 = coef[4]
      */
     bool reset(const float* coef, const int num);
     /*
-     * Process can be in-place
+     * Process can be in-place, Direct Form II implementation
      */
     void process(const float* input, float* output, const int num);
 
@@ -34,6 +33,10 @@ public:
      * };
      */
     bool reset(const float coefs[][5], const int numCascade);
+
+    /*
+     * Process with cascaded biquad filters
+     */
     void process(const float* input, float* output, const int num);
 
 private:
