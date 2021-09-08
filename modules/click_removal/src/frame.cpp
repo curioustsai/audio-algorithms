@@ -5,20 +5,24 @@
 #include "frame.h"
 #include <cmath>
 #include <cstring>
-#include <iostream>
+#include <stdio.h>
+
+namespace ubnt {
 
 Frame::Frame() { reset(_frameSize); }
 
 Frame::Frame(const int frameSize) : _frameSize(frameSize) { reset(_frameSize); };
 
-void Frame::reset(const int frameSize) {
+bool Frame::reset(const int frameSize) {
     _frameSize = frameSize;
 
     if (_data) {
         delete[] _data;
         _data = nullptr;
     }
-    _data = new float[_frameSize] {0};
+    _data = new float[_frameSize]{0};
+
+    return true;
 }
 
 Frame::~Frame() {
@@ -30,7 +34,7 @@ Frame::~Frame() {
 
 bool Frame::updateFrame(const float* data, const int num) {
     if (num != _frameSize) {
-        std::cout << "Update Frame Failed" << std::endl;
+        printf("Update Frame Failed\n");
         return false;
     }
 
@@ -41,7 +45,7 @@ bool Frame::updateFrame(const float* data, const int num) {
 
 bool Frame::getOutput(float* buf, const int num) {
     if (num != _frameSize) {
-        std::cout << "GetOuput Failed" << std::endl;
+        printf("GetOuput Failed\n");
         return false;
     }
 
@@ -67,6 +71,15 @@ float Frame::getPowerdB() {
     return 10 * log10f(mean);
 }
 
+bool Frame::copyFrame(Frame& other) {
+    if (other._frameSize != _frameSize) return false;
+
+    if (_data == nullptr) { _data = new float[_frameSize]; }
+    memcpy(_data, other._data, _frameSize * sizeof(float));
+
+    return true;
+}
+
 FrameOverlap::FrameOverlap() {}
 
 FrameOverlap::FrameOverlap(const int frameSize, const int overlapSize) {
@@ -82,7 +95,7 @@ FrameOverlap::~FrameOverlap() {
     }
 }
 
-void FrameOverlap::reset(const int frameSize, const int overlapSize) {
+bool FrameOverlap::reset(const int frameSize, const int overlapSize) {
     _frameSize = frameSize;
     _overlapSize = overlapSize;
     _hopSize = frameSize - _overlapSize;
@@ -91,12 +104,14 @@ void FrameOverlap::reset(const int frameSize, const int overlapSize) {
         delete[] _data;
         _data = nullptr;
     }
-    _data = new float[_frameSize] {0};
+    _data = new float[_frameSize]{0};
+
+    return true;
 }
 
 bool FrameOverlap::updateFrame(const float* data, const int num) {
     if (num != _hopSize) {
-        std::cout << "Update Frame Failed" << std::endl;
+        printf("Update Frame Failed\n");
         return false;
     }
 
@@ -108,7 +123,7 @@ bool FrameOverlap::updateFrame(const float* data, const int num) {
 
 bool FrameOverlap::getOutput(float* buf, const int num) {
     if (num != _hopSize) {
-        std::cout << "GetOuput Failed" << std::endl;
+        printf("GetOuput Failed\n");
         return false;
     }
 
@@ -117,16 +132,4 @@ bool FrameOverlap::getOutput(float* buf, const int num) {
     return true;
 }
 
-// void FrameOverlap::hanning(float *window, unsigned int framSize) {
-//     const float PI_2 = M_PI + M_PI;
-//     const float denom = 1.0f / static_cast<float>(framSize - 1);
-//     const unsigned int halfSample = framSize >> 1;
-//     for (unsigned int i = 0; i < halfSample; i++) {
-//         window[i] = 0.5f * (1.0f - cos(PI_2 * static_cast<float>(i) * denom));
-//         window[framSize - i - 1] = window[i];
-//     }
-//     // If the numSample is odd number, the center index of window should be calculated
-//     if ((framSize & 1) == 1) {
-//         window[halfSample + 1] = 0.5f;
-//     }
-// }
+} // namespace ubnt

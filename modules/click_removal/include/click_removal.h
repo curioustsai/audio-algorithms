@@ -8,6 +8,8 @@
 #include "frame.h"
 #include "ring_buffer.h"
 
+namespace ubnt {
+
 class ClickRemoval {
 public:
     ClickRemoval() = delete;
@@ -17,22 +19,24 @@ public:
     int process(const float *input, float *output, const int num);
 
 #ifdef AUDIO_ALGO_DEBUG
-    float *dbgInfo; 
+    float *dbgInfo{nullptr};
 #endif
 
 private:
-    RingBuffer _rawBuffer{1024};
+    RingBuffer _inBuffer{1024};
     SosFilter _hpf4kHz;
+    SosFilter _lpf4kHz;
     FrameOverlap _inFrame{1024, 512};
     FrameOverlap _inFrame4kHz{1024, 512};
 
     int _frameSize{1024};
-    int _subframeSize{256};
-    int _hopSize{128};
+    int _subframeSize{1024};
+    int _hopSize{512};
     int _detected{0};
 
+    float *_hop{nullptr};
     float _threshold_all{0.01};
     float _threshold_4kHz{0.005};
-    float _framePowerSmooth{0};
 };
 
+} // namespace ubnt

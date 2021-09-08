@@ -6,6 +6,8 @@
 
 #include "frame.h"
 
+using namespace ubnt;
+
 /* TEST for Frame */
 
 TEST(Frame, Reset) {

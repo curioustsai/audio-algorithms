@@ -4,6 +4,8 @@
 
 #include "ring_buffer.h"
 
+using namespace ubnt;
+
 TEST(RingBuffer, IndenticalFrame) {
     RingBuffer buf;
     int frameSize = 1024;

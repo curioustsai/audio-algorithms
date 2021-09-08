@@ -5,6 +5,8 @@
 
 #include "biquad.h"
 
+using namespace ubnt;
+
 TEST(Biquad, Process) {
     Biquad biquad;
     int frameSize = 16;
@@ -31,14 +33,12 @@ TEST(Biquad, Process) {
 
 TEST(SosFilter, Process) {
     SosFilter sosfilt;
-    // const float ba[2][5] = {{0.32483446, -1.29933784, 1.94900676, -1.29933784, 0.32483446},
-    //                         {1., -2.28624977, 2.39800304, -1.27756663, 0.3796345}};
     const float ba[2][5] = {{0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.41692846},
                             {1., -2., 1., -1.62913992, 0.9105507}};
     int frameSize = 16;
     float *inbuf = new float[frameSize];
     float *outbuf = new float[frameSize];
-    float ans[] = {0.,          0.32483446,  0.09298379, -0.2415354, -0.36018799, -0.24880247,
+    float ans[16] = {0.,          0.32483446,  0.09298379, -0.2415354, -0.36018799, -0.24880247,
                    -0.04897011, 0.11620218,  0.20197575, 0.21500525, 0.174264,    0.09675092,
                    0.00131773,  -0.08798588, -0.1468685, -0.15983416};
 

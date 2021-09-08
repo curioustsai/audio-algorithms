@@ -4,17 +4,24 @@
 
 #pragma once
 
+namespace ubnt {
+
 class Biquad {
 public:
-    Biquad();
-    ~Biquad();
+    /* Default constructor, call reset function to set coefs before use */
+    Biquad() = default;
+
+    /* Default deconstructor */
+    ~Biquad() = default;
+
     /*
-     * Init biquad filter with coef[5]
+     * Reset biquad filter with coef[5]
      * b0 = coef[0], b1 = coef[1], b2 = coef[2], a0 = 1, a1 = coef[3], a2 = coef[4]
      */
     bool reset(const float* coef, const int num);
+
     /*
-     * Process can be in-place, Direct Form II implementation
+     * Direct Form II implementation, can be processed in-place  
      */
     void process(const float* input, float* output, const int num);
 
@@ -23,10 +30,19 @@ private:
     float _state[2] = {0.f};
 };
 
+/*
+ * Second order section filter (cascaded biquad)
+ */
 class SosFilter {
 public:
+    /* Default constructor, call reset function to set coefs before use */
+    SosFilter() = default;
+
+    /* Default deconstructor */
+    ~SosFilter();
+
     /*
-     * Initialize with 2d coefs array
+     * Reset coefs with 2d array
      * coefs[5][numCascade] = { 
      * {0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284},
      * {1, -2, 1, -1.62913992, 0.9105507}
@@ -40,7 +56,8 @@ public:
     void process(const float* input, float* output, const int num);
 
 private:
-    int _numCascade;
-    Biquad** _biquads;
+    int _numCascade{0};
+    Biquad** _biquads{nullptr};
 };
 
+} // namespace ubnt

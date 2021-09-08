@@ -6,6 +6,8 @@
 #include <cstring>
 #include <stdio.h>
 
+namespace ubnt {
+
 RingBuffer::RingBuffer() {
     _capacity = 15360;
     resetCapacity(_capacity);
@@ -87,3 +89,5 @@ void RingBuffer::showInfo() {
     printf("capacity: %d\nIn Use Lenght: %d\nStart index: %d\nEnd Index: %d\n\n", _capacity,
            _inUseLength, _inUseStart, _inUseEnd);
 }
+
+} // namespace ubnt

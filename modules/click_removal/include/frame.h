@@ -4,17 +4,20 @@
 
 #pragma once
 
+namespace ubnt {
+
 class Frame {
 public:
     Frame();
     Frame(const int frameSize);
     ~Frame();
 
-    void reset(const int frameSize);
+    bool reset(const int frameSize);
     bool updateFrame(const float* data, const int num);
     bool getOutput(float* buf, const int num);
     float getPowerMean();
     float getPowerdB();
+    bool copyFrame(Frame& other);
 
 protected:
     float* _data{nullptr};
@@ -27,17 +30,13 @@ public:
     FrameOverlap(const int frameSize, const int overlapSize);
     ~FrameOverlap();
 
-    void reset(const int frameSize, const int overlapSize);
+    bool reset(const int frameSize, const int overlapSize);
     bool updateFrame(const float* data, const int num);
     bool getOutput(float* buf, const int num);
 
-    // void applyWindow();
-    // void initHanning();
-
 private:
-    float *hanning{nullptr};
-    float *windowed{nullptr};
-
     int _overlapSize{512};
     int _hopSize{512};
 };
+
+} // namespace ubnt

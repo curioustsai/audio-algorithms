@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
     app.add_option("--frameSize", frameSize, "frame size in samples");
-    app.add_option("--subframeSize", frameSize, "subframe size in samples");
+    app.add_option("--subframeSize", subframeSize, "subframe size in samples");
     app.add_option("--threshold_all", threshold_all, "threshold of all bands");
     app.add_option("--threshold_4kHz", threshold_4kHz, "threshold above 4kHz");
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     float *input = new float[frameSize];
     float *output = new float[frameSize];
 
-    ClickRemoval remover(frameSize, subframeSize, threshold_all, threshold_4kHz);
+    ubnt::ClickRemoval remover(frameSize, subframeSize, threshold_all, threshold_4kHz);
     while (frameSize == sf_read_short(infile, input_q15, frameSize)) {
         for (int i = 0; i < frameSize; i++) { input[i] = (float)(input_q15[i] / 32768.f); }
 
@@ -91,7 +91,6 @@ int main(int argc, char *argv[]) {
 
 #ifdef AUDIO_ALGO_DEBUG
     delete[] dbgBuf_q15;
-    // delete[] dbgBuf;
     sf_close(dbgfile);
 #endif
 }

@@ -4,17 +4,35 @@
 
 #pragma once
 
+namespace ubnt {
+
 class RingBuffer {
 public:
+    /* Constructor, create with default capacity 15360 samples */
     RingBuffer();
+
+    /* Constructor, create with capacity size */
     RingBuffer(const int capacity);
+
+    /* Deconstructor, delete _data buffer */
     ~RingBuffer();
 
+    /* Resize with capacity */
     bool resetCapacity(const int capacity);
+
+    /*  Put zeros into buffer */
     bool setDelay(const int delaySamples);
+
+    /* Copy new frame into ring buffer */
     bool putFrame(const float* newFrame, const int num);
-    int getFrame(float* newFrame, const int num);
+
+    /* Copy frame into buffer */
+    int getFrame(float* buffer, const int num);
+
+    /* Get samples in use */
     int getInUseSamples();
+
+    /* print member info */
     void showInfo();
 
 private:
@@ -24,3 +42,5 @@ private:
     int _inUseEnd{0};
     int _inUseLength{0};
 };
+
+} // namespace ubnt

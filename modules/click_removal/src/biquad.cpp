@@ -6,12 +6,7 @@
 #include <cstring>
 #include <stdio.h>
 
-Biquad::Biquad() {
-    float coef[5] = {0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284};
-    reset(coef, 5);
-}
-
-Biquad::~Biquad() {}
+namespace ubnt {
 
 bool Biquad::reset(const float *coef, const int num) {
     if (num != 5) {
@@ -41,6 +36,19 @@ void Biquad::process(const float *input, float *output, const int num) {
     }
 }
 
+SosFilter::~SosFilter() {
+    if (_biquads) {
+        for (int i = 0; i < _numCascade; i++) {
+            if (_biquads[i]) {
+                delete _biquads[i];
+                _biquads[i] = nullptr;
+            }
+        }
+        delete[] _biquads;
+        _biquads = nullptr;
+    }
+}
+
 bool SosFilter::reset(const float coefs[][5], const int numCascade) {
     _numCascade = numCascade;
     _biquads = new Biquad *[numCascade];
@@ -54,6 +62,8 @@ bool SosFilter::reset(const float coefs[][5], const int numCascade) {
 }
 
 void SosFilter::process(const float *input, float *output, const int num) {
-    memcpy(output, input, num * sizeof(float));
-    for (int i = 0; i < _numCascade; i++) { _biquads[i]->process(output, output, num); }
+    _biquads[0]->process(input, output, num);
+    for (int i = 1; i < _numCascade; i++) { _biquads[i]->process(output, output, num); }
 }
+
+} // namespace ubnt

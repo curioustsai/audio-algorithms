@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstring>
 
+namespace ubnt {
+
 ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const float threshold_all,
                            const float threshold_4kHz)
     : _frameSize(frameSize),
@@ -13,25 +15,44 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
       _threshold_all(threshold_all),
       _threshold_4kHz(threshold_4kHz) {
 
-    /* high pass filter, 2 biquad cascasded 
+    /* 
+     * high pass filter at 4kHz for fs=48kHz, 2 biquad cascaded 
      * import scipy.signal as signal
-     * signal.cheby1(4, 3, 4000/24000, 'high', output='sos') */
-    const float ba[2][5] = {{0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284},
-                            {1, -2, 1, -1.62913992, 0.9105507}};
-    _hpf4kHz.reset(ba, 2);
+     * signal.cheby1(4, 3, 4000/24000, 'high', output='sos') 
+     */
+    const float coef[2][5] = {{0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284},
+                              {1, -2, 1, -1.62913992, 0.9105507}};
+    _hpf4kHz.reset(coef, 2);
+
+    /*
+     * low pass filter at 4kHz for fs=48kHz, 2 biquad cascaded
+     * signal.cheby1(4, 3, 4000/24000, 'low', output='sos')
+     */
+    const float coef_lpf4kHz[2][5] = {
+        {5.17335477e-04, 1.03467095e-03, 5.17335477e-04, -1.75391386e+00, 8.03975970e-01},
+        {1.00000000e+00, 2.00000000e+00, 1.00000000e+00, -1.68424486e+00, 9.17796589e-01}};
+    _lpf4kHz.reset(coef_lpf4kHz, 2);
 
     _hopSize = _subframeSize / 2;
     _inFrame.reset(_subframeSize, _hopSize);
     _inFrame4kHz.reset(_subframeSize, _hopSize);
+    _hop = new float[_hopSize];
 
 #ifdef AUDIO_ALGO_DEBUG
     dbgInfo = new float[_frameSize * 2];
 #endif
-};
+}
 
 ClickRemoval::~ClickRemoval() {
+    if (_hop) {
+        delete[] _hop;
+        _hop = nullptr;
+    }
 #ifdef AUDIO_ALGO_DEBUG
-    delete[] dbgInfo;
+    if (dbgInfo) {
+        delete[] dbgInfo;
+        dbgInfo = nullptr;
+    }
 #endif
 }
 
@@ -39,14 +60,13 @@ int ClickRemoval::process(const float *input, float *output, const int num) {
     if (num != _frameSize) return 0;
 
     int num_processed = 0;
-    float *data_hop = new float[_hopSize];
-    _rawBuffer.putFrame(input, num);
+    _inBuffer.putFrame(input, num);
 
-    while (_rawBuffer.getFrame(data_hop, _hopSize) == _hopSize) {
-        _inFrame.updateFrame(data_hop, _hopSize);
+    while (_inBuffer.getFrame(_hop, _hopSize) == _hopSize) {
+        _inFrame.updateFrame(_hop, _hopSize);
 
-        _hpf4kHz.process(data_hop, data_hop, _hopSize);
-        _inFrame4kHz.updateFrame(data_hop, _hopSize);
+        _hpf4kHz.process(_hop, _hop, _hopSize);
+        _inFrame4kHz.updateFrame(_hop, _hopSize);
 
         float power = _inFrame.getPowerMean();
         float power_4kHz = _inFrame4kHz.getPowerMean();
@@ -58,24 +78,19 @@ int ClickRemoval::process(const float *input, float *output, const int num) {
         }
 #endif
 
-        _inFrame.getOutput(output + num_processed, _hopSize);
-        if ((power > _threshold_all) && (power_4kHz > _threshold_4kHz)) { _detected = 3; }
+        if ((power > _threshold_all) && (power_4kHz > _threshold_4kHz)) { _detected = 2; }
 
+        _inFrame.getOutput(output + num_processed, _hopSize);
         if (_detected) {
-            float gain = fmin(0.1, _framePowerSmooth / power);
-            for (int i = 0; i < _hopSize; i++) { output[i + num_processed] *= gain; }
+            _lpf4kHz.process(output + num_processed, output + num_processed, _hopSize);
+            for (int i = 0; i < _hopSize; i++) { output[i + num_processed] *= 0.25; }
             _detected--;
         }
-        _framePowerSmooth = 0.9f * _framePowerSmooth + 0.1f * power;
 
         num_processed += _hopSize;
-        // bypass
-        // for (int i = 0; i < _hopSize; i++) { output[i + num_processed] = data_hop[i]; }
-        // num_processed += _hopSize;
     }
-
-    delete[] data_hop;
 
     return num_processed;
 }
 
+} // namespace ubnt
