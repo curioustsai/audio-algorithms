@@ -7,6 +7,10 @@ if(${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
 	add_subdirectory(formant_shifter)
 endif()
 
+if(${UBNT_PLATFORM_NAME} STREQUAL "gen4c")
+	add_subdirectory(ui_click_remover)
+endif()
+
 if(${UBNT_PLATFORM_NAME} STREQUAL "x86")
 	add_subdirectory(ui_audio_events)
 	add_subdirectory(ui_sample_app)
