@@ -14,19 +14,10 @@ RingBuffer::RingBuffer() {
 }
 
 RingBuffer::RingBuffer(const int capacity) : _capacity(capacity) { resetCapacity(_capacity); }
-RingBuffer::~RingBuffer() {
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-}
+RingBuffer::~RingBuffer() {}
 
 bool RingBuffer::resetCapacity(const int capacity) {
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-    _data = new float[capacity]{0};
+    _data.reset(new float[capacity]{0});
     if (_data == nullptr) return false;
 
     _capacity = capacity;
@@ -49,14 +40,14 @@ bool RingBuffer::putFrame(const float* dataFrame, const int num) {
 
     // safe case
     if (_inUseEnd + num < _capacity) {
-        memcpy(_data + _inUseEnd, dataFrame, num * sizeof(float));
+        memcpy(_data.get() + _inUseEnd, dataFrame, num * sizeof(float));
         _inUseLength += num;
         _inUseEnd += num;
     } else {
         int len1 = _capacity - _inUseEnd;
         int len2 = num - len1;
-        memcpy(_data + _inUseEnd, dataFrame, len1 * sizeof(float));
-        memcpy(_data, dataFrame + len1, len2 * sizeof(float));
+        memcpy(_data.get() + _inUseEnd, dataFrame, len1 * sizeof(float));
+        memcpy(_data.get(), dataFrame + len1, len2 * sizeof(float));
 
         _inUseLength += num;
         _inUseEnd = len2;
@@ -71,14 +62,14 @@ int RingBuffer::getFrame(float* dataFrame, const int num) {
 
     // successfully get data
     if (_inUseStart + num < _capacity) {
-        memcpy(dataFrame, _data + _inUseStart, num * sizeof(float));
+        memcpy(dataFrame, _data.get() + _inUseStart, num * sizeof(float));
         _inUseLength -= num;
         _inUseStart += num;
     } else {
         int len1 = _capacity - _inUseStart;
         int len2 = num - len1;
-        memcpy(dataFrame, _data + _inUseStart, len1 * sizeof(float));
-        memcpy(dataFrame + len1, _data, len2 * sizeof(float));
+        memcpy(dataFrame, _data.get() + _inUseStart, len1 * sizeof(float));
+        memcpy(dataFrame + len1, _data.get(), len2 * sizeof(float));
         _inUseLength -= num;
         _inUseStart = len2;
     }

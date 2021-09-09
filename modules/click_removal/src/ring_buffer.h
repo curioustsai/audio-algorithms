@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <memory>
 namespace ubnt {
 
 class RingBuffer {
@@ -36,7 +37,7 @@ public:
     void showInfo();
 
 private:
-    float* _data{nullptr};
+    std::unique_ptr<float[]>_data;
     int _capacity{15360};
     int _inUseStart{0};
     int _inUseEnd{0};

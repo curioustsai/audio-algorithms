@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <memory>
 namespace ubnt {
 
 class Frame {
@@ -12,6 +13,7 @@ public:
     Frame(const int frameSize);
     ~Frame();
 
+    /* TODO ADD virtual */
     bool reset(const int frameSize);
     bool updateFrame(const float* data, const int num);
     bool getOutput(float* buf, const int num);
@@ -20,7 +22,7 @@ public:
     bool copyFrame(Frame& other);
 
 protected:
-    float* _data{nullptr};
+    std::unique_ptr<float[]> _data{nullptr};
     int _frameSize{1024};
 };
 

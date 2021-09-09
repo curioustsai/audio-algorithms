@@ -15,22 +15,12 @@ Frame::Frame(const int frameSize) : _frameSize(frameSize) { reset(_frameSize); }
 
 bool Frame::reset(const int frameSize) {
     _frameSize = frameSize;
-
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-    _data = new float[_frameSize]{0};
+    _data.reset(new float[_frameSize]{0});
 
     return true;
 }
 
-Frame::~Frame() {
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-}
+Frame::~Frame() {}
 
 bool Frame::updateFrame(const float* data, const int num) {
     if (num != _frameSize) {
@@ -38,7 +28,7 @@ bool Frame::updateFrame(const float* data, const int num) {
         return false;
     }
 
-    memcpy(_data, data, num * sizeof(float));
+    memcpy(_data.get(), data, num * sizeof(float));
 
     return true;
 }
@@ -49,7 +39,7 @@ bool Frame::getOutput(float* buf, const int num) {
         return false;
     }
 
-    memcpy(buf, _data, num * sizeof(float));
+    memcpy(buf, _data.get(), num * sizeof(float));
 
     return true;
 }
@@ -74,8 +64,8 @@ float Frame::getPowerdB() {
 bool Frame::copyFrame(Frame& other) {
     if (other._frameSize != _frameSize) return false;
 
-    if (_data == nullptr) { _data = new float[_frameSize]; }
-    memcpy(_data, other._data, _frameSize * sizeof(float));
+    if (_data == nullptr) { _data.reset(new float[_frameSize]); }
+    memcpy(_data.get(), other._data.get(), _frameSize * sizeof(float));
 
     return true;
 }
@@ -88,23 +78,14 @@ FrameOverlap::FrameOverlap(const int frameSize, const int overlapSize) {
     reset(_frameSize, _overlapSize);
 }
 
-FrameOverlap::~FrameOverlap() {
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-}
+FrameOverlap::~FrameOverlap() {}
 
 bool FrameOverlap::reset(const int frameSize, const int overlapSize) {
     _frameSize = frameSize;
     _overlapSize = overlapSize;
     _hopSize = frameSize - _overlapSize;
 
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-    _data = new float[_frameSize]{0};
+    _data.reset(new float[_frameSize]{0});
 
     return true;
 }
@@ -115,8 +96,8 @@ bool FrameOverlap::updateFrame(const float* data, const int num) {
         return false;
     }
 
-    memmove(_data, _data + _hopSize, _overlapSize * sizeof(float));
-    memcpy(_data + _overlapSize, data, _hopSize * sizeof(float));
+    memmove(_data.get(), _data.get() + _hopSize, _overlapSize * sizeof(float));
+    memcpy(_data.get() + _overlapSize, data, _hopSize * sizeof(float));
 
     return true;
 }
@@ -127,7 +108,7 @@ bool FrameOverlap::getOutput(float* buf, const int num) {
         return false;
     }
 
-    memcpy(buf, _data, num * sizeof(float));
+    memcpy(buf, _data.get(), num * sizeof(float));
 
     return true;
 }

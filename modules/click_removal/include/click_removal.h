@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 namespace ubnt {
 
 class RingBuffer;
@@ -28,23 +29,23 @@ public:
     int threshold_4kHz() const { return _threshold_4kHz; }
 
 #ifdef AUDIO_ALGO_DEBUG
-    float* dbgInfo{nullptr};
+    std::unique_ptr<float[]> dbgInfo;
 #endif
 
 private:
-    RingBuffer* _inBuffer;
-    SosFilter* _hpf4kHz;
-    SosFilter* _lpf4kHz;
-    FrameOverlap* _inFrame;
-    FrameOverlap* _inFrame4kHz;
+    std::unique_ptr<RingBuffer> _inBuffer;
+    std::unique_ptr<SosFilter> _hpf4kHz;
+    std::unique_ptr<SosFilter> _lpf4kHz;
+    std::unique_ptr<FrameOverlap> _inFrame;
+    std::unique_ptr<FrameOverlap> _inFrame4kHz;
+    std::unique_ptr<float[]> _floatBuf;
+    std::unique_ptr<float[]> _hop;
 
     int _frameSize{1024};
     int _subframeSize{1024};
     int _hopSize{512};
     int _detected{0};
 
-    float* _floatBuf{nullptr};
-    float* _hop{nullptr};
     float _threshold_all{0.01};
     float _threshold_4kHz{0.005};
 };

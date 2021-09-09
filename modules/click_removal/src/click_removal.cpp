@@ -26,7 +26,7 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
      */
     const float coef[2][5] = {{0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284},
                               {1, -2, 1, -1.62913992, 0.9105507}};
-    _hpf4kHz = new SosFilter;
+    _hpf4kHz.reset(new SosFilter);
     _hpf4kHz->reset(coef, 2);
 
     /*
@@ -37,65 +37,21 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
         {5.17335477e-04, 1.03467095e-03, 5.17335477e-04, -1.75391386e+00, 8.03975970e-01},
         {1.00000000e+00, 2.00000000e+00, 1.00000000e+00, -1.68424486e+00, 9.17796589e-01}};
 
-    _lpf4kHz = new SosFilter;
+    _lpf4kHz.reset(new SosFilter);
     _lpf4kHz->reset(coef_lpf4kHz, 2);
 
-    _inFrame = new FrameOverlap{_subframeSize, _hopSize};
-    _inFrame->reset(_subframeSize, _hopSize);
+    _inFrame.reset(new FrameOverlap{_subframeSize, _hopSize});
+    _inFrame4kHz.reset(new FrameOverlap{_subframeSize, _hopSize});
 
-    _inFrame4kHz = new FrameOverlap{_subframeSize, _hopSize};
-    _inFrame4kHz->reset(_subframeSize, _hopSize);
-    _inBuffer = new RingBuffer{frameSize * 16};
-    _hop = new float[_hopSize];
+    _inBuffer.reset(new RingBuffer{frameSize * 16});
+    _hop.reset(new float[_hopSize]);
 
 #ifdef AUDIO_ALGO_DEBUG
-    dbgInfo = new float[_frameSize * 2];
+    dbgInfo.reset(new float[_frameSize * 2]);
 #endif
 }
 
-ClickRemoval::~ClickRemoval() {
-    if (_hpf4kHz) {
-        delete _hpf4kHz;
-        _hpf4kHz = nullptr;
-    }
-
-    if (_lpf4kHz) {
-        delete _lpf4kHz;
-        _lpf4kHz = nullptr;
-    }
-
-    if (_inFrame) {
-        delete _inFrame;
-        _inFrame = nullptr;
-    }
-
-    if (_inFrame4kHz) {
-        delete _inFrame4kHz;
-        _inFrame4kHz = nullptr;
-    }
-
-    if (_inBuffer) {
-        delete _inBuffer;
-        _inBuffer = nullptr;
-    }
-
-    if (_hop) {
-        delete[] _hop;
-        _hop = nullptr;
-    }
-
-    if (_floatBuf) {
-        delete[] _floatBuf;
-        _floatBuf = nullptr;
-    }
-
-#ifdef AUDIO_ALGO_DEBUG
-    if (dbgInfo) {
-        delete[] dbgInfo;
-        dbgInfo = nullptr;
-    }
-#endif
-}
+ClickRemoval::~ClickRemoval() {}
 
 int ClickRemoval::process(float *buf, const int num) {
     if (num != _frameSize) return 0;
@@ -103,11 +59,11 @@ int ClickRemoval::process(float *buf, const int num) {
     int num_processed = 0;
     _inBuffer->putFrame(buf, num);
 
-    while (_inBuffer->getFrame(_hop, _hopSize) == _hopSize) {
-        _inFrame->updateFrame(_hop, _hopSize);
+    while (_inBuffer->getFrame(_hop.get(), _hopSize) == _hopSize) {
+        _inFrame->updateFrame(_hop.get(), _hopSize);
 
-        _hpf4kHz->process(_hop, _hop, _hopSize);
-        _inFrame4kHz->updateFrame(_hop, _hopSize);
+        _hpf4kHz->process(_hop.get(), _hop.get(), _hopSize);
+        _inFrame4kHz->updateFrame(_hop.get(), _hopSize);
 
         float power = _inFrame->getPowerMean();
         float power_4kHz = _inFrame4kHz->getPowerMean();
@@ -136,10 +92,10 @@ int ClickRemoval::process(float *buf, const int num) {
 }
 
 int ClickRemoval::process(int16_t *buf, const int num) {
-    if (_floatBuf == nullptr) { _floatBuf = new float[_frameSize]; }
+    if (_floatBuf == nullptr) { _floatBuf.reset(new float[_frameSize]); }
 
     for (int i = 0; i < num; i++) { _floatBuf[i] = (float)buf[i] / 32768.f; }
-    int num_processed = process(_floatBuf, num);
+    int num_processed = process(_floatBuf.get(), num);
     for (int i = 0; i < num_processed; i++) { buf[i] = (int16_t)(_floatBuf[i] * 32768.f); }
     for (int i = num_processed; i < num; i++) { buf[i] = 0; }
 
