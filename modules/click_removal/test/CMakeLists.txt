@@ -14,6 +14,7 @@ function(
         ${TEST_NAME}
         PRIVATE
         ${SOURCES_ROOT}/test/include
+        ${SOURCES_ROOT}/click_removal/src
     )
 
     target_link_libraries(

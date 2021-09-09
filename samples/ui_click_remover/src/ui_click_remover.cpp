@@ -60,19 +60,13 @@ int main(int argc, char *argv[]) {
     int16_t *dbgBuf_q15 = (int16_t *)new int16_t[frameSize * 2]{0};
 #endif
 
-    int16_t *input_q15 = (int16_t *)new int16_t[frameSize]{0};
-    int16_t *output_q15 = (int16_t *)new int16_t[frameSize]{0};
-    float *input = new float[frameSize];
-    float *output = new float[frameSize];
+    int16_t *buf_q15 = (int16_t *)new int16_t[frameSize]{0};
 
     ubnt::ClickRemoval remover(frameSize, subframeSize, threshold_all, threshold_4kHz);
-    while (frameSize == sf_read_short(infile, input_q15, frameSize)) {
-        for (int i = 0; i < frameSize; i++) { input[i] = (float)(input_q15[i] / 32768.f); }
+    while (frameSize == sf_read_short(infile, buf_q15, frameSize)) {
 
-        remover.process(input, output, frameSize);
-
-        for (int i = 0; i < frameSize; i++) { output_q15[i] = (int16_t)(output[i] * 32768.f); }
-        sf_write_short(outfile, output_q15, frameSize);
+        remover.process(buf_q15, frameSize);
+        sf_write_short(outfile, buf_q15, frameSize);
 
 #ifdef AUDIO_ALGO_DEBUG
         for (int i = 0; i < frameSize * 2; i++) {
@@ -82,10 +76,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    delete[] input_q15;
-    delete[] output_q15;
-    delete[] input;
-    delete[] output;
+    delete[] buf_q15;
     sf_close(infile);
     sf_close(outfile);
 

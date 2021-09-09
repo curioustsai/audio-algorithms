@@ -83,6 +83,12 @@ ClickRemoval::~ClickRemoval() {
         delete[] _hop;
         _hop = nullptr;
     }
+
+    if (_floatBuf) {
+        delete[] _floatBuf;
+        _floatBuf = nullptr;
+    }
+
 #ifdef AUDIO_ALGO_DEBUG
     if (dbgInfo) {
         delete[] dbgInfo;
@@ -91,11 +97,11 @@ ClickRemoval::~ClickRemoval() {
 #endif
 }
 
-int ClickRemoval::process(const float *input, float *output, const int num) {
+int ClickRemoval::process(float *buf, const int num) {
     if (num != _frameSize) return 0;
 
     int num_processed = 0;
-    _inBuffer->putFrame(input, num);
+    _inBuffer->putFrame(buf, num);
 
     while (_inBuffer->getFrame(_hop, _hopSize) == _hopSize) {
         _inFrame->updateFrame(_hop, _hopSize);
@@ -115,15 +121,27 @@ int ClickRemoval::process(const float *input, float *output, const int num) {
 
         if ((power > _threshold_all) && (power_4kHz > _threshold_4kHz)) { _detected = 2; }
 
-        _inFrame->getOutput(output + num_processed, _hopSize);
+        _inFrame->getOutput(buf + num_processed, _hopSize);
         if (_detected) {
-            _lpf4kHz->process(output + num_processed, output + num_processed, _hopSize);
-            for (int i = 0; i < _hopSize; i++) { output[i + num_processed] *= 0.25; }
+            _lpf4kHz->process(buf + num_processed, buf + num_processed, _hopSize);
+            for (int i = 0; i < _hopSize; i++) { buf[i + num_processed] *= 0.25; }
             _detected--;
         }
 
         num_processed += _hopSize;
     }
+    memset(buf + num_processed, 0, (num - num_processed) * sizeof(float));
+
+    return num_processed;
+}
+
+int ClickRemoval::process(int16_t *buf, const int num) {
+    if (_floatBuf == nullptr) { _floatBuf = new float[_frameSize]; }
+
+    for (int i = 0; i < num; i++) { _floatBuf[i] = (float)buf[i] / 32768.f; }
+    int num_processed = process(_floatBuf, num);
+    for (int i = 0; i < num_processed; i++) { buf[i] = (int16_t)(_floatBuf[i] * 32768.f); }
+    for (int i = num_processed; i < num; i++) { buf[i] = 0; }
 
     return num_processed;
 }
