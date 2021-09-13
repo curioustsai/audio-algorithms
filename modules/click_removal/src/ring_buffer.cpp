@@ -56,6 +56,13 @@ bool RingBuffer::putFrame(const float* dataFrame, const int num) {
     return true;
 }
 
+bool RingBuffer::putFrame(Frame* dataFrame) {
+    const int num = dataFrame->frameSize();
+    const float* frame = dataFrame->ptr();
+
+    return putFrame(frame, num);
+}
+
 int RingBuffer::getFrame(float* dataFrame, const int num) {
     // not enough data for output
     if (_inUseLength < num) { return 0; }
@@ -74,6 +81,12 @@ int RingBuffer::getFrame(float* dataFrame, const int num) {
         _inUseStart = len2;
     }
     return num;
+}
+
+int RingBuffer::getFrame(Frame* outFrame) {
+    const int num = outFrame->frameSize();
+    float* frame = outFrame->ptr();
+    return getFrame(frame, num);
 }
 
 void RingBuffer::showInfo() {

@@ -8,8 +8,8 @@
 int main(int argc, char *argv[]) {
     std::string inputFilePath;
     std::string outputFilePath;
-    float threshold_all = 0.005;
-    float threshold_4kHz = 0.0025;
+    float threshold_all = 0.01;
+    float threshold_4kHz = 0.008; //0.01
     int frameSize = 1024;
     int subframeSize = 1024;
 
@@ -43,11 +43,12 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    ubnt::ClickRemoval remover(frameSize, subframeSize, threshold_all, threshold_4kHz);
 #ifdef AUDIO_ALGO_DEBUG
     SNDFILE *dbgfile;
     SF_INFO sfinfo_dbg;
     memcpy(&sfinfo_dbg, &sfinfo_in, sizeof(SF_INFO));
-    sfinfo_dbg.channels = 2;
+    sfinfo_dbg.channels = remover.dbgChannels;
 
     std::string dbgFilePath;
     dbgFilePath.assign(outputFilePath.begin(), outputFilePath.end() - 4);
@@ -57,22 +58,20 @@ int main(int argc, char *argv[]) {
         printf("Not able to open outputfile file %s.\n", dbgFilePath.c_str());
         return -1;
     }
-    int16_t *dbgBuf_q15 = (int16_t *)new int16_t[frameSize * 2]{0};
+    int16_t *dbgBuf_q15 = (int16_t *)new int16_t[frameSize * remover.dbgChannels]{0};
 #endif
-
     int16_t *buf_q15 = (int16_t *)new int16_t[frameSize]{0};
 
-    ubnt::ClickRemoval remover(frameSize, subframeSize, threshold_all, threshold_4kHz);
     while (frameSize == sf_read_short(infile, buf_q15, frameSize)) {
 
         remover.process(buf_q15, frameSize);
         sf_write_short(outfile, buf_q15, frameSize);
 
 #ifdef AUDIO_ALGO_DEBUG
-        for (int i = 0; i < frameSize * 2; i++) {
+        for (int i = 0; i < frameSize * remover.dbgChannels; i++) {
             dbgBuf_q15[i] = (int16_t)(remover.dbgInfo[i] * 32768.f);
         }
-        sf_write_short(dbgfile, dbgBuf_q15, frameSize * 2);
+        sf_write_short(dbgfile, dbgBuf_q15, frameSize * remover.dbgChannels);
 #endif
     }
 

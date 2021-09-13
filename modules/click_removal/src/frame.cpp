@@ -33,16 +33,19 @@ bool Frame::updateFrame(const float* data, const int num) {
     return true;
 }
 
-bool Frame::getOutput(float* buf, const int num) {
+bool Frame::updateFrame(const Frame* data) { return updateFrame(data->ptr(), data->frameSize()); }
+
+bool Frame::getFrame(float* buf, const int num) {
     if (num != _frameSize) {
         printf("GetOuput Failed\n");
         return false;
     }
 
     memcpy(buf, _data.get(), num * sizeof(float));
-
     return true;
 }
+
+bool Frame::getFrame(Frame* data) { return getFrame(data->ptr(), data->frameSize()); }
 
 float Frame::getPowerMean() {
     float mean = 0;
@@ -61,11 +64,11 @@ float Frame::getPowerdB() {
     return 10 * log10f(mean);
 }
 
-bool Frame::copyFrame(Frame& other) {
-    if (other._frameSize != _frameSize) return false;
+bool Frame::copyFrame(Frame* other) {
+    if (other->frameSize() != _frameSize) return false;
 
     if (_data == nullptr) { _data.reset(new float[_frameSize]); }
-    memcpy(_data.get(), other._data.get(), _frameSize * sizeof(float));
+    memcpy(_data.get(), other->ptr(), _frameSize * sizeof(float));
 
     return true;
 }
@@ -80,6 +83,7 @@ FrameOverlap::FrameOverlap(const int frameSize, const int overlapSize) {
 
 FrameOverlap::~FrameOverlap() {}
 
+bool FrameOverlap::reset(const int frameSize) { return reset(frameSize, frameSize / 2); }
 bool FrameOverlap::reset(const int frameSize, const int overlapSize) {
     _frameSize = frameSize;
     _overlapSize = overlapSize;
@@ -90,9 +94,9 @@ bool FrameOverlap::reset(const int frameSize, const int overlapSize) {
     return true;
 }
 
-bool FrameOverlap::updateFrame(const float* data, const int num) {
+bool FrameOverlap::updateHop(const float* data, const int num) {
     if (num != _hopSize) {
-        printf("Update Frame Failed\n");
+        printf("Update Hop Failed\n");
         return false;
     }
 
@@ -102,7 +106,11 @@ bool FrameOverlap::updateFrame(const float* data, const int num) {
     return true;
 }
 
-bool FrameOverlap::getOutput(float* buf, const int num) {
+bool FrameOverlap::updateHop(const Frame* data) {
+    return updateHop(data->ptr(), data->frameSize());
+}
+
+bool FrameOverlap::getHop(float* buf, const int num) {
     if (num != _hopSize) {
         printf("GetOuput Failed\n");
         return false;
@@ -111,6 +119,10 @@ bool FrameOverlap::getOutput(float* buf, const int num) {
     memcpy(buf, _data.get(), num * sizeof(float));
 
     return true;
+}
+
+bool FrameOverlap::getHop(Frame* data) {
+    return getFrame(data->ptr(), data->frameSize());
 }
 
 } // namespace ubnt

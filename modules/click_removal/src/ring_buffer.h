@@ -5,6 +5,8 @@
 #pragma once
 
 #include <memory>
+#include "frame.h"
+
 namespace ubnt {
 
 class RingBuffer {
@@ -27,8 +29,14 @@ public:
     /* Copy new frame into ring buffer */
     bool putFrame(const float* newFrame, const int num);
 
+    /* Copy new frame into ring buffer */
+    bool putFrame(Frame* newFrame);
+
     /* Copy frame into buffer */
     int getFrame(float* buffer, const int num);
+
+    /* Copy frame into Frame */
+    int getFrame(Frame* outFrame);
 
     /* Get samples in use */
     int getInUseSamples();

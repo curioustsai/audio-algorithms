@@ -16,7 +16,7 @@ TEST(Frame, Reset) {
     float *output = new float[frameSize];
 
     frame.reset(frameSize);
-    frame.getOutput(output, frameSize);
+    frame.getFrame(output, frameSize);
 
     for (int i = 0; i < frameSize; i++) { ASSERT_EQ(output[i], 0); }
 
@@ -30,7 +30,7 @@ TEST(Frame, UdpateFrame) {
     float *outbuf = new float[frameSize];
     for (int i = 0; i < frameSize; i++) { inbuf[i] = i; }
     frame.updateFrame(inbuf, frameSize);
-    frame.getOutput(outbuf, frameSize);
+    frame.getFrame(outbuf, frameSize);
 
     for (int i = 0; i < frameSize; i++) { ASSERT_EQ(inbuf[i], outbuf[i]); }
 
@@ -84,13 +84,13 @@ TEST(FrameOverlap, Reset) {
     frame.reset(frameSize, overlapSize);
 
     for (int i = 0; i < hopSize; i++) { inbuf[i] = i; }
-    frame.updateFrame(inbuf, hopSize);
-    frame.getOutput(outbuf, hopSize);
+    frame.updateHop(inbuf, hopSize);
+    frame.getHop(outbuf, hopSize);
     for (int i = 0; i < hopSize; i++) { ASSERT_EQ(outbuf[i], 0); }
 
     for (int i = 0; i < hopSize; i++) { inbuf[i] = i + hopSize; }
-    frame.updateFrame(inbuf, hopSize);
-    frame.getOutput(outbuf, hopSize);
+    frame.updateHop(inbuf, hopSize);
+    frame.getHop(outbuf, hopSize);
     for (int i = 0; i < hopSize; i++) { ASSERT_EQ(outbuf[i], i); }
 
     delete[] inbuf;
@@ -108,7 +108,7 @@ TEST(FrameOverlap, GetPowerMean) {
     frame.reset(frameSize, overlapSize);
 
     for (int i = 0; i < hopSize; i++) { inbuf[i] = i; }
-    frame.updateFrame(inbuf, hopSize);
+    frame.updateHop(inbuf, hopSize);
 
     float powerMean = 0.f;
     for (int i = 0; i < hopSize; i++) { powerMean += (i * i); }
@@ -130,7 +130,7 @@ TEST(FrameOverlap, GetPowerdB) {
     frame.reset(frameSize, overlapSize);
 
     for (int i = 0; i < hopSize; i++) { inbuf[i] = i; }
-    frame.updateFrame(inbuf, hopSize);
+    frame.updateHop(inbuf, hopSize);
 
     float powerMean = 0.f;
     for (int i = 0; i < hopSize; i++) { powerMean += (i * i); }
