@@ -118,7 +118,7 @@ int ClickRemoval::process(float *buf, const int num) {
     while (_inBuffer->getFrame(_hop.get()) == _hopSize) {
         _inFrame->updateHop(_hop.get());
 
-        _hpf4kHz->process(_hop->ptr(), _frameHP->ptr(), _hopSize);
+        _hpf4kHz->process(_hop->data(), _frameHP->data(), _hopSize);
         _inFrame4kHz->updateHop(_frameHP.get());
 
         float power = _inFrame->getPowerMean();
@@ -128,7 +128,7 @@ int ClickRemoval::process(float *buf, const int num) {
         _framePower = 0.9 * _framePower + 0.1 * power;
 
         if ((power > _threshold_all) && (power_4kHz > _threshold_4kHz)) {
-            _bpf->process(_hop->ptr(), _frameBP->ptr(), _hopSize);
+            _bpf->process(_hop->data(), _frameBP->data(), _hopSize);
             _inFrame500_2kHz->updateHop(_frameBP.get());
             power_500_2kHz = _inFrame500_2kHz->getPowerMean();
 
@@ -148,10 +148,10 @@ int ClickRemoval::process(float *buf, const int num) {
 
         if (_detected) {
             // if (_framePower > 0.01) {
-            //     _removeFilter->process(_prevFrame->ptr(), _prevFrame->ptr(), _hopSize);
+            //     _removeFilter->process(_prevFrame->data(), _prevFrame->data(), _hopSize);
             //     _removeFilter->process(buf + num_processed, buf + num_processed, _hopSize);
             // } else {
-                _lpf4kHz->process(_prevFrame->ptr(), _prevFrame->ptr(), _hopSize);
+                _lpf4kHz->process(_prevFrame->data(), _prevFrame->data(), _hopSize);
                 _lpf4kHz->process(buf + num_processed, buf + num_processed, _hopSize);
             // }
             _detected--;
@@ -174,7 +174,7 @@ int ClickRemoval::process(float *buf, const int num) {
         // } else {
         //     _inFrame->getHop(buf + num_processed, _hopSize);
         //     _prevFrame->copyFrame(_inFrame.get());
-        //     // _removeFilter->process(_prevFrame->ptr(), _prevFrame->ptr(), _hopSize);
+        //     // _removeFilter->process(_prevFrame->data(), _prevFrame->data(), _hopSize);
         // }
 
         // method 2:

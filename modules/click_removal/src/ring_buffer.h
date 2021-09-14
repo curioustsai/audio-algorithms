@@ -17,7 +17,7 @@ public:
     /* Constructor, create with capacity size */
     RingBuffer(const int capacity);
 
-    /* Deconstructor, delete _data buffer */
+    /* Destructor, delete _data buffer */
     ~RingBuffer();
 
     /* Resize with capacity */
@@ -45,7 +45,7 @@ public:
     void showInfo();
 
 private:
-    std::unique_ptr<float[]>_data;
+    float* _data{nullptr};
     int _capacity{15360};
     int _inUseStart{0};
     int _inUseEnd{0};

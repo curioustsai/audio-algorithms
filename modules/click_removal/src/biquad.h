@@ -11,7 +11,7 @@ public:
     /* Default constructor, call reset function to set coefs before use */
     Biquad() = default;
 
-    /* Default deconstructor */
+    /* Default destructor */
     ~Biquad() = default;
 
     /*
@@ -38,7 +38,7 @@ public:
     /* Default constructor, call reset function to set coefs before use */
     SosFilter() = default;
 
-    /* Default deconstructor */
+    /* Default destructor */
     ~SosFilter();
 
     /*

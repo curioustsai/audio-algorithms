@@ -15,25 +15,33 @@ Frame::Frame(const int frameSize) : _frameSize(frameSize) { reset(_frameSize); }
 
 bool Frame::reset(const int frameSize) {
     _frameSize = frameSize;
-    _data.reset(new float[_frameSize]{0});
+    if (_data) delete[] _data;
+    _data = new float[_frameSize]{0};
 
     return true;
 }
 
-Frame::~Frame() {}
+Frame::~Frame() {
+    if (_data) {
+        delete[] _data;
+        _data = nullptr;
+    }
+}
 
-bool Frame::updateFrame(const float* data, const int num) {
+bool Frame::updateFrame(const float* dataBuf, const int num) {
     if (num != _frameSize) {
         printf("Update Frame Failed\n");
         return false;
     }
 
-    memcpy(_data.get(), data, num * sizeof(float));
+    memcpy(_data, dataBuf, num * sizeof(float));
 
     return true;
 }
 
-bool Frame::updateFrame(const Frame* data) { return updateFrame(data->ptr(), data->frameSize()); }
+bool Frame::updateFrame(const Frame* dataFrame) {
+    return updateFrame(dataFrame->data(), dataFrame->frameSize());
+}
 
 bool Frame::getFrame(float* buf, const int num) {
     if (num != _frameSize) {
@@ -41,11 +49,13 @@ bool Frame::getFrame(float* buf, const int num) {
         return false;
     }
 
-    memcpy(buf, _data.get(), num * sizeof(float));
+    memcpy(buf, _data, num * sizeof(float));
     return true;
 }
 
-bool Frame::getFrame(Frame* data) { return getFrame(data->ptr(), data->frameSize()); }
+bool Frame::getFrame(Frame* dataFrame) {
+    return getFrame(dataFrame->data(), dataFrame->frameSize());
+}
 
 float Frame::getPowerMean() {
     float mean = 0;
@@ -67,21 +77,25 @@ float Frame::getPowerdB() {
 bool Frame::copyFrame(Frame* other) {
     if (other->frameSize() != _frameSize) return false;
 
-    if (_data == nullptr) { _data.reset(new float[_frameSize]); }
-    memcpy(_data.get(), other->ptr(), _frameSize * sizeof(float));
+    if (_data == nullptr) { _data = new float[_frameSize]; }
+    memcpy(_data, other->data(), _frameSize * sizeof(float));
 
     return true;
 }
 
 FrameOverlap::FrameOverlap() {}
 
-FrameOverlap::FrameOverlap(const int frameSize, const int overlapSize) {
+FrameOverlap::FrameOverlap(const int frameSize, const int overlapSize) : Frame{frameSize} {
     _frameSize = frameSize;
     _overlapSize = overlapSize;
-    reset(_frameSize, _overlapSize);
 }
 
-FrameOverlap::~FrameOverlap() {}
+FrameOverlap::~FrameOverlap() {
+    if (_data) {
+        delete[] _data;
+        _data = nullptr;
+    }
+}
 
 bool FrameOverlap::reset(const int frameSize) { return reset(frameSize, frameSize / 2); }
 bool FrameOverlap::reset(const int frameSize, const int overlapSize) {
@@ -89,25 +103,26 @@ bool FrameOverlap::reset(const int frameSize, const int overlapSize) {
     _overlapSize = overlapSize;
     _hopSize = frameSize - _overlapSize;
 
-    _data.reset(new float[_frameSize]{0});
+    if (_data) delete[] _data;
+    _data = new float[_frameSize]{0};
 
     return true;
 }
 
-bool FrameOverlap::updateHop(const float* data, const int num) {
+bool FrameOverlap::updateHop(const float* dataBuf, const int num) {
     if (num != _hopSize) {
         printf("Update Hop Failed\n");
         return false;
     }
 
-    memmove(_data.get(), _data.get() + _hopSize, _overlapSize * sizeof(float));
-    memcpy(_data.get() + _overlapSize, data, _hopSize * sizeof(float));
+    memmove(_data, _data + _hopSize, _overlapSize * sizeof(float));
+    memcpy(_data + _overlapSize, dataBuf, _hopSize * sizeof(float));
 
     return true;
 }
 
-bool FrameOverlap::updateHop(const Frame* data) {
-    return updateHop(data->ptr(), data->frameSize());
+bool FrameOverlap::updateHop(const Frame* dataFrame) {
+    return updateHop(dataFrame->data(), dataFrame->frameSize());
 }
 
 bool FrameOverlap::getHop(float* buf, const int num) {
@@ -116,13 +131,13 @@ bool FrameOverlap::getHop(float* buf, const int num) {
         return false;
     }
 
-    memcpy(buf, _data.get(), num * sizeof(float));
+    memcpy(buf, _data, num * sizeof(float));
 
     return true;
 }
 
-bool FrameOverlap::getHop(Frame* data) {
-    return getFrame(data->ptr(), data->frameSize());
+bool FrameOverlap::getHop(Frame* dataFrame) {
+    return getFrame(dataFrame->data(), dataFrame->frameSize());
 }
 
 } // namespace ubnt
