@@ -13,30 +13,6 @@ import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.io import wavfile
 
-#
-# class BiquadFilter():
-#     def __init__(self, ba):
-#         self._coef = ba
-#         self._state = np.zeros(2)
-#
-#     def process(self, x):
-#         b0 = self._coef[0]
-#         b1 = self._coef[1]
-#         b2 = self._coef[2]
-#         a1 = self._coef[3]
-#         a2 = self._coef[4]
-#
-#         y = np.zeros(len(x))
-#         for i in np.arange(len(x)):
-#             temp1 = a1 * self._state[0]
-#             temp2 = a2 * self._state[1]
-#             wn = x[i] - temp1 - temp2
-#             y[i] = b0 * wn + b1 * self._state[0] + b2 * self._state[1]
-#
-#             self._state[1] = self._state[0]
-#             self._state[0] = wn
-#         return y
-
 
 class ClickRemover():
     def __init__(self, frameSize, threshold_all, threshold_4kHz):
@@ -109,26 +85,3 @@ if __name__ == "__main__":
     for inputfile in file_list:
         outputfile = os.path.join("./processed", os.path.basename(inputfile))
         remover.process(inputfile, outputfile)
-
-
-    # ba1 = np.array([ 0.32483446, -0.64966892,  0.32483446, -0.65710985, 0.41692846])
-    # ba2 = np.array([ 1,        -2,          1,          1,         -1.62913992, 0.9105507 ])
-    #
-    # biquad1 = BiquadFilter(ba1)
-    # biquad2 = BiquadFilter(ba2)
-    #
-    # fs, audio = wavfile.read("./wavefiles/De_camera_cut_noise(ThermalScan)/wav_1.wav")
-    #
-    # start, end = 0, 0
-    # frameSize = 1024
-    # hopSize = frameSize // 2
-    # output = np.zeros(len(audio))
-    # while end < len(audio):
-    #     end = start + frameSize
-    #     x = audio[start:end]
-    #     y1 = biquad1.process(x)
-    #     output[start:end] = biquad2.process(y1)
-    #     start += hopSize
-    #
-    # wavfile.write("biquad_py.wav", fs, output.astype(np.int16))
-

@@ -23,11 +23,11 @@ public:
     int process(float* buf, const int num);
     int process(int16_t* buf, const int num);
 
-    void threshold_all(const int threshold_all) { _threshold_all = threshold_all; }
-    int threshold_all() const { return _threshold_all; }
+    void threshold_all(const int threshold_all);
+    int threshold_all() const;
 
-    void threshold_4kHz(const int threshold_4kHz) { _threshold_4kHz = threshold_4kHz; }
-    int threshold_4kHz() const { return _threshold_4kHz; }
+    void threshold_4kHz(const int threshold_4kHz);
+    int threshold_4kHz() const;
 
 #ifdef AUDIO_ALGO_DEBUG
     int dbgChannels{3};
@@ -35,28 +35,31 @@ public:
 #endif
 
 private:
-    std::unique_ptr<RingBuffer> _inBuffer;
-    std::unique_ptr<SosFilter> _hpf4kHz;
-    std::unique_ptr<SosFilter> _lpf4kHz;
-    std::unique_ptr<SosFilter> _bpf;
-    std::unique_ptr<SosFilter> _removeFilter;
+    void initHann(Frame* window);
+    bool applyWindow(const Frame* frame, const Frame* window, Frame* windowed);
+    void overlapAdd(Frame* previous, Frame* current, float* buf);
 
-    std::unique_ptr<FrameOverlap> _inFrame;
-    std::unique_ptr<FrameOverlap> _inFrame4kHz;
-    std::unique_ptr<FrameOverlap> _inFrame500_2kHz;
-    std::unique_ptr<FrameOverlap> _prevFrame;
+    RingBuffer* _inBuffer{nullptr};
+    RingBuffer* _outBuffer{nullptr};
+    SosFilter* _hpf4kHz{nullptr};
+    SosFilter* _removeFilter{nullptr};
 
-    std::unique_ptr<float[]> _floatBuf;
-    std::unique_ptr<Frame> _hop;
-    std::unique_ptr<Frame> _frameHP;
-    std::unique_ptr<Frame> _frameBP;
-    std::unique_ptr<Frame> _frameLP;
+    FrameOverlap* _currFrame{nullptr};
+    FrameOverlap* _prevFrame{nullptr};
+    FrameOverlap* _outFrame{nullptr};
+    Frame* _hop{nullptr};
+    Frame* _frameHP{nullptr};
+    Frame* _frameBP{nullptr};
+    Frame* _frameLP{nullptr};
+    Frame* _hann{nullptr};
+    Frame* _windowed{nullptr};
+
+    float* _floatBuf{nullptr};
 
     int _frameSize{1024};
     int _subframeSize{1024};
     int _hopSize{512};
     int _detected{0};
-    float _framePower{0};
 
     float _threshold_all{0.01};
     float _threshold_4kHz{0.005};

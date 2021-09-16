@@ -88,14 +88,10 @@ FrameOverlap::FrameOverlap() {}
 FrameOverlap::FrameOverlap(const int frameSize, const int overlapSize) : Frame{frameSize} {
     _frameSize = frameSize;
     _overlapSize = overlapSize;
+    _hopSize = frameSize - overlapSize;
 }
 
-FrameOverlap::~FrameOverlap() {
-    if (_data) {
-        delete[] _data;
-        _data = nullptr;
-    }
-}
+FrameOverlap::~FrameOverlap() { }
 
 bool FrameOverlap::reset(const int frameSize) { return reset(frameSize, frameSize / 2); }
 bool FrameOverlap::reset(const int frameSize, const int overlapSize) {

@@ -8,8 +8,8 @@
 int main(int argc, char *argv[]) {
     std::string inputFilePath;
     std::string outputFilePath;
-    float threshold_all = 0.01;
-    float threshold_4kHz = 0.008; //0.01
+    float threshold_all = 0.005;
+    float threshold_4kHz = 0.0001;
     int frameSize = 1024;
     int subframeSize = 1024;
 
