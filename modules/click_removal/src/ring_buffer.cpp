@@ -13,7 +13,10 @@ RingBuffer::RingBuffer() {
     resetCapacity(_capacity);
 }
 
-RingBuffer::RingBuffer(const int capacity) : _capacity(capacity) { resetCapacity(_capacity); }
+RingBuffer::RingBuffer(const int frameSize, const int num) {
+    _capacity = frameSize * num;
+    resetCapacity(_capacity);
+}
 RingBuffer::~RingBuffer() {
     if (_data) {
         delete[] _data;

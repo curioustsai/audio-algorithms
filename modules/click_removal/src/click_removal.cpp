@@ -17,6 +17,21 @@
 
 namespace ubnt {
 
+/*
+ * high pass filter at 4kHz for fs=48kHz, 2 biquad cascaded
+ * import scipy.signal as signal
+ * signal.cheby1(4, 3, 4000/24000, 'high', output='sos')
+ */
+const float coef_hpf4kHz[2][5] = {{0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284},
+                                  {1, -2, 1, -1.62913992, 0.9105507}};
+/*
+ * low pass filter at 400Hz for fs=48kHz, 2 biquad cascaded
+ * signal.cheby1(4, 3, 400/24000, 'low', output='sos')
+ */
+const float coef_lpf400Hz[2][5] = {
+    {5.79832612e-08, 1.15966522e-07, 5.79832612e-08, -1.97816320e+00, 9.78694943e-01},
+    {1.00000000e+00, 2.00000000e+00, 1.00000000e+00, -1.98865955e+00, 9.91124026e-01}};
+
 ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const float threshold_all,
                            const float threshold_4kHz)
     : _frameSize(frameSize),
@@ -25,23 +40,9 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
       _threshold_4kHz(threshold_4kHz) {
     _hopSize = _subframeSize / 2;
 
-    /* 
-     * high pass filter at 4kHz for fs=48kHz, 2 biquad cascaded 
-     * import scipy.signal as signal
-     * signal.cheby1(4, 3, 4000/24000, 'high', output='sos') 
-     */
-    const float coef_hpf4kHz[2][5] = {{0.32483446, -0.64966892, 0.32483446, -0.65710985, 0.4169284},
-                                      {1, -2, 1, -1.62913992, 0.9105507}};
     _hpf4kHz = new SosFilter;
     _hpf4kHz->reset(coef_hpf4kHz, 2);
 
-    /*
-     * low pass filter at 400Hz for fs=48kHz, 2 biquad cascaded
-     * signal.cheby1(4, 3, 400/24000, 'low', output='sos')
-     */
-    const float coef_lpf400Hz[2][5] = {
-        {5.79832612e-08, 1.15966522e-07, 5.79832612e-08, -1.97816320e+00, 9.78694943e-01},
-        {1.00000000e+00, 2.00000000e+00, 1.00000000e+00, -1.98865955e+00, 9.91124026e-01}};
     _removeFilter = new SosFilter;
     _removeFilter->reset(coef_lpf400Hz, 2);
 
@@ -49,9 +50,9 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
     _prevFrame = new FrameOverlap{_subframeSize, _hopSize};
     _outFrame = new FrameOverlap{_subframeSize, _hopSize};
 
-    _inBuffer = new RingBuffer{frameSize * 4};
+    _inBuffer = new RingBuffer{frameSize, 4};
 
-    _outBuffer = new RingBuffer{frameSize * 4};
+    _outBuffer = new RingBuffer{frameSize, 4};
     // delay 2 frameSize
     _outBuffer->setDelay(frameSize * 2);
 

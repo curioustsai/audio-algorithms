@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <memory>
 #include "frame.h"
+#include <memory>
 
 namespace ubnt {
 
@@ -14,8 +14,11 @@ public:
     /* Constructor, create with default capacity 15360 samples */
     RingBuffer();
 
-    /* Constructor, create with capacity size */
-    RingBuffer(const int capacity);
+    /* Constructor
+     * @parameter frameSize in samples
+     * @parameter num, how many frames stored in buffer
+     */
+    RingBuffer(const int frameSize, const int num);
 
     /* Destructor, delete _data buffer */
     ~RingBuffer();
