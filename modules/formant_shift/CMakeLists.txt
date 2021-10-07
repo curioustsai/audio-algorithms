@@ -47,8 +47,8 @@ target_link_libraries(
     pffft
 )
 
-if(UBNT_WITH_TESTS)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")
-	add_subdirectory(test)
-endif()
+# if(UBNT_WITH_TESTS)
+# 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")
+# 	add_subdirectory(test)
+# endif()
 
