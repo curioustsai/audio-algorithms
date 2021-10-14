@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 
     int count = 0;
 
-    while (frame_size != sf_read_short(infile, data, frame_size)) {
+    while (frame_size == sf_read_short(infile, data, frame_size)) {
         /* run something here */
         /* run something here */
         /* run something here */
