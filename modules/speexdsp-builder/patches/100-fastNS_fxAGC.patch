@@ -1,0 +1,422 @@
+diff --git a/libspeexdsp/fftwrap.c b/libspeexdsp/fftwrap.c
+index 4573479..4599b1d 100644
+--- a/libspeexdsp/fftwrap.c
++++ b/libspeexdsp/fftwrap.c
+@@ -361,6 +361,7 @@ void spx_ifft(void *table, spx_word16_t *in, spx_word16_t *out)
+ 
+ #ifdef FIXED_POINT
+ /*#include "smallft.h"*/
++#include <math.h>
+ 
+ 
+ void spx_fft_float(void *table, float *in, float *out)
+@@ -370,6 +371,8 @@ void spx_fft_float(void *table, float *in, float *out)
+    int N = ((struct drft_lookup *)table)->n;
+ #elif defined(USE_KISS_FFT)
+    int N = ((struct kiss_config *)table)->N;
++#elif defined(USE_GPL_FFTW3)
++  int N =  ((struct fftw_config *) table)->N;
+ #else
+ #endif
+ #ifdef VAR_ARRAYS
+@@ -406,6 +409,8 @@ void spx_ifft_float(void *table, float *in, float *out)
+    int N = ((struct drft_lookup *)table)->n;
+ #elif defined(USE_KISS_FFT)
+    int N = ((struct kiss_config *)table)->N;
++#elif defined(USE_GPL_FFTW3)
++  int N =  ((struct fftw_config *) table)->N;
+ #else
+ #endif
+ #ifdef VAR_ARRAYS
+diff --git a/libspeexdsp/preprocess.c b/libspeexdsp/preprocess.c
+index 3053eb5..c132fff 100644
+--- a/libspeexdsp/preprocess.c
++++ b/libspeexdsp/preprocess.c
+@@ -66,11 +66,10 @@
+ #include "fftwrap.h"
+ #include "filterbank.h"
+ #include "math_approx.h"
++#include "pseudofloat.h"
+ #include "os_support.h"
+ 
+ #define LOUDNESS_EXP 5.f
+-#define AMP_SCALE .001f
+-#define AMP_SCALE_1 1000.f
+ 
+ #define NB_BANDS 24
+ 
+@@ -88,6 +87,12 @@
+ #define SQR16(x) (MULT16_16((x),(x)))
+ #define SQR16_Q15(x) (MULT16_16_Q15((x),(x)))
+ 
++#ifdef FIXED_POINT
++#define FLOAT(x,bits) (((x) * 1.0f) / (1 << bits))
++#else
++#define FLOAT(x,bits) (x)
++#endif
++
+ #ifdef FIXED_POINT
+ static inline spx_word16_t DIV32_16_Q8(spx_word32_t a, spx_word32_t b)
+ {
+@@ -224,20 +229,21 @@ struct SpeexPreprocessState_ {
+    spx_word16_t *inbuf;      /**< Input buffer (overlapped analysis) */
+    spx_word16_t *outbuf;     /**< Output buffer (for overlap and add) */
+ 
+-   /* AGC stuff, only for floating point for now */
+-#ifndef FIXED_POINT
++   /* AGC stuff */
+    int    agc_enabled;
+-   float  agc_level;
+-   float  loudness_accum;
+-   float *loudness_weight;   /**< Perceptual loudness curve */
+-   float  loudness;          /**< Loudness estimate */
+-   float  agc_gain;          /**< Current AGC gain */
+-   float  max_gain;          /**< Maximum gain allowed */
+-   float  max_increase_step; /**< Maximum increase in gain from one frame to another */
+-   float  max_decrease_step; /**< Maximum decrease in gain from one frame to another */
+-   float  prev_loudness;     /**< Loudness of previous frame */
+-   float  init_max;          /**< Current gain limit during initialisation */
+-#endif
++   spx_word32_t  agc_level;
++   spx_word16_t  loudness_accum;
++   spx_word16_t *loudness_weight;   /**< Perceptual loudness curve */
++   spx_word32_t  loudness;          /**< Loudness estimate */
++   spx_word32_t  agc_gain;          /**< Current AGC gain */
++   spx_word32_t  max_gain;          /**< Maximum gain allowed */
++   spx_word32_t  max_increase_step; /**< Maximum increase in gain from one frame to another */
++   spx_word32_t  max_decrease_step; /**< Maximum decrease in gain from one frame to another */
++   spx_word32_t  prev_loudness;     /**< Loudness of previous frame */
++   spx_word32_t  init_max;          /**< Current gain limit during initialisation */
++   spx_word32_t  target_gain;
++   spx_word32_t  sqrt_2N;
++
+    int    nb_adapt;          /**< Number of frames used for adaptation so far */
+    int    was_speech;
+    int    min_count;         /**< Number of frames processed so far */
+@@ -495,28 +501,36 @@ EXPORT SpeexPreprocessState *speex_preprocess_state_init(int frame_size, int sam
+       st->inbuf[i]=0;
+       st->outbuf[i]=0;
+    }
+-#ifndef FIXED_POINT
++
+    st->agc_enabled = 0;
+    st->agc_level = 8000;
+-   st->loudness_weight = (float*)speex_alloc(N*sizeof(float));
++   st->loudness_weight = (spx_word16_t*)speex_alloc(N*sizeof(spx_word16_t));
+    for (i=0;i<N;i++)
+    {
+-      float ff=((float)i)*.5*sampling_rate/((float)N);
+-      /*st->loudness_weight[i] = .5f*(1.f/(1.f+ff/8000.f))+1.f*exp(-.5f*(ff-3800.f)*(ff-3800.f)/9e5f);*/
+-      st->loudness_weight[i] = .35f-.35f*ff/16000.f+.73f*exp(-.5f*(ff-3800)*(ff-3800)/9e5f);
+-      if (st->loudness_weight[i]<.01f)
+-         st->loudness_weight[i]=.01f;
+-      st->loudness_weight[i] *= st->loudness_weight[i];
++	   spx_word32_t ff=DIV32(MULT16_16(i, sampling_rate), 2 * N);
++	   spx_word32_t e=spx_exp(NEG32(SHR32(SQR16(DIV32_16(SHL32(SUB32(ff,3800),10),1341)),9)));
++	   st->loudness_weight[i] = SUB32(QCONST32(.35f,15),DIV32(MULT16_16(QCONST16(.35f,15),ff),16000));
++	   st->loudness_weight[i] = ADD32(st->loudness_weight[i], MULT16_32_Q15(QCONST16(.73f,15),e));
++
++	   if (st->loudness_weight[i]<QCONST16(.01f,15))
++		   st->loudness_weight[i]=QCONST16(.01f,15);
++	   st->loudness_weight[i] = EXTRACT16(MULT16_16_Q15(st->loudness_weight[i],st->loudness_weight[i]));
+    }
+-   /*st->loudness = pow(AMP_SCALE*st->agc_level,LOUDNESS_EXP);*/
+-   st->loudness = 1e-15;
+-   st->agc_gain = 1;
+-   st->max_gain = 30;
+-   st->max_increase_step = exp(0.11513f * 12.*st->frame_size / st->sampling_rate);
+-   st->max_decrease_step = exp(-0.11513f * 40.*st->frame_size / st->sampling_rate);
++   st->loudness = 1;
++   st->loudness_accum = QCONST32(0.0001f,15);
++   st->agc_gain = QCONST32(1.f, 11);
++   st->max_gain = QCONST32(30.f, 11);
++
++   i = 12;
++   speex_preprocess_ctl(st, SPEEX_PREPROCESS_SET_AGC_INCREMENT, &i);
++   i = 40;
++   speex_preprocess_ctl(st, SPEEX_PREPROCESS_SET_AGC_DECREMENT, &i);
++
+    st->prev_loudness = 1;
+-   st->init_max = 1;
+-#endif
++   st->init_max = QCONST32(1,11);
++   st->sqrt_2N = SHL32(spx_sqrt(SHL32(MULT16_16(N,2),20)),5);
++   st->target_gain = Q15ONE;
++
+    st->was_speech = 0;
+ 
+    st->fft_lookup = spx_fft_init(2*N);
+@@ -540,9 +554,7 @@ EXPORT void speex_preprocess_state_destroy(SpeexPreprocessState *st)
+    speex_free(st->gain);
+    speex_free(st->prior);
+    speex_free(st->post);
+-#ifndef FIXED_POINT
+    speex_free(st->loudness_weight);
+-#endif
+    speex_free(st->echo_noise);
+    speex_free(st->residual_echo);
+ 
+@@ -560,56 +572,91 @@ EXPORT void speex_preprocess_state_destroy(SpeexPreprocessState *st)
+    speex_free(st);
+ }
+ 
+-/* FIXME: The AGC doesn't work yet with fixed-point*/
+-#ifndef FIXED_POINT
+ static void speex_compute_agc(SpeexPreprocessState *st, spx_word16_t Pframe, spx_word16_t *ft)
+ {
+    int i;
+    int N = st->ps_size;
+-   float target_gain;
+-   float loudness=1.f;
+-   float rate;
++
++   spx_word32_t loudness=1;
++   spx_word32_t t;
++   spx_word32_t gain;
+ 
+    for (i=2;i<N;i++)
+    {
+-      loudness += 2.f*N*st->ps[i]* st->loudness_weight[i];
++	  loudness = ADD32(loudness, MULT16_32_Q15(st->loudness_weight[i], st->ps[i]));
+    }
+-   loudness=sqrt(loudness);
+-      /*if (loudness < 2*pow(st->loudness, 1.0/LOUDNESS_EXP) &&
+-   loudness*2 > pow(st->loudness, 1.0/LOUDNESS_EXP))*/
+-   if (Pframe>.3f)
++   loudness=MULT16_32_Q15(spx_sqrt(loudness), st->sqrt_2N);
++
++   if (Pframe>QCONST16(.3f, 15))
+    {
+-      /*rate=2.0f*Pframe*Pframe/(1+st->nb_loudness_adapt);*/
+-      rate = .03*Pframe*Pframe;
+-      st->loudness = (1-rate)*st->loudness + (rate)*pow(AMP_SCALE*loudness, LOUDNESS_EXP);
+-      st->loudness_accum = (1-rate)*st->loudness_accum + rate;
+-      if (st->init_max < st->max_gain && st->nb_adapt > 20)
+-         st->init_max *= 1.f + .1f*Pframe*Pframe;
+-   }
+-   /*printf ("%f %f %f %f\n", Pframe, loudness, pow(st->loudness, 1.0f/LOUDNESS_EXP), st->loudness2);*/
++	   const spx_word16_t rate = EXTRACT16(MULT16_16_Q15(MULT16_16_Q15(QCONST16(.03f,15),Pframe),Pframe));
++	   const spx_word16_t invrate = SUB16(Q15_ONE, rate);
++
++#ifdef FIXED_POINT
++	   const spx_word32_t diff = SUB32(loudness,st->loudness);
++	   spx_word16_t m = rate;
++	   if (diff > st->loudness)
++		   m = SUB16(Q15_ONE, SQR16_Q15(SUB16(Q15_ONE,rate)));
++	   else if (diff < 0)
++		   m = MULT16_16_Q15(rate, SHR16(rate,1));
++	   st->loudness = ADD32(st->loudness, MULT16_32_Q15(m, diff));
++#else
++	   st->loudness *= pow(invrate + rate * pow(loudness / st->loudness, LOUDNESS_EXP), 1.0f/LOUDNESS_EXP);
++#endif
++	   if (st->init_max < st->max_gain && st->nb_adapt > 20) {
++		   st->init_max = ADD32(st->init_max, MULT16_32_Q15(MULT16_16_Q15(MULT16_16_Q15(QCONST16(.1f,15),Pframe),Pframe),st->init_max));
++	   }
+ 
+-   target_gain = AMP_SCALE*st->agc_level*pow(st->loudness/(1e-4+st->loudness_accum), -1.0f/LOUDNESS_EXP);
++	   t = st->loudness;
+ 
+-   if ((Pframe>.5  && st->nb_adapt > 20) || target_gain < st->agc_gain)
++
++	   if (st->loudness_accum < QCONST16(0.9999, 15)) {
++		   st->loudness_accum = ADD16(EXTRACT16(MULT16_16_Q15(invrate,st->loudness_accum)),rate);
++		   t = DIV32(SHL32(t,15),st->loudness_accum);
++	   }
++
++	   //      printf("%f %f %f %f %f %f %f %f %f\n", l, ol, nl, FLOAT(rate,15), (float)t, FLOAT(loudness,15), FLOAT(Pframe,15), FLOAT(st->loudness_accum,15), FLOAT(rate,15));
++
++	   st->target_gain = DIV32(SHL32(st->agc_level,11),t);
++	   //      printf("%f\n", FLOAT(st->target_gain,11));
++   }
++
++   if ((Pframe>QCONST16(.5,15)  && st->nb_adapt > 20) || st->target_gain < st->agc_gain)
+    {
+-      if (target_gain > st->max_increase_step*st->agc_gain)
+-         target_gain = st->max_increase_step*st->agc_gain;
+-      if (target_gain < st->max_decrease_step*st->agc_gain && loudness < 10*st->prev_loudness)
+-         target_gain = st->max_decrease_step*st->agc_gain;
+-      if (target_gain > st->max_gain)
+-         target_gain = st->max_gain;
+-      if (target_gain > st->init_max)
+-         target_gain = st->init_max;
+-
+-      st->agc_gain = target_gain;
++	   if (st->target_gain > MULT16_32_Q11(st->max_increase_step,st->agc_gain))
++		   st->target_gain = MULT16_32_Q11(st->max_increase_step,st->agc_gain);
++	   if ((st->target_gain < MULT16_32_Q11(st->max_decrease_step,st->agc_gain) && (loudness < MULT16_16(10,st->prev_loudness))))
++		   st->target_gain = MULT16_32_Q11(st->max_decrease_step,st->agc_gain);
++	   if (st->target_gain > st->max_gain)
++		   st->target_gain = st->max_gain;
++	   if (st->target_gain > st->init_max)
++		   st->target_gain = st->init_max;
++
++	   st->agc_gain = st->target_gain;
++   }
++
++   gain = st->agc_gain;
++
++#ifdef FIXED_POINT
++   i = 10 - spx_ilog2(ABS32(st->agc_gain));
++   if (i > 0) {
++	   st->frame_shift += i;
++	   gain = SHL32(st->agc_gain, i);
++   } else if (i < 0) {
++	   st->frame_shift += i;
++	   if (st->frame_shift < 0) {
++		   i -= st->frame_shift;
++		   st->frame_shift = 0;
++	   }
++	   gain = SHR32(st->agc_gain, ABS16(i));
+    }
+-   /*fprintf (stderr, "%f %f %f\n", loudness, (float)AMP_SCALE_1*pow(st->loudness, 1.0f/LOUDNESS_EXP), st->agc_gain);*/
++#endif
+ 
+    for (i=0;i<2*N;i++)
+-      ft[i] *= st->agc_gain;
++      ft[i] = EXTRACT16(MULT16_32_Q11(ft[i], gain));
++
+    st->prev_loudness = loudness;
+ }
+-#endif
+ 
+ static void preprocess_analysis(SpeexPreprocessState *st, spx_int16_t *x)
+ {
+@@ -675,9 +722,9 @@ static void update_noise_prob(SpeexPreprocessState *st)
+          st->Smin[i] = st->Stmp[i] = 0;
+    }
+ 
+-   if (st->nb_adapt < 100)
++   if (st->nb_adapt < 2000)
+       min_range = 15;
+-   else if (st->nb_adapt < 1000)
++   else if (st->nb_adapt < 5000)
+       min_range = 50;
+    else if (st->nb_adapt < 10000)
+       min_range = 150;
+@@ -764,12 +811,12 @@ EXPORT int speex_preprocess_run(SpeexPreprocessState *st, spx_int16_t *x)
+    update_noise_prob(st);
+ 
+    /* Noise estimation always updated for the 10 first frames */
+-   /*if (st->nb_adapt<10)
++   if (st->nb_adapt<10)
+    {
+       for (i=1;i<N-1;i++)
+          st->update_prob[i] = 0;
+    }
+-   */
++
+ 
+    /* Update the noise estimate for the frequencies where it can be */
+    for (i=0;i<N;i++)
+@@ -945,11 +992,8 @@ EXPORT int speex_preprocess_run(SpeexPreprocessState *st, spx_int16_t *x)
+    st->ft[0] = MULT16_16_P15(st->gain2[0],st->ft[0]);
+    st->ft[2*N-1] = MULT16_16_P15(st->gain2[N-1],st->ft[2*N-1]);
+ 
+-   /*FIXME: This *will* not work for fixed-point */
+-#ifndef FIXED_POINT
+    if (st->agc_enabled)
+       speex_compute_agc(st, Pframe, st->ft);
+-#endif
+ 
+    /* Inverse FFT with 1/N scaling */
+    spx_ifft(st->fft_lookup, st->ft, st->frame);
+@@ -957,8 +1001,6 @@ EXPORT int speex_preprocess_run(SpeexPreprocessState *st, spx_int16_t *x)
+    for (i=0;i<2*N;i++)
+       st->frame[i] = PSHR16(st->frame[i], st->frame_shift);
+ 
+-   /*FIXME: This *will* not work for fixed-point */
+-#ifndef FIXED_POINT
+    if (st->agc_enabled)
+    {
+       float max_sample=0;
+@@ -972,7 +1014,6 @@ EXPORT int speex_preprocess_run(SpeexPreprocessState *st, spx_int16_t *x)
+             st->frame[i] *= damp;
+       }
+    }
+-#endif
+ 
+    /* Synthesis window (for WOLA) */
+    for (i=0;i<2*N;i++)
+@@ -1054,14 +1095,12 @@ EXPORT int speex_preprocess_ctl(SpeexPreprocessState *state, int request, void *
+    case SPEEX_PREPROCESS_GET_DENOISE:
+       (*(spx_int32_t*)ptr) = st->denoise_enabled;
+       break;
+-#ifndef FIXED_POINT
+    case SPEEX_PREPROCESS_SET_AGC:
+       st->agc_enabled = (*(spx_int32_t*)ptr);
+       break;
+    case SPEEX_PREPROCESS_GET_AGC:
+       (*(spx_int32_t*)ptr) = st->agc_enabled;
+       break;
+-#ifndef DISABLE_FLOAT_API
+    case SPEEX_PREPROCESS_SET_AGC_LEVEL:
+       st->agc_level = (*(float*)ptr);
+       if (st->agc_level<1)
+@@ -1072,26 +1111,27 @@ EXPORT int speex_preprocess_ctl(SpeexPreprocessState *state, int request, void *
+    case SPEEX_PREPROCESS_GET_AGC_LEVEL:
+       (*(float*)ptr) = st->agc_level;
+       break;
+-#endif /* #ifndef DISABLE_FLOAT_API */
+    case SPEEX_PREPROCESS_SET_AGC_INCREMENT:
+-      st->max_increase_step = exp(0.11513f * (*(spx_int32_t*)ptr)*st->frame_size / st->sampling_rate);
++	  st->max_increase_step = PSHR32(spx_exp(DIV32_16(MULT16_16(MULT16_16(QCONST16(0.11513f,15),ABS16(*(spx_int32_t*)ptr)),st->frame_size), st->sampling_rate)),5);
+       break;
+    case SPEEX_PREPROCESS_GET_AGC_INCREMENT:
+       (*(spx_int32_t*)ptr) = floor(.5+8.6858*log(st->max_increase_step)*st->sampling_rate/st->frame_size);
+       break;
+    case SPEEX_PREPROCESS_SET_AGC_DECREMENT:
+-      st->max_decrease_step = exp(0.11513f * (*(spx_int32_t*)ptr)*st->frame_size / st->sampling_rate);
++	  st->max_decrease_step = NEG32(PSHR32(spx_exp(DIV32_16(MULT16_16(MULT16_16(QCONST16(0.11513f,15),ABS16(*(spx_int32_t*)ptr)),st->frame_size), st->sampling_rate)),5));
+       break;
+    case SPEEX_PREPROCESS_GET_AGC_DECREMENT:
+       (*(spx_int32_t*)ptr) = floor(.5+8.6858*log(st->max_decrease_step)*st->sampling_rate/st->frame_size);
+       break;
+    case SPEEX_PREPROCESS_SET_AGC_MAX_GAIN:
+-      st->max_gain = exp(0.11513f * (*(spx_int32_t*)ptr));
++      /* st->max_gain = exp(0.11513f * (*(spx_int32_t*)ptr)); */
++	  st->max_gain = QCONST32((*(float*)ptr), 11);
+       break;
+    case SPEEX_PREPROCESS_GET_AGC_MAX_GAIN:
+-      (*(spx_int32_t*)ptr) = floor(.5+8.6858*log(st->max_gain));
++      /* (*(spx_int32_t*)ptr) = floor(.5+8.6858*log(st->max_gain)); */
++	  (*(float*)ptr) = FLOAT(st->agc_gain,11);
++
+       break;
+-#endif
+    case SPEEX_PREPROCESS_SET_VAD:
+       speex_warning("The VAD has been replaced by a hack pending a complete rewrite");
+       st->vad_enabled = (*(spx_int32_t*)ptr);
+@@ -1167,14 +1207,13 @@ EXPORT int speex_preprocess_ctl(SpeexPreprocessState *state, int request, void *
+    case SPEEX_PREPROCESS_GET_ECHO_STATE:
+       (*(SpeexEchoState**)ptr) = (SpeexEchoState*)st->echo_state;
+       break;
+-#ifndef FIXED_POINT
+    case SPEEX_PREPROCESS_GET_AGC_LOUDNESS:
+-      (*(spx_int32_t*)ptr) = pow(st->loudness, 1.0/LOUDNESS_EXP);
++	  (*(spx_int32_t*)ptr) = st->loudness;
+       break;
+    case SPEEX_PREPROCESS_GET_AGC_GAIN:
+-      (*(spx_int32_t*)ptr) = floor(.5+8.6858*log(st->agc_gain));
++	  (*(float*)ptr) = FLOAT(st->agc_gain,11);
++	  //      (*(spx_int32_t*)ptr) = floor(.5+8.6858*log(st->agc_gain));
+       break;
+-#endif
+    case SPEEX_PREPROCESS_GET_PSD_SIZE:
+    case SPEEX_PREPROCESS_GET_NOISE_PSD_SIZE:
+       (*(spx_int32_t*)ptr) = st->ps_size;
+@@ -1190,7 +1229,6 @@ EXPORT int speex_preprocess_ctl(SpeexPreprocessState *state, int request, void *
+    case SPEEX_PREPROCESS_GET_PROB:
+       (*(spx_int32_t*)ptr) = MULT16_16_Q15(st->speech_prob, 100);
+       break;
+-#ifndef FIXED_POINT
+    case SPEEX_PREPROCESS_SET_AGC_TARGET:
+       st->agc_level = (*(spx_int32_t*)ptr);
+       if (st->agc_level<1)
+@@ -1201,7 +1239,6 @@ EXPORT int speex_preprocess_ctl(SpeexPreprocessState *state, int request, void *
+    case SPEEX_PREPROCESS_GET_AGC_TARGET:
+       (*(spx_int32_t*)ptr) = st->agc_level;
+       break;
+-#endif
+    default:
+       speex_warning_int("Unknown speex_preprocess_ctl request: ", request);
+       return -1;
