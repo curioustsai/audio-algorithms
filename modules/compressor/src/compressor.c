@@ -113,7 +113,8 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
 		float mink = 0.1f;
 		float maxk = 10000.0f;
 		// search by comparing the knee slope at the current k guess, to the ideal slope
-		for (int i = 0; i < 15; i++){
+		int i = 0;
+		for (i = 0; i < 15; i++){
 			if (kneeslope(xknee, k, linearthreshold) < slope)
 				maxk = k;
 			else
@@ -233,7 +234,8 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
 	int samplepos = 0;
 	float spacingdb = SF_COMPRESSOR_SPACINGDB;
 
-	for (int ch = 0; ch < chunks; ch++){
+	int ch = 0;
+	for (ch = 0; ch < chunks; ch++){
 		detectoravg = fixf(detectoravg, 1.0f);
 		float desiredgain = detectoravg;
 		float scaleddesiredgain = asinf(desiredgain) * ang90inv;
@@ -261,7 +263,8 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
 		}
 
 		// process the chunk
-		for (int chi = 0; chi < samplesperchunk; chi++, samplepos++,
+		int chi = 0;
+		for (chi = 0; chi < samplesperchunk; chi++, samplepos++,
 			delayreadpos = (delayreadpos + 1) % delaybufsize,
 			delaywritepos = (delaywritepos + 1) % delaybufsize){
 

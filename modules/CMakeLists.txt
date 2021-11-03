@@ -6,6 +6,7 @@ if (${UBNT_PLATFORM_NAME} MATCHES "gen[34].")
 	add_subdirectory(audio_events)
 	add_subdirectory(pffft)
 	add_subdirectory(formant_shift)
+	add_subdirectory(compressor)
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
