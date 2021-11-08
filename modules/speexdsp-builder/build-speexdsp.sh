@@ -30,6 +30,7 @@ UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3s gen4l gen4c gen4s x86)
 UBNT_LIBRARIES_TYPE="STATIC"
 UBNT_JOB_COUNT=4
 UBNT_DO_CLEAN=false
+UBNT_VERBOSE=false
 
 SCRIPT=$0
 OPTIONS="p:h:w:t:b:l:j:r:f:g:cvh"
@@ -66,6 +67,9 @@ do
 		-c)	# Clean all projects before make
 			UBNT_DO_CLEAN=true
 			;;
+        -v|--verbose)
+            UBNT_VERBOSE=true
+            ;;
 	esac
 done
 
@@ -108,19 +112,22 @@ if [ $UBNT_DO_CLEAN = true ]; then
 	make clean -C $SpeexdspDir
 fi
 
-echo "host: $HOST"
-echo "ar: $AR"
-echo "cc: $CC"
-echo "cxx: $CXX"
-echo "flags: $ARCHFLAGS"
-echo "workdir: $WORKDIR"
-echo "ubnt_fw_cache: $TOOLCHAIN_ROOT"
+if [ $UBNT_VERBOSE = true ]; then
+    echo "host: $HOST"
+    echo "ar: $AR"
+    echo "cc: $CC"
+    echo "cxx: $CXX"
+    echo "flags: $ARCHFLAGS"
+    echo "workdir: $WORKDIR"
+    echo "ubnt_fw_cache: $TOOLCHAIN_ROOT"
+fi
 
 mkdir -p $WORKDIR/$UBNT_WORK_DIR/lib
 mkdir -p $WORKDIR/$UBNT_ROOTFS_DIR/bin
 mkdir -p $WORKDIR/$UBNT_ROOTFS_DIR/lib
 mkdir -p $WORKDIR/$UBNT_ROOTFS_DIR/include/speex
 
+# git apply patch
 cd $SpeexdspDir
 if [ ! -d $SpeexdspDir/patches ]; then
     mkdir $SpeexdspDir/patches
@@ -128,12 +135,25 @@ if [ ! -d $SpeexdspDir/patches ]; then
     cp ${ROOT}/modules/speexdsp-builder/patches/100-fastNS_fxAGC.patch $SpeexdspDir/patches
 fi
 
-if [[ $UBNT_PLATFORM_TYPE == "x86" ]]; then
-	CFLAGS="-g -O3" ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
-		 --enable-static --enable-shared
-else
-	CXX=$CXX CXXFLAGS="$ARCHFLAGS -O3 " ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
-		--enable-shared --enable-static -host=$HOST --build=x86-linux-gnu
+# check if we need reconfigure
+reconfigure="yes"
+if [[ -f $SpeexdspDir/configured_platform ]]; then
+    SpeexdspConfig=`cat $SpeexdspDir/configured_platform`
+    if [[ $SpeexdspConfig == $UBNT_PLATFORM_TYPE ]]; then
+        reconfigure="no"
+    fi
+fi
+
+# configure; make; make install
+if [[ $reconfigure == "yes" ]]; then
+    if [[ $UBNT_PLATFORM_TYPE == "x86" ]]; then
+        CFLAGS="-g -O3" ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
+             --enable-static --enable-shared
+    else
+        CXX=$CXX CXXFLAGS="$ARCHFLAGS -O3 " ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
+            --enable-shared --enable-static -host=$HOST --build=x86-linux-gnu
+    fi
+    echo $UBNT_PLATFORM_TYPE > configured_platform
 fi
 make -j $UBNT_JOB_COUNT
 make install
