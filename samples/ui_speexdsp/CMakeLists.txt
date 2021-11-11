@@ -45,6 +45,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 target_link_libraries(
     ${PROJECT_NAME}
 	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
+    -L${PROJECT_ROOT}/build/${UBNT_PLATFORM_NAME}/${CMAKE_BUILD_TYPE}/rootfs/lib/
     -lspeexdsp
 	-lsndfile
     -lpthread

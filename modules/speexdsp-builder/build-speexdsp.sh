@@ -23,8 +23,6 @@ printHelp() {
 }
 
 UBNT_BUILD_TYPE=MinSizeRel
-UBNT_ROOTFS_DIR=$UBNT_BUILD_TYPE/rootfs
-UBNT_WORK_DIR=$UBNT_BUILD_TYPE/work
 UBNT_PLATFORM_TYPE=__empty__
 UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3s gen4l gen4c gen4s x86)
 UBNT_LIBRARIES_TYPE="STATIC"
@@ -72,6 +70,9 @@ do
             ;;
 	esac
 done
+
+UBNT_ROOTFS_DIR=$UBNT_BUILD_TYPE/rootfs
+UBNT_WORK_DIR=$UBNT_BUILD_TYPE/work
 
 #validation of the user input
 if [[ ! "${UBNT_PLATFORMS_LIST[*]}" =~ "${UBNT_PLATFORM_TYPE}" ]]
@@ -137,9 +138,9 @@ fi
 
 # check if we need reconfigure
 reconfigure="yes"
-if [[ -f $SpeexdspDir/configured_platform ]]; then
-    SpeexdspConfig=`cat $SpeexdspDir/configured_platform`
-    if [[ $SpeexdspConfig == $UBNT_PLATFORM_TYPE ]]; then
+if [[ -f $SpeexdspDir/configured_platform_buildtype ]]; then
+    SpeexdspConfig=`cat $SpeexdspDir/configured_platform_buildtype`
+    if [[ $SpeexdspConfig == "${UBNT_PLATFORM_TYPE}_${UBNT_BUILD_TYPE}" ]]; then
         reconfigure="no"
     fi
 fi
@@ -156,7 +157,7 @@ if [[ $reconfigure == "yes" ]]; then
         CXX=$CXX CXXFLAGS="$ARCHFLAGS -O3 " ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
             --enable-shared --enable-static -host=$HOST --build=x86-linux-gnu
     fi
-    echo $UBNT_PLATFORM_TYPE > configured_platform
+    echo "${UBNT_PLATFORM_TYPE}_${UBNT_BUILD_TYPE}" > configured_platform_buildtype
 fi
 make -j $UBNT_JOB_COUNT
 make install
