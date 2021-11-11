@@ -25,8 +25,7 @@ include_directories(
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PROJECT_ROOT}/thirdparty/CLI11/include
-	${PROJECT_ROOT}/thirdparty/speexdsp/build/${UBNT_PLATFORM_NAME}/include/speex
-    ${SOURCES_ROOT}/mic_array/include/
+	${PROJECT_ROOT}/thirdparty/speexdsp/include
 	${LIBSNDFILE_INCLUDE_DIRS}
 )
 
@@ -45,12 +44,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 #define the list of library dependencies
 target_link_libraries(
     ${PROJECT_NAME}
-	-L${PROJECT_ROOT}/thirdparty/speexdsp/build/${UBNT_PLATFORM_NAME}/lib
-	-L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
 	-L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
-    mic_array
+    -L${PROJECT_ROOT}/build/${UBNT_PLATFORM_NAME}/${CMAKE_BUILD_TYPE}/rootfs/lib/
     -lspeexdsp
-	-lfftw3f
 	-lsndfile
     -lpthread
     -lm
@@ -59,6 +55,22 @@ target_link_libraries(
     -lcrypt
     -lrt
 )
+
+OPTION(ENABLE_BF "enable beamforming features" OFF)
+
+if (ENABLE_BF)
+    add_definitions(-DAUDIO_ALGO_DEBUG)
+    include_directories(
+        AFTER
+        ${SOURCES_ROOT}/mic_array/include/
+        )
+    target_link_libraries(
+        ${PROJECT_NAME}
+        -L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
+        -lfftw3f
+        mic_array
+        )
+endif()
 
 #where do we want the app(s) installed
 install(

@@ -1,4 +1,6 @@
+#ifdef ENABLE_BF
 #include "MicArray.h"
+#endif
 #include "speex/speex_echo.h"
 #include "speex/speex_preprocess.h"
 
@@ -12,19 +14,21 @@
 int main(int argc, char **argv) {
     SpeexPreprocessState *den_st;
     SpeexEchoState *echo_st;
+#ifdef ENABLE_BF
     void *hMicArray;
+    int fftlen = 512;
+    bool enable_bf = false;
+#endif
 
     std::string inputFilePath, outputFilePath, refFilePath;
     short *data, *mic_data, *ref_data, *echo_out, *bf_out;
     int parameter;
     int count = 0;
     int frame_size = 256;
-    int fftlen = 512;
     int nsLevel = 15;
     int agcTarget = 16000;
     int tail_length = 1024;
     bool enable_aec = false;
-    bool enable_bf = false;
     bool enable_ns = true, disable_ns = false;
     bool enable_agc = false;
 
@@ -91,7 +95,9 @@ int main(int argc, char **argv) {
 
     int sample_rate = sfinfo_in.samplerate;
     int num_channel = sfinfo_in.channels;
+#ifdef ENABLE_BF
     enable_bf = (num_channel > 1) ? true : false;
+#endif
 
     mic_data = (short *)malloc(num_channel * frame_size * sizeof(short));
     bf_out = (short *)malloc(frame_size * sizeof(short));
@@ -107,9 +113,11 @@ int main(int argc, char **argv) {
         den_st = speex_preprocess_state_init(frame_size, sample_rate);
     }
 
+#ifdef ENABLE_BF
     if (enable_bf) {
         MicArray_Init(&hMicArray, sample_rate, num_channel, fftlen, frame_size);
     }
+#endif
 
     /* denoise */
     parameter = enable_ns;
@@ -140,17 +148,21 @@ int main(int argc, char **argv) {
             data = mic_data;
         }
 
+#ifdef ENABLE_BF
         if (num_channel >= 2) {
             MicArray_Process(hMicArray, data, bf_out);
             data = bf_out;
         }
+#endif
 
         speex_preprocess_run(den_st, data);
         sf_write_short(outfile, data, frame_size);
         count++;
     }
 
+#ifdef ENABLE_BF
     if (enable_bf) MicArray_Release(hMicArray);
+#endif
     if (enable_aec) speex_echo_state_destroy(echo_st);
     speex_preprocess_state_destroy(den_st);
 

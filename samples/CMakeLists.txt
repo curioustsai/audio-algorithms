@@ -5,10 +5,12 @@ if(${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
 	add_subdirectory(ui_audio_events)
 	# add_subdirectory(clear_voice)
 	add_subdirectory(formant_shifter)
+	add_subdirectory(ui_speexdsp)
 endif()
 
 if(${UBNT_PLATFORM_NAME} STREQUAL "gen4c")
 	add_subdirectory(ui_click_remover)
+	add_subdirectory(ui_speexdsp)
 endif()
 
 if(${UBNT_PLATFORM_NAME} STREQUAL "x86")
