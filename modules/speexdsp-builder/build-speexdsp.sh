@@ -146,6 +146,9 @@ fi
 
 # configure; make; make install
 if [[ $reconfigure == "yes" ]]; then
+    if [[ ! -f ./configure ]]; then
+        ./autogen.sh
+    fi
     if [[ $UBNT_PLATFORM_TYPE == "x86" ]]; then
         CFLAGS="-g -O3" ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
              --enable-static --enable-shared
