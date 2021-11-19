@@ -63,10 +63,13 @@ typedef struct {
     float kneedboffset_agg;
     float offset_agg;
 
+    // expander
+	float threshold_expander;
+	float linearthreshold_expander;
+	float slope_expander;
+
     // noise gate
-	float threshold_noise;
-	float linearthreshold_noise;
-	float slope_noise;
+    float linearthreshold_noise;
 
 	float attacksamplesinv;
 	float satreleasesamplesinv;
@@ -99,8 +102,9 @@ void sf_simplecomp(sf_compressor_state_st *state,
 	float ratio,     // unitless, amount to inversely scale the output when applying comp [1 to 20]
     float threshold_agg,
     float ratio_agg,
+    float threshold_expander,
+    float ratio_expander,
     float threshold_noise,
-    float ratio_noise,
 	float attack,    // seconds, length of the attack phase [0 to 1]
 	float release    // seconds, length of the release phase [0 to 1]
 );
@@ -116,8 +120,9 @@ void sf_advancecomp(sf_compressor_state_st *state,
     float ratio,
     float threshold_agg,
     float ratio_agg,
+    float threshold_expander,
+    float ratio_expander,
     float threshold_noise,
-    float ratio_noise,
     float attack,
     float release,
 	// these are the advanced parameters:

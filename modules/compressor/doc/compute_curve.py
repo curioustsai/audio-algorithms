@@ -48,7 +48,7 @@ def calculate_k(threshold, knee, slope):
 def compute_curve(x_data, pregain=0.0, postgain=0.0,
                   threshold=-24.0, knee=1.0, ratio=2.0,
                   threshold_agg=-12.0, knee_agg=1.0, ratio_agg=4.0,
-                  threshold_noise=-60.0, knee_noise=1.0, ratio_noise=0.5):
+                  threshold_expander=-60.0, knee_expander=1.0, ratio_expander=4.0):
     """
     x_data: input arary, linear data [1/32767, 0)
     y_data: output arary, linear data [1/32767, 0)
@@ -78,24 +78,24 @@ def compute_curve(x_data, pregain=0.0, postgain=0.0,
     offset_agg = threshold_agg - knot_thr_agg
 
     # TODO:
-    # 1) add soft-knee for noise gate
+    # 1) add soft-knee for expander
     # 2) re-design the knee_curve of compressor 2
 
-    # noise gate
-    slope_noise = 1 / ratio_noise
-    linear_threshold_noise = dB2lin(threshold_noise)
-    knee_noise = 0
+    # expander
+    slope_expander = 1 / ratio_expander
+    linear_threshold_expander = dB2lin(threshold_expander)
+    knee_expander = 0
 
     for i in range(samples):
         x = x_data[i]
 
         if x < linear_threshold:
-            if x > linear_threshold_noise:
+            if x > linear_threshold_expander:
                 # linear piece
                 y_data[i] = x
             else:
-                # noise gate
-                y_data[i] = dB2lin(max(threshold_noise - knee_noise - slope_noise * (threshold_noise - lin2dB(x)), -93))
+                # expander
+                y_data[i] = dB2lin(max(threshold_expander - knee_expander - slope_expander * (threshold_expander - lin2dB(x)), -93))
 
         else:
             # compressor 1
@@ -122,7 +122,7 @@ def compute_curve(x_data, pregain=0.0, postgain=0.0,
 def plot_figure(x_data, pregain=0.0, postgain=0.0,
                 threshold=-24.0, knee=3.0, ratio=2.0,
                 threshold_agg=-12.0, knee_agg=3.0, ratio_agg=4.0,
-                threshold_noise=-40, knee_noise=3.0, ratio_noise=0.5):
+                threshold_expander=-40, knee_expander=3.0, ratio_expander=0.5):
     """
     x_data: arary, linear data [1/32767, 0)
     y_data: arary, linear data [1/32767, 0)
@@ -146,15 +146,20 @@ def plot_figure(x_data, pregain=0.0, postgain=0.0,
     plt.yticks(np.arange(-96, 3, 3))
 
     # reference line
-    plt.plot(x_dB, x_dB, 'r--')
+    # plt.plot(x_dB, x_dB, 'r--')
+    #
+    # xx = np.array([-93.00, -90.00, -87.00, -84.00, -81.00, -78.00, -75.00, -72.00, -69.00, -66.00, -63.00, -60.00, -57.00, -54.00, -51.00, -48.00, -45.00, -42.00, -39.00, -36.00, -33.00, -30.00, -27.00, -24.00, -21.00, -18.00, -15.00, -12.00, -9.00, -6.00, -3.00, 0.00, ])
+    # yy = np.array([-68.08, -67.33, -66.58, -65.83, -65.08, -64.33, -63.58, -62.83, -62.08, -61.33, -60.58, -59.83, -56.95, -53.95, -50.96, -47.98, -44.98, -42.00, -39.00, -36.00, -33.00, -30.00, -27.00, -24.00, -22.21, -20.70, -19.19, -17.68, -16.58, -15.77, -15.01, -14.26, ])
+    #
+    # plt.plot(xx, yy, 'g--')
 
     plt.title("Dynamic Range Compressor\n"
               "pre-gain: {:2.2f}, post-gain {:2.2f}\n"
-              "threshold_noise: {:2.2f}, ratio_noise: {:2.2f}\n"
+              "threshold_expander: {:2.2f}, ratio_expander: {:2.2f}\n"
               "threshold: {:2.2f}, knee: {:2.2f}, ratio: {:2.2f}\n"
               "threshold_agg: {:2.2f}, knee_agg: {:2.2f}, ratio_agg: {:2.2f}".format(
                   pregain, postgain,
-                  threshold_noise, ratio_noise,
+                  threshold_expander, ratio_expander,
                   threshold, knee, ratio,
                   threshold_agg, knee_agg, ratio_agg))
     plt.grid()
@@ -176,10 +181,10 @@ if __name__ == "__main__":
     parser.add_argument("--knee_agg", type=float, default=1.0)
     parser.add_argument("--ratio_agg", type=float, default=4.0)
 
-    # noise gate
-    parser.add_argument("--threshold_noise", type=float, default=-60.0)
-    parser.add_argument("--knee_noise", type=float, default=1.0)
-    parser.add_argument("--ratio_noise", type=float, default=0.5)
+    # expander
+    parser.add_argument("--threshold_expander", type=float, default=-60.0)
+    parser.add_argument("--knee_expander", type=float, default=1.0)
+    parser.add_argument("--ratio_expander", type=float, default=4.0)
 
     args = parser.parse_args()
 
@@ -194,9 +199,9 @@ if __name__ == "__main__":
                            threshold_agg=args.threshold_agg,
                            knee_agg=args.knee_agg,
                            ratio_agg=args.ratio_agg,
-                           threshold_noise=args.threshold_noise,
-                           knee_noise=args.knee_noise,
-                           ratio_noise=args.ratio_noise)
+                           threshold_expander=args.threshold_expander,
+                           knee_expander=args.knee_expander,
+                           ratio_expander=args.ratio_expander)
 
     plot_figure(x_data,
                 pregain=args.pregain,
@@ -207,6 +212,6 @@ if __name__ == "__main__":
                 threshold_agg=args.threshold_agg,
                 knee_agg=args.knee_agg,
                 ratio_agg=args.ratio_agg,
-                threshold_noise=args.threshold_noise,
-                knee_noise=args.knee_noise,
-                ratio_noise=args.ratio_noise)
+                threshold_expander=args.threshold_expander,
+                knee_expander=args.knee_expander,
+                ratio_expander=args.ratio_expander)

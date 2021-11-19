@@ -61,16 +61,19 @@ TEST(DRC, Process) {
     float threshold_agg = -12.f;
     float ratio_agg = 4.f;
 
+    // expander
+    float threshold_expander = -60.f;
+    float ratio_expander = 4.f;
+
     // noise gate
-    float threshold_noise = -60.f;
-    float ratio_noise = 0.5f;
+    float threshold_noise = -80.f;
 
     float attack = 0.003f;
     float release = 0.250f;
 
     sf_compressor_state_st compressor_st;
     sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
-                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
+                  threshold_agg, ratio_agg, threshold_expander, ratio_expander, threshold_noise, attack, release);
 
     int duration = 5;
     int total_length = sample_rate * duration;
@@ -142,7 +145,7 @@ TEST(DRC, Process) {
      */
     pregain = 6.f;
     sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
-                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
+                  threshold_agg, ratio_agg, threshold_expander, ratio_expander, attack, release);
     // iterate different amplitude levels
     // printf("pre-gain: %f\tpost-gain: %f\n", pregain, postgain);
     answers.clear();
@@ -176,7 +179,7 @@ TEST(DRC, Process) {
     pregain = 0.f;
     postgain = 6.0f;
     sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
-                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
+                  threshold_agg, ratio_agg, threshold_expander, ratio_expander, attack, release);
     // printf("pre-gain: %f\tpost-gain: %f\n", pregain, postgain);
     answers.clear();
     answers = {-54.0, -51.0, -48.0, -45.0,       -42.0,       -39.0,       -36.0,
@@ -223,7 +226,7 @@ TEST(DRC, Process) {
 //         // float compcurve(float x, float knee,
 //         // float linearthreshold, float linearthresholdknee, float k, float slope, float threshold, float kneedboffset,
 //         // float linearthreshold_agg, float linearthresholdknee_agg, float k_agg, float slope_agg, float threshold_agg, float kneedboffset_agg, float offset_agg,
-//         // float linearthreshold_noise, float slope_noise, float threshold_noise);
+//         // float linearthreshold_expander, float slope_expander, float threshold_expander);
 //         float y = compcurve(x, 1, 0.0630957261, 0.0707945824, 94.1952744, 0.5, -24, -23.2771568, 0.251188636,
 //                 0.281838298, 46.9471626, 0.25, -12, -11.4555693, 5.77715683, 0.00100000005, 2, -60);
 //         float ydb = 20 * log10f(y);

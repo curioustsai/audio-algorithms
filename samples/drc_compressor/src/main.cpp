@@ -16,8 +16,9 @@ int main(int argc, char **argv) {
     float postgain = 0; //Decibel amount to perform gain after compression (0 to 40)
     float knee = 1;        //Decibel width of the knee (0 to 40)"
 
-    float threshold_noise = -60; //Decibel level that triggers the compression (-100 to 0)"
-    float ratio_noise = 0.5;     //Ratio of compression after the threshold (1 to 20)"
+    float threshold_noise = -90;
+    float threshold_expander = -60; //Decibel level that triggers the compression (-100 to 0)"
+    float ratio_expander = 2;     //Ratio of compression after the threshold (1 to 20)"
 
     float threshold = -24; //Decibel level that triggers the compression (-100 to 0)"
     float ratio = 2;       //Ratio of compression after the threshold (1 to 20)"
@@ -40,9 +41,10 @@ int main(int argc, char **argv) {
     app.add_option("--postgain", postgain, "postgain after compression, default: 0 dB");
     app.add_option("--knee", knee, "width of soft knee, defalt: 1 dB");
 
-    app.add_option("--threshold_noise", threshold_noise,
-                   "threshold for compression noise, default: -60 dB");
-    app.add_option("--ratio_noise", ratio_noise, "compression ratio noise, defaul: 0.5");
+    app.add_option("--threshold_noise", threshold_noise, "threshold for noise, default: -90 dB");
+    app.add_option("--threshold_expander", threshold_expander,
+                   "threshold for expander, default: -60 dB");
+    app.add_option("--ratio_expander", ratio_expander, "expander ratio, defaul: 2");
 
     app.add_option("--threshold", threshold, "threshold for compression, default: -24 dB");
     app.add_option("--ratio", ratio, "compression ratio, defaul: 2");
@@ -94,7 +96,7 @@ int main(int argc, char **argv) {
 
     sf_compressor_state_st compressor_st;
     sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
-                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
+                  threshold_agg, ratio_agg, threshold_expander, ratio_expander, threshold_noise, attack, release);
 
     while (frame_size == sf_read_short(infile, data, frame_size)) {
         for (int i = 0; i < frame_size; i++) { input_float[i] = (float)data[i] / 32768.0f; }
