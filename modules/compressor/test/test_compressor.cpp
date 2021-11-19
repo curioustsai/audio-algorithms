@@ -51,15 +51,26 @@ TEST(DRC, Process) {
 
     float pregain = 0.f;
     float postgain = 0.f;
-    float threshold = -12.f;
-    float knee = 3.f;
-    float ratio = 12.f;
+    float knee = 1.f;
+
+    // compressor 1 (normal)
+    float threshold = -24.f;
+    float ratio = 2.f;
+
+    // compressor 2 (aggressive)
+    float threshold_agg = -12.f;
+    float ratio_agg = 4.f;
+
+    // noise gate
+    float threshold_noise = -60.f;
+    float ratio_noise = 0.5f;
+
     float attack = 0.003f;
     float release = 0.250f;
 
     sf_compressor_state_st compressor_st;
-    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, threshold, knee, ratio, attack,
-                  release);
+    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
+                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
 
     int duration = 5;
     int total_length = sample_rate * duration;
@@ -69,16 +80,24 @@ TEST(DRC, Process) {
 
     float* outbuf = new float[total_length];
     std::vector<float> amplitudes;
-    for (float dB = -60; dB <= 0; dB += 3) { amplitudes.push_back(powf(10, 0.05 * dB)); }
-    std::vector<float> answers = {
-        -60.0f, -57.0f, -54.0f, -51.0f,        -48.0f,        -45.0f,        -42.0f,
-        -39.0f, -36.0f, -33.0f, -30.0f,        -27.0f,        -24.0f,        -21.0f,
-        -18.0f, -15.0f, -12.0f, -10.84154926f, -10.59154926f, -10.34154926f, -10.09154926f};
+    for (float dB = -93; dB <= 0; dB += 3) { amplitudes.push_back(powf(10, 0.05 * dB)); }
+    // for (float dB = -93; dB <= -60; dB += 3) { amplitudes.push_back(powf(10, 0.05 * dB)); }
+    // std::vector<float> answers = {
+    //     -60.0f, -57.0f, -54.0f, -51.0f,        -48.0f,        -45.0f,        -42.0f,
+    //     -39.0f, -36.0f, -33.0f, -30.0f,        -27.0f,        -24.0f,        -21.0f,
+    //     -18.0f, -15.0f, -12.0f, -10.84154926f, -10.59154926f, -10.34154926f, -10.09154926f};
+
     /*
      * Test without pre-gain & post-gain
      */
     // iterate different amplitude levels
     // printf("pre-gain: %f\tpost-gain: %f\n", pregain, postgain);
+    std::vector<float> input;
+    std::vector<float> results;
+
+    std::vector<float> input_data;
+    std::vector<float> output_data;
+
     for (size_t k = 0; k < amplitudes.size(); k++) {
         float amp = amplitudes[k];
 
@@ -89,21 +108,41 @@ TEST(DRC, Process) {
         }
 
         // compare, start from 3s
-        // float dBFS_input = calculate_dBFS(inbuf, total_length, 3 * sample_rate, 4 * sample_rate);
-        float dBFS_output = calculate_dBFS(outbuf, total_length, 3 * sample_rate, 4 * sample_rate);
+        float dBFS_input = calculate_dBFS(inbuf, total_length, 4 * sample_rate, 4.5 * sample_rate);
+        float dBFS_output = calculate_dBFS(outbuf, total_length, 4 * sample_rate, 4.5 * sample_rate);
         // printf("dBFS_input: %f\tdBFS_output: %f\tanswer:%f\n", dBFS_input, dBFS_output, answers[k]);
+        // printf("dBFS_input: %f\tdBFS_output: %f\n", dBFS_input, dBFS_output);
+        input.push_back(dBFS_input);
+        results.push_back(dBFS_output);
 
-        ASSERT_LT(fabsf(dBFS_output - answers[k]), 1);
+        // ASSERT_LT(fabsf(dBFS_output - answers[k]), 1);
+        std::vector<float> temp(inbuf, inbuf + duration * sample_rate);
+        input_data.insert(input_data.end(), temp.begin(), temp.end());
+
+        std::vector<float> temp2(outbuf, outbuf + duration * sample_rate);
+        output_data.insert(output_data.end(), temp2.begin(), temp2.end());
 
         delete[] inbuf;
     }
 
+    output_pcm(input_data.data(), sample_rate * duration * amplitudes.size(), "./amp.pcm");
+    output_pcm(output_data.data(), sample_rate * duration * amplitudes.size(), "./output.pcm");
+
+    printf("[");
+    for (auto in : input) { printf("%2.2f, ", in); }
+    printf("]\n");
+
+    printf("[");
+    for (auto res : results) { printf("%2.2f, ", res); }
+    printf("]\n");
+
+#if 0
     /*
      * Test with pre-gain
      */
     pregain = 6.f;
-    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, threshold, knee, ratio, attack,
-                  release);
+    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
+                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
     // iterate different amplitude levels
     // printf("pre-gain: %f\tpost-gain: %f\n", pregain, postgain);
     answers.clear();
@@ -136,8 +175,8 @@ TEST(DRC, Process) {
      */
     pregain = 0.f;
     postgain = 6.0f;
-    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, threshold, knee, ratio, attack,
-                  release);
+    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
+                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
     // printf("pre-gain: %f\tpost-gain: %f\n", pregain, postgain);
     answers.clear();
     answers = {-54.0, -51.0, -48.0, -45.0,       -42.0,       -39.0,       -36.0,
@@ -161,6 +200,7 @@ TEST(DRC, Process) {
 
         delete[] inbuf;
     }
+#endif
 
 #if 0
     std::string inpath = "./sine_1k_test.pcm";
@@ -172,3 +212,31 @@ TEST(DRC, Process) {
     delete[] outbuf;
 }
 
+// TEST(DRC, compcurve) {
+//     std::vector<float> amplitudes;
+//     std::vector<float> vectx;
+//     std::vector<float> vecty;
+//     for (float dB = -96; dB <= 0; dB += 3) { amplitudes.push_back(powf(10, 0.05 * dB)); }
+//
+//     for (float x: amplitudes){
+//
+//         // float compcurve(float x, float knee,
+//         // float linearthreshold, float linearthresholdknee, float k, float slope, float threshold, float kneedboffset,
+//         // float linearthreshold_agg, float linearthresholdknee_agg, float k_agg, float slope_agg, float threshold_agg, float kneedboffset_agg, float offset_agg,
+//         // float linearthreshold_noise, float slope_noise, float threshold_noise);
+//         float y = compcurve(x, 1, 0.0630957261, 0.0707945824, 94.1952744, 0.5, -24, -23.2771568, 0.251188636,
+//                 0.281838298, 46.9471626, 0.25, -12, -11.4555693, 5.77715683, 0.00100000005, 2, -60);
+//         float ydb = 20 * log10f(y);
+//         float xdb = 20 * log10f(x);
+//         vecty.push_back(ydb);
+//         vectx.push_back(xdb);
+//     }
+//
+//     printf("[");
+//     for (auto in: vectx) { printf("%2.2f, ", in); }
+//     printf("]\n");
+//
+//     printf("[");
+//     for (auto in: vecty) { printf("%2.2f, ", in); }
+//     printf("]\n");
+// }

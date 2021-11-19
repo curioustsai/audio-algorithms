@@ -12,11 +12,19 @@ int main(int argc, char **argv) {
     float *input_float;
     float *output_float;
     int frame_size = 1024;
-    float pregain = 0;      //Decibel amount to perform gain before compression (0 to 40)
-    float postgain = 0;     //Decibel amount to perform gain after compression (0 to 40)
-    float threshold = -24;  //Decibel level that triggers the compression (-100 to 0)"
-    float knee = 3;         //Decibel width of the knee (0 to 40)"
-    float ratio = 12;       //Ratio of compression after the threshold (1 to 20)"
+    float pregain = 0;  //Decibel amount to perform gain before compression (0 to 40)
+    float postgain = 0; //Decibel amount to perform gain after compression (0 to 40)
+    float knee = 1;        //Decibel width of the knee (0 to 40)"
+
+    float threshold_noise = -60; //Decibel level that triggers the compression (-100 to 0)"
+    float ratio_noise = 0.5;     //Ratio of compression after the threshold (1 to 20)"
+
+    float threshold = -24; //Decibel level that triggers the compression (-100 to 0)"
+    float ratio = 2;       //Ratio of compression after the threshold (1 to 20)"
+
+    float threshold_agg = -12; //Decibel level that triggers the compression aggressive (-100 to 0)"
+    float ratio_agg = 4;       //Ratio of compression aggressive after the threshold (1 to 20)"
+
     float attack = 0.003f;  //Seconds for the compression to kick in (0 to 1)"
     float release = 0.250f; //Seconds for the compression to release (0 to 1)"
 
@@ -26,12 +34,23 @@ int main(int argc, char **argv) {
         ->required()
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "output file")->required();
-    app.add_option("--frameSize", frame_size, "frame size in samples, default: 1024")->check(CLI::Number);
+    app.add_option("--frameSize", frame_size, "frame size in samples, default: 1024")
+        ->check(CLI::Number);
     app.add_option("--pregain", pregain, "pregain before compression, default: 0 dB");
     app.add_option("--postgain", postgain, "postgain after compression, default: 0 dB");
+    app.add_option("--knee", knee, "width of soft knee, defalt: 1 dB");
+
+    app.add_option("--threshold_noise", threshold_noise,
+                   "threshold for compression noise, default: -60 dB");
+    app.add_option("--ratio_noise", ratio_noise, "compression ratio noise, defaul: 0.5");
+
     app.add_option("--threshold", threshold, "threshold for compression, default: -24 dB");
-    app.add_option("--knee", knee, "width of soft knee, defalt: 3 dB");
-    app.add_option("--ratio", ratio, "compression ratio, defaul: 12");
+    app.add_option("--ratio", ratio, "compression ratio, defaul: 2");
+
+    app.add_option("--threshold_agg", threshold_agg,
+                   "threshold for compression aggressive, default: -12 dB");
+    app.add_option("--ratio_agg", ratio_agg, "compression ratio aggressive, defaul: 4");
+
     app.add_option("--attack", attack, "compression attack time, default: 0.003");
     app.add_option("--release", release, "compression release time, default: 0.250");
 
@@ -74,7 +93,8 @@ int main(int argc, char **argv) {
     int count = 0;
 
     sf_compressor_state_st compressor_st;
-    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, threshold, knee, ratio, attack, release);
+    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
+                  threshold_agg, ratio_agg, threshold_noise, ratio_noise, attack, release);
 
     while (frame_size == sf_read_short(infile, data, frame_size)) {
         for (int i = 0; i < frame_size; i++) { input_float[i] = (float)data[i] / 32768.0f; }

@@ -43,26 +43,35 @@ extern "C" {
 #endif
 
 typedef struct {
-	// user can read the metergain state variable after processing a chunk to see how much dB the
-	// compressor would have liked to compress the sample; the meter values aren't used to shape the
-	// sound in any way, only used for output if desired
-	float metergain;
-
-	// everything else shouldn't really be mucked with unless you read the algorithm and feel
-	// comfortable
-	float meterrelease;
-	float threshold;
 	float knee;
 	float linearpregain;
+
+    // compressor 1 (normal)
+	float threshold;
 	float linearthreshold;
+	float linearthresholdknee;
 	float slope;
+	float k;
+	float kneedboffset;
+
+    // compressor 2 (aggressive)
+	float threshold_agg;
+	float linearthreshold_agg;
+	float linearthresholdknee_agg;
+	float slope_agg;
+    float k_agg;
+    float kneedboffset_agg;
+    float offset_agg;
+
+    // noise gate
+	float threshold_noise;
+	float linearthreshold_noise;
+	float slope_noise;
+
 	float attacksamplesinv;
 	float satreleasesamplesinv;
 	float wet;
 	float dry;
-	float k;
-	float kneedboffset;
-	float linearthresholdknee;
 	float mastergain;
 	float a; // adaptive release polynomial coefficients
 	float b;
@@ -85,9 +94,13 @@ void sf_simplecomp(sf_compressor_state_st *state,
 	int rate,        // input sample rate (samples per second)
 	float pregain,   // dB, amount to boost the signal before applying compression [0 to 100]
 	float postgain,  // dB, amount to boost the signal after applying compression [0 to 100]
-	float threshold, // dB, level where compression kicks in [-100 to 0]
 	float knee,      // dB, width of the knee [0 to 40]
+	float threshold, // dB, level where compression kicks in [-100 to 0]
 	float ratio,     // unitless, amount to inversely scale the output when applying comp [1 to 20]
+    float threshold_agg,
+    float ratio_agg,
+    float threshold_noise,
+    float ratio_noise,
 	float attack,    // seconds, length of the attack phase [0 to 1]
 	float release    // seconds, length of the release phase [0 to 1]
 );
@@ -95,14 +108,24 @@ void sf_simplecomp(sf_compressor_state_st *state,
 // populate a compressor state with advanced parameters
 void sf_advancecomp(sf_compressor_state_st *state,
 	// these parameters are the same as the simple version above:
-	int rate, float pregain, float threshold, float knee, float ratio, float attack, float release,
+	int rate,
+    float pregain,
+	float postgain,     // dB, amount of gain to apply after compression [0 to 100]
+    float knee,
+    float threshold,
+    float ratio,
+    float threshold_agg,
+    float ratio_agg,
+    float threshold_noise,
+    float ratio_noise,
+    float attack,
+    float release,
 	// these are the advanced parameters:
 	float predelay,     // seconds, length of the predelay buffer [0 to 1]
 	float releasezone1, // release zones should be increasing between 0 and 1, and are a fraction
 	float releasezone2, //  of the release time depending on the input dB -- these parameters define
 	float releasezone3, //  the adaptive release curve, which is discussed in further detail in the
 	float releasezone4, //  demo: adaptive-release-curve.html
-	float postgain,     // dB, amount of gain to apply after compression [0 to 100]
 	float wet           // amount to apply the effect [0 completely dry to 1 completely wet]
 );
 

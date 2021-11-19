@@ -16,9 +16,14 @@ void sf_defaultcomp(sf_compressor_state_st *state, int rate){
 	// sane defaults
 	sf_advancecomp(state, rate,
 		  0.000f, // pregain
+		  0.000f, // postgain
+		  1.000f, // knee
 		-24.000f, // threshold
-		 30.000f, // knee
-		 12.000f, // ratio
+		  2.000f, // ratio
+		-12.000f, // threshold_agg
+		  4.000f, // ratio_agg
+		-60.000f, // threshold_noise
+		  0.500f, // ratio_noise
 		  0.003f, // attack
 		  0.250f, // release
 		  0.006f, // predelay
@@ -26,21 +31,31 @@ void sf_defaultcomp(sf_compressor_state_st *state, int rate){
 		  0.160f, // releasezone2
 		  0.420f, // releasezone3
 		  0.980f, // releasezone4
-		  0.000f, // postgain
 		  1.000f  // wet
 	);
 }
 
-void sf_simplecomp(sf_compressor_state_st *state, int rate, float pregain, float postgain, float threshold,
-	float knee, float ratio, float attack, float release){
-	// sane defaults
-	sf_advancecomp(state, rate, pregain, threshold, knee, ratio, attack, release,
+void sf_simplecomp(sf_compressor_state_st *state, int rate, float pregain, float postgain, float knee,
+        float threshold, float ratio, float threshold_agg, float ratio_agg,float threshold_noise, float ratio_noise,
+        float attack, float release){
+	// set defaults
+	sf_advancecomp(state, rate,
+        pregain,
+        postgain,
+        knee,
+        threshold,
+        ratio,
+        threshold_agg,
+        ratio_agg,
+        threshold_noise,
+        ratio_noise,
+        attack,
+        release,
 		0.006f, // predelay
 		0.090f, // releasezone1
 		0.160f, // releasezone2
 		0.420f, // releasezone3
 		0.980f, // releasezone4
-		postgain, // postgain
 		1.000f  // wet
 	);
 }
@@ -63,22 +78,69 @@ static inline float kneeslope(float x, float k, float linearthreshold){
 	return k * x / ((k * linearthreshold + 1.0f) * expf(k * (x - linearthreshold)) - 1);
 }
 
-static inline float compcurve(float x, float k, float slope, float linearthreshold,
-	float linearthresholdknee, float threshold, float knee, float kneedboffset){
-	if (x < linearthreshold)
-		return x;
-	if (knee <= 0.0f) // no knee in curve
-		return db2lin(threshold + slope * (lin2db(x) - threshold));
-	if (x < linearthresholdknee)
-		return kneecurve(x, k, linearthreshold);
-	return db2lin(kneedboffset + slope * (lin2db(x) - threshold - knee));
+/* static inline float compcurve(float x, float k, float slope, float linearthreshold, */
+/* 	float linearthresholdknee, float threshold, float knee, float kneedboffset){ */
+/* 	if (x < linearthreshold) */
+/* 		return x; */
+/* 	if (knee <= 0.0f) // no knee in curve */
+/* 		return db2lin(threshold + slope * (lin2db(x) - threshold)); */
+/* 	if (x < linearthresholdknee) */
+/* 		return kneecurve(x, k, linearthreshold); */
+/* 	return db2lin(kneedboffset + slope * (lin2db(x) - threshold - knee)); */
+/* } */
+
+static inline float compcurve(float x, float knee,
+        float linearthreshold, float linearthresholdknee, float k, float slope, float threshold, float kneedboffset,
+        float linearthreshold_agg, float linearthresholdknee_agg, float k_agg, float slope_agg, float threshold_agg, float kneedboffset_agg, float offset_agg,
+        float linearthreshold_noise, float slope_noise, float threshold_noise){
+
+    if (x < linearthreshold) {
+        /* if (x > linearthreshold_noise) // linear piece */
+            return x;
+        /* else */
+        /*     return db2lin(fmaxf(threshold_noise - (slope_noise * (threshold_noise - lin2db(x))), -93)); */
+    }
+    else {
+        if (x < linearthreshold_agg) { // compressor 1
+            if (x > linearthresholdknee)
+                return db2lin(kneedboffset + slope * (lin2db(x) - threshold - knee));
+            else
+                return kneecurve(x, k, linearthreshold);
+        }
+        else {  // compressor 2
+            if (x > linearthresholdknee_agg)
+                return db2lin(kneedboffset_agg + slope_agg * (lin2db(x) - threshold_agg - knee) - offset_agg);
+            else
+                return kneecurve(x, k_agg, linearthreshold_agg) / db2lin(offset_agg);
+        }
+    }
+}
+
+
+
+static inline float calculate_k(float linearthreshold, float linearthresholdknee, float slope) {
+    float k = 5.0f; // initial guess
+    float xknee = linearthresholdknee;
+    float mink = 0.1f;
+    float maxk = 10000.0f;
+    // search by comparing the knee slope at the current k guess, to the ideal slope
+    for (int i = 0; i < 15; i++){
+        if (kneeslope(xknee, k, linearthreshold) < slope)
+            maxk = k;
+        else
+            mink = k;
+        k = sqrtf(mink * maxk);
+    }
+
+    return k;
 }
 
 // this is the main initialization function
 // it does a bunch of pre-calculation so that the inner loop of signal processing is fast
-void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, float threshold,
-	float knee, float ratio, float attack, float release, float predelay, float releasezone1,
-	float releasezone2, float releasezone3, float releasezone4, float postgain, float wet){
+void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, float postgain, float knee,
+        float threshold, float ratio, float threshold_agg, float ratio_agg, float threshold_noise, float ratio_noise,
+        float attack, float release, float predelay,
+        float releasezone1, float releasezone2, float releasezone3, float releasezone4, float wet){
 
 	// setup the predelay buffer
 	int delaybufsize = rate * predelay;
@@ -90,8 +152,6 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
 
 	// useful values
 	float linearpregain = db2lin(pregain);
-	float linearthreshold = db2lin(threshold);
-	float slope = 1.0f / ratio;
 	float attacksamples = rate * attack;
 	float attacksamplesinv = 1.0f / attacksamples;
 	float releasesamples = rate * release;
@@ -99,32 +159,35 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
 	float satreleasesamplesinv = 1.0f / ((float)rate * satrelease);
 	float dry = 1.0f - wet;
 
-	// metering values (not used in core algorithm, but used to output a meter if desired)
-	/* float metergain = 1.0f; // gets overwritten immediately because gain will always be negative */
-	float meterfalloff = 0.325f; // seconds
-	float meterrelease = 1.0f - expf(-1.0f / ((float)rate * meterfalloff));
 
-	// calculate knee curve parameters
-	float k = 5.0f; // initial guess
+    // compressor 1 (normal)
+	float linearthreshold = db2lin(threshold);
+	float linearthresholdknee = db2lin(threshold + knee);
+	float slope = 1.0f / ratio;
 	float kneedboffset = 0.0f;
-	float linearthresholdknee = 0.0f;
+    float k = 5.0f; // initial guess
 	if (knee > 0.0f){ // if a knee exists, search for a good k value
-		float xknee = db2lin(threshold + knee);
-		float mink = 0.1f;
-		float maxk = 10000.0f;
-		// search by comparing the knee slope at the current k guess, to the ideal slope
-		int i = 0;
-		for (i = 0; i < 15; i++){
-			if (kneeslope(xknee, k, linearthreshold) < slope)
-				maxk = k;
-			else
-				mink = k;
-			k = sqrtf(mink * maxk);
-		}
-		kneedboffset = lin2db(kneecurve(xknee, k, linearthreshold));
-		linearthresholdknee = db2lin(threshold + knee);
+        k = calculate_k(linearthreshold, linearthresholdknee, slope);
+		kneedboffset = lin2db(kneecurve(linearthresholdknee, k, linearthreshold));
 	}
 
+    // compressor 2 (aggressive)
+    float linearthreshold_agg = db2lin(threshold_agg);
+	float linearthresholdknee_agg = db2lin(threshold_agg + knee);
+    float slope_agg = 1.0f / ratio_agg;
+	float kneedboffset_agg = 0.0f;
+    float k_agg = 5.0f; // initial guess
+	if (knee > 0.0f){ // if a knee exists, search for a good k value
+        k_agg = calculate_k(linearthreshold_agg, linearthresholdknee_agg, slope_agg);
+		kneedboffset_agg = lin2db(kneecurve(linearthresholdknee_agg, k_agg, linearthreshold_agg));
+	}
+    float knot_threshold_agg = kneedboffset + slope * (lin2db(linearthreshold_agg) - threshold - knee);
+    float offset_agg = threshold_agg - knot_threshold_agg;
+
+    // noise gate
+    float linearthreshold_noise = db2lin(threshold_noise);
+    float slope_noise = 1.0f / ratio_noise;
+    
     // empirical / perceptual tuning
 	// calculate a master gain based on what sounds good
 	/* float fulllevel = compcurve(1.0f, k, slope, linearthreshold, linearthresholdknee, */
@@ -145,20 +208,35 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
 	float d = y1;
 
 	// save everything
-	state->metergain            = 1.0f; // large value overwritten immediately since it's always < 0
-	state->meterrelease         = meterrelease;
-	state->threshold            = threshold;
 	state->knee                 = knee;
 	state->wet                  = wet;
 	state->linearpregain        = linearpregain;
+
+    // compressor 1 (normal)
+	state->threshold            = threshold;
 	state->linearthreshold      = linearthreshold;
+    state->linearthresholdknee  = linearthresholdknee;
 	state->slope                = slope;
+	state->k                    = k;
+	state->kneedboffset         = kneedboffset;
+
+    // compressor 2 (aggressive)
+    state->threshold_agg        = threshold_agg;
+    state->linearthreshold_agg  = linearthreshold_agg;
+    state->linearthresholdknee_agg = linearthresholdknee_agg;
+    state->slope_agg            = slope_agg;
+    state->k_agg                = k_agg;
+    state->kneedboffset_agg     = kneedboffset_agg;
+    state->offset_agg           = offset_agg;
+    
+    // noise gate
+    state->threshold_noise = threshold_noise;
+    state->linearthreshold_noise = linearthreshold_noise;
+    state->slope_noise = slope_noise;
+
 	state->attacksamplesinv     = attacksamplesinv;
 	state->satreleasesamplesinv = satreleasesamplesinv;
 	state->dry                  = dry;
-	state->k                    = k;
-	state->kneedboffset         = kneedboffset;
-	state->linearthresholdknee  = linearthresholdknee;
 	state->mastergain           = mastergain;
 	state->a                    = a;
 	state->b                    = b;
@@ -170,7 +248,6 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
 	state->delaybufsize         = delaybufsize;
 	state->delaywritepos        = 0;
 	state->delayreadpos         = delaybufsize > 1 ? 1 : 0;
-
 }
 
 // for more information on the adaptive release curve, check out adaptive-release-curve.html demo +
@@ -200,8 +277,6 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
 	float *output){
 
 	// pull out the state into local variables
-	float metergain            = state->metergain;
-	float meterrelease         = state->meterrelease;
 	float threshold            = state->threshold;
 	float knee                 = state->knee;
 	float linearpregain        = state->linearpregain;
@@ -226,6 +301,17 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
 	int delaywritepos          = state->delaywritepos;
 	int delayreadpos           = state->delayreadpos;
 	float *delaybuf     = state->delaybuf;
+
+    float linearthreshold_agg = state->linearthreshold_agg;
+    float linearthresholdknee_agg = state->linearthresholdknee_agg;
+    float k_agg = state->k_agg;
+    float slope_agg = state->slope_agg;
+    float threshold_agg = state->threshold_agg;
+    float kneedboffset_agg = state->kneedboffset_agg;
+    float offset_agg = state->offset_agg;
+    float linearthreshold_noise = state->linearthreshold_noise;
+    float threshold_noise = state->threshold_noise;
+    float slope_noise = state->slope_noise;
 
 	int samplesperchunk = SF_COMPRESSOR_SPU;
 	int chunks = size / samplesperchunk;
@@ -276,8 +362,12 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
 			if (inputmax < 0.0001f)
 				attenuation = 1.0f;
 			else{
-				float inputcomp = compcurve(inputmax, k, slope, linearthreshold,
-					linearthresholdknee, threshold, knee, kneedboffset);
+				/* float inputcomp = compcurve(inputmax, k, slope, linearthreshold, */
+				/* 	linearthresholdknee, threshold, knee, kneedboffset); */
+
+				float inputcomp = compcurve(inputmax, knee, linearthreshold, linearthresholdknee, k, slope, threshold, kneedboffset,
+					linearthreshold_agg, linearthresholdknee_agg, k_agg, slope_agg, threshold_agg, kneedboffset_agg, offset_agg,
+                    linearthreshold_noise, slope_noise, threshold_noise);
 				attenuation = inputcomp / inputmax;
 			}
 
@@ -309,19 +399,11 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
 			float premixgain = sinf(ang90 * compgain);
 			float gain = dry + wet * mastergain * premixgain;
 
-			// calculate metering (not used in core algo, but used to output a meter if desired)
-			float premixgaindb = lin2db(premixgain);
-			if (premixgaindb < metergain)
-				metergain = premixgaindb; // spike immediately
-			else
-				metergain += (premixgaindb - metergain) * meterrelease; // fall slowly
-
 			// apply the gain
 			output[samplepos] = delaybuf[delayreadpos] * gain;
 		}
 	}
 
-	state->metergain     = metergain;
 	state->detectoravg   = detectoravg;
 	state->compgain      = compgain;
 	state->maxcompdiffdb = maxcompdiffdb;
