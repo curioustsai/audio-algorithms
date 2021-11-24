@@ -77,10 +77,6 @@ def compute_curve(x_data, pregain=0.0, postgain=0.0,
     knot_thr_agg = (kneedBoffset + slope * (lin2dB(linear_threshold_agg) - threshold - knee))
     offset_agg = threshold_agg - knot_thr_agg
 
-    # TODO:
-    # 1) add soft-knee for expander
-    # 2) re-design the knee_curve of compressor 2
-
     # expander
     slope_expander = 1 / ratio_expander
     linear_threshold_expander = dB2lin(threshold_expander)
@@ -146,12 +142,7 @@ def plot_figure(x_data, pregain=0.0, postgain=0.0,
     plt.yticks(np.arange(-96, 3, 3))
 
     # reference line
-    # plt.plot(x_dB, x_dB, 'r--')
-    #
-    # xx = np.array([-93.00, -90.00, -87.00, -84.00, -81.00, -78.00, -75.00, -72.00, -69.00, -66.00, -63.00, -60.00, -57.00, -54.00, -51.00, -48.00, -45.00, -42.00, -39.00, -36.00, -33.00, -30.00, -27.00, -24.00, -21.00, -18.00, -15.00, -12.00, -9.00, -6.00, -3.00, 0.00, ])
-    # yy = np.array([-68.08, -67.33, -66.58, -65.83, -65.08, -64.33, -63.58, -62.83, -62.08, -61.33, -60.58, -59.83, -56.95, -53.95, -50.96, -47.98, -44.98, -42.00, -39.00, -36.00, -33.00, -30.00, -27.00, -24.00, -22.21, -20.70, -19.19, -17.68, -16.58, -15.77, -15.01, -14.26, ])
-    #
-    # plt.plot(xx, yy, 'g--')
+    plt.plot(x_dB, x_dB, 'r--')
 
     plt.title("Dynamic Range Compressor\n"
               "pre-gain: {:2.2f}, post-gain {:2.2f}\n"
