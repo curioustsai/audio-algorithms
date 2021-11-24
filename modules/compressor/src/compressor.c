@@ -24,7 +24,6 @@ void sf_defaultcomp(sf_compressor_state_st *state, int rate){
 		  4.000f, // ratio_agg
 		-60.000f, // threshold_expander
 		  1.00f,  // ratio_expander
-        -93.000f, // threshold_noise
 		  0.003f, // attack
 		  0.250f, // release
 		  0.006f, // predelay
@@ -38,7 +37,7 @@ void sf_defaultcomp(sf_compressor_state_st *state, int rate){
 
 void sf_simplecomp(sf_compressor_state_st *state, int rate, float pregain, float postgain, float knee,
         float threshold, float ratio, float threshold_agg, float ratio_agg,float threshold_expander, float ratio_expander,
-        float threshold_noise, float attack, float release){
+        float attack, float release){
 	// set defaults
 	sf_advancecomp(state, rate,
         pregain,
@@ -50,7 +49,6 @@ void sf_simplecomp(sf_compressor_state_st *state, int rate, float pregain, float
         ratio_agg,
         threshold_expander,
         ratio_expander,
-        threshold_noise,
         attack,
         release,
 		0.006f, // predelay
@@ -128,7 +126,7 @@ static inline float calculate_k(float linearthreshold, float linearthresholdknee
 // it does a bunch of pre-calculation so that the inner loop of signal processing is fast
 void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, float postgain, float knee,
         float threshold, float ratio, float threshold_agg, float ratio_agg, float threshold_expander, float ratio_expander,
-        float threshold_noise, float attack, float release, float predelay,
+        float attack, float release, float predelay,
         float releasezone1, float releasezone2, float releasezone3, float releasezone4, float wet){
 
 	// setup the predelay buffer
@@ -176,9 +174,6 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
     float linearthreshold_expander = db2lin(threshold_expander);
     float slope_expander = 1.0f / ratio_expander;
 
-    // noise gate
-    float linearthreshold_noise = db2lin(threshold_noise);
-    
 	float mastergain = db2lin(postgain);
 
 	// calculate the adaptive release curve parameters
@@ -219,9 +214,6 @@ void sf_advancecomp(sf_compressor_state_st *state, int rate, float pregain, floa
     state->threshold_expander = threshold_expander;
     state->linearthreshold_expander = linearthreshold_expander;
     state->slope_expander = slope_expander;
-
-    // noise gate
-    state->linearthreshold_noise = linearthreshold_noise;
 
 	state->attacksamplesinv     = attacksamplesinv;
 	state->satreleasesamplesinv = satreleasesamplesinv;
@@ -301,8 +293,6 @@ void sf_compressor_process(sf_compressor_state_st *state, int size, float *input
     float linearthreshold_expander = state->linearthreshold_expander;
     float threshold_expander = state->threshold_expander;
     float slope_expander = state->slope_expander;
-
-    /* float linearthreshold_noise = state->linearthreshold_noise; */
 
 	int samplesperchunk = SF_COMPRESSOR_SPU;
 	int chunks = size / samplesperchunk;
