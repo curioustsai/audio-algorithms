@@ -23,11 +23,11 @@ public:
     int process(float* buf, const int num);
     int process(int16_t* buf, const int num);
 
-    void threshold_all(const int threshold_all);
-    int threshold_all() const;
+    void threshold_all(const float threshold_all);
+    float threshold_all() const;
 
-    void threshold_4kHz(const int threshold_4kHz);
-    int threshold_4kHz() const;
+    void threshold_4kHz(const float threshold_4kHz);
+    float threshold_4kHz() const;
 
 #ifdef AUDIO_ALGO_DEBUG
     int dbgChannels{3};

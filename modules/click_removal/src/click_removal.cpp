@@ -70,10 +70,10 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
 #endif
 }
 
-void ClickRemoval::threshold_all(const int threshold_all) { _threshold_all = threshold_all; }
-int ClickRemoval::threshold_all() const { return _threshold_all; }
-void ClickRemoval::threshold_4kHz(const int threshold_4kHz) { _threshold_4kHz = threshold_4kHz; }
-int ClickRemoval::threshold_4kHz() const { return _threshold_4kHz; }
+void ClickRemoval::threshold_all(const float threshold_all) { _threshold_all = threshold_all; }
+float ClickRemoval::threshold_all() const { return _threshold_all; }
+void ClickRemoval::threshold_4kHz(const float threshold_4kHz) { _threshold_4kHz = threshold_4kHz; }
+float ClickRemoval::threshold_4kHz() const { return _threshold_4kHz; }
 
 ClickRemoval::~ClickRemoval() {
     SAFEDELETE(_inBuffer);
