@@ -14,6 +14,7 @@ if (${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "gen4c")
+	add_subdirectory(audio_utils)
 	add_subdirectory(click_removal)
 	add_subdirectory(speexdsp-builder)
 endif()
