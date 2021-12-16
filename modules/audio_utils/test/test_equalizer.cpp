@@ -2,25 +2,13 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "equalizer.h"
 #include "sndfile.h"
+#include "tone_generator.h"
 
 using namespace ubnt;
-
-void generate_sine(float *buf, int length, int sample_rate = 48000, int fc = 1000,
-                   float amplitude = 0.5) {
-    for (int i = 0; i < length; i++) { buf[i] = amplitude * sinf(2 * M_PI * fc * i / sample_rate); }
-}
-
-void generate_chirp(float *buf, int length, int sample_rate = 48000, int f1 = 1000, int f2 = 2000,
-                    float amplitude = 0.5) {
-    float M = (float)length / sample_rate;
-    for (int i = 0; i < length; ++i) {
-        float t = (float)i / sample_rate;
-        buf[i] = amplitude * sinf(2 * M_PI * (f1 * t + (f2 - f1) * t * t / (2.0 * M)));
-    }
-}
 
 TEST(Equalizer, Peak) {
     Equalizer *eq;
@@ -51,7 +39,10 @@ TEST(Equalizer, Peak) {
     float gain = 6;
     float Q = 0.5;
     eq = new Equalizer(f0, fs, gain, Q);
-    eq->process(inbuf, outbuf, bufSize);
+
+    for (int i = 0; i < numFrames; ++i) {
+        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+    }
 
     outfile = sf_open("./EQ_4000Hz_gain6.wav", SFM_WRITE, &info);
     sf_write_float(outfile, outbuf, bufSize);
@@ -82,18 +73,17 @@ TEST(Equalizer, Notch) {
     info.channels = 1;
     info.frames = 0;
 
-    SNDFILE *outfile = sf_open("./sweep_tone.wav", SFM_WRITE, &info);
-    sf_write_float(outfile, inbuf, bufSize);
-    sf_close(outfile);
-
     // EQ coefficient
     int f0 = 4000;
     float gain = -6;
     float Q = 0.5;
     eq = new Equalizer(f0, fs, gain, Q);
-    eq->process(inbuf, outbuf, bufSize);
 
-    outfile = sf_open("./EQ_4000Hz_gain-6.wav", SFM_WRITE, &info);
+    for (int i = 0; i < numFrames; ++i) {
+        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+    }
+
+    SNDFILE *outfile = sf_open("./EQ_4000Hz_gain-6.wav", SFM_WRITE, &info);
     sf_write_float(outfile, outbuf, bufSize);
     sf_close(outfile);
 
@@ -104,7 +94,7 @@ TEST(Equalizer, Notch) {
 
 TEST(Equalizer, MulitEQ) {
     const int NUM_EQ = 4;
-    Equalizer **eq = new Equalizer*[NUM_EQ];
+    Equalizer **eq = new Equalizer *[NUM_EQ];
 
     int fs = 48000;
     int numFrames = 500;
@@ -123,10 +113,6 @@ TEST(Equalizer, MulitEQ) {
     info.channels = 1;
     info.frames = 0;
 
-    SNDFILE *outfile = sf_open("./sweep_tone.wav", SFM_WRITE, &info);
-    sf_write_float(outfile, inbuf, bufSize);
-    sf_close(outfile);
-
     // EQ coefficient
     // int f0 = 4000;
     float gain = -6;
@@ -140,14 +126,89 @@ TEST(Equalizer, MulitEQ) {
     eq[2]->process(outbuf, outbuf, bufSize);
     eq[3]->process(outbuf, outbuf, bufSize);
 
-    outfile = sf_open("./MultiEQ.wav", SFM_WRITE, &info);
+    SNDFILE *outfile = sf_open("./MultiEQ.wav", SFM_WRITE, &info);
     sf_write_float(outfile, outbuf, bufSize);
     sf_close(outfile);
 
-    for (int i = 0; i < NUM_EQ; ++i) {
-       delete eq[i]; 
-    }
+    for (int i = 0; i < NUM_EQ; ++i) { delete eq[i]; }
     delete[] eq;
+    delete[] inbuf;
+    delete[] outbuf;
+}
+
+TEST(Equalizer, Peak4kHzSpeech) {
+    Equalizer *eq;
+
+    SF_INFO info;
+    SNDFILE *infile = sf_open("./test_vector/speech.wav", SFM_READ, &info);
+
+    int fs = info.samplerate;
+    int bufSize = info.frames;
+    int frameSize = 1024;
+    int numFrames = bufSize / frameSize;
+
+    int16_t *inbuf = new int16_t[bufSize] {0};
+    int16_t *outbuf = new int16_t[bufSize] {0};
+
+    // EQ coefficient
+    int f0 = 4000;
+    float gain = 6;
+    float Q = 0.5;
+    eq = new Equalizer(f0, fs, gain, Q);
+
+    for (int i = 0; i < numFrames; ++i) {
+        sf_read_short(infile, &inbuf[i*frameSize], frameSize);
+        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+    }
+
+    SNDFILE* outfile = sf_open("./speech_4000Hz_gain6.wav", SFM_WRITE, &info);
+    sf_write_short(outfile, outbuf, bufSize);
+    sf_close(outfile);
+
+    delete eq;
+    delete[] inbuf;
+    delete[] outbuf;
+}
+
+TEST(Equalizer, 4kTone) {
+    Equalizer *eq;
+
+    int fs = 48000;
+    int numFrames = 500;
+    int frameSize = 1024;
+    int amp = 16834;
+    int bufSize = numFrames * frameSize;
+
+    int16_t *inbuf = new int16_t[bufSize];
+    int16_t *outbuf = new int16_t[bufSize];
+
+    generate_sine_int16(inbuf, bufSize, fs, 4000, amp);
+
+    SF_INFO info;
+    info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
+    info.samplerate = fs;
+    info.channels = 1;
+    info.frames = 0;
+
+    SNDFILE *outfile = sf_open("./tone_4kHz.wav", SFM_WRITE, &info);
+    sf_write_short(outfile, inbuf, bufSize);
+    sf_close(outfile);
+
+    // EQ coefficient
+    int f0 = 4000;
+    float gain = -6;
+    float Q = 0.5;
+    eq = new Equalizer(f0, fs, gain, Q);
+
+    for (int i = 0; i < numFrames; ++i) {
+        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+    }
+
+    outfile = sf_open("./tone_4kHz_supp6.wav", SFM_WRITE, &info);
+    sf_write_short(outfile, outbuf, bufSize);
+    sf_close(outfile);
+
+    delete eq;
     delete[] inbuf;
     delete[] outbuf;
 }

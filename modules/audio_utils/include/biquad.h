@@ -25,6 +25,7 @@ public:
      * Direct Form II implementation, can be processed in-place  
      */
     void process(const float* input, float* output, const int num);
+    void process(const int16_t *input, int16_t *output, const int num);
 
 private:
     float _coef[5] = {0.f};
@@ -55,6 +56,7 @@ public:
      * Process with cascaded biquad filters
      */
     void process(const float* input, float* output, const int num);
+    void process(const int16_t* input, int16_t* output, const int num);
 
 private:
     int _numCascade{0};

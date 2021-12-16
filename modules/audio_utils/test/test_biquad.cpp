@@ -6,6 +6,7 @@
 #include "biquad.h"
 #include "equalizer.h"
 #include "sndfile.h"
+#include "tone_generator.h"
 
 using namespace ubnt;
 
