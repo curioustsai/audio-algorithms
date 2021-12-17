@@ -1,32 +1,52 @@
 #include "CLI/CLI.hpp"
+#include "CLI/Validators.hpp"
 #include "compressor.h"
+#include "nlohmann/json.hpp"
 #include <sndfile.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+struct DrcParam {
+    int frameSize{1024};
+    float pregain{0.0f};
+    float postgain{0.0f};
+
+    float thresholdExpander{-60.f};
+    float ratioExpander{1.f};
+    float thresholdCompressor{-60.f};
+    float ratioCompressor{1.f};
+    float thresholdLimiter{-12.f};
+    float ratioLimiter{4};
+
+    float knee{1.0f};
+    float attack{0.003f};
+    float release{0.250f};
+};
+
+void ParseConfigParam(nlohmann::json &json, DrcParam &drcParam) {
+    drcParam.frameSize = json["frameSize"];
+    drcParam.pregain = json["drc"]["pregain"];
+    drcParam.postgain = json["drc"]["postgain"];
+
+    drcParam.thresholdExpander = json["drc"]["thresholdExpander"];
+    drcParam.ratioExpander = json["drc"]["ratioExpander"];
+    drcParam.thresholdCompressor = json["drc"]["thresholdCompressor"];
+    drcParam.ratioCompressor = json["drc"]["ratioCompressor"];
+    drcParam.thresholdLimiter = json["drc"]["thresholdLimiter"];
+    drcParam.ratioLimiter = json["drc"]["ratioLimiter"];
+
+    drcParam.knee = json["drc"]["knee"];
+    drcParam.attack = json["drc"]["attack"];
+    drcParam.release = json["drc"]["release"];
+}
+
 int main(int argc, char **argv) {
-    std::string inputFilePath, outputFilePath;
+    std::string inputFilePath, outputFilePath, configFilePath;
     short *data;
     float *input_float;
     float *output_float;
-    int frame_size = 1024;
-    float pregain = 0;  //Decibel amount to perform gain before compression (0 to 40)
-    float postgain = 0; //Decibel amount to perform gain after compression (0 to 40)
-    float knee = 1;        //Decibel width of the knee (0 to 40)"
-
-    float threshold_expander = -60; //Decibel level that triggers the compression (-100 to 0)"
-    float ratio_expander = 2;     //Ratio of compression after the threshold (1 to 20)"
-
-    float threshold = -24; //Decibel level that triggers the compression (-100 to 0)"
-    float ratio = 2;       //Ratio of compression after the threshold (1 to 20)"
-
-    float threshold_agg = -12; //Decibel level that triggers the compression aggressive (-100 to 0)"
-    float ratio_agg = 4;       //Ratio of compression aggressive after the threshold (1 to 20)"
-
-    float attack = 0.003f;  //Seconds for the compression to kick in (0 to 1)"
-    float release = 0.250f; //Seconds for the compression to release (0 to 1)"
 
     CLI::App app{"DRC compressor"};
 
@@ -34,25 +54,9 @@ int main(int argc, char **argv) {
         ->required()
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "output file")->required();
-    app.add_option("--frameSize", frame_size, "frame size in samples, default: 1024")
-        ->check(CLI::Number);
-    app.add_option("--pregain", pregain, "pregain before compression, default: 0 dB");
-    app.add_option("--postgain", postgain, "postgain after compression, default: 0 dB");
-    app.add_option("--knee", knee, "width of soft knee, defalt: 1 dB");
-
-    app.add_option("--threshold_expander", threshold_expander,
-                   "threshold for expander, default: -60 dB");
-    app.add_option("--ratio_expander", ratio_expander, "expander ratio, defaul: 2");
-
-    app.add_option("--threshold", threshold, "threshold for compression, default: -24 dB");
-    app.add_option("--ratio", ratio, "compression ratio, defaul: 2");
-
-    app.add_option("--threshold_agg", threshold_agg,
-                   "threshold for compression aggressive, default: -12 dB");
-    app.add_option("--ratio_agg", ratio_agg, "compression ratio aggressive, defaul: 4");
-
-    app.add_option("--attack", attack, "compression attack time, default: 0.003");
-    app.add_option("--release", release, "compression release time, default: 0.250");
+    app.add_option("-c,--config", configFilePath, "config json file")
+        ->required()
+        ->check(CLI::ExistingFile);
 
     try {
         app.parse(argc, argv);
@@ -84,23 +88,33 @@ int main(int argc, char **argv) {
     int sample_rate = sfinfo.samplerate;
     printf("sample rate: %d\n", sample_rate);
 
-    data = (short *)new short[frame_size];
-    input_float = (float *)new float[frame_size];
-    output_float = (float *)new float[frame_size];
+    DrcParam drcParam;
+    std::ifstream ifs(configFilePath);
+    nlohmann::json jf = nlohmann::json::parse(ifs);
+    std::cout << jf.dump(4) << std::endl;
+    ParseConfigParam(jf, drcParam);
+
+    int frameSize = drcParam.frameSize;
+
+    data = (short *)new short[frameSize];
+    input_float = (float *)new float[frameSize];
+    output_float = (float *)new float[frameSize];
 
     clock_t tick = clock();
 
     int count = 0;
 
     sf_compressor_state_st compressor_st;
-    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
-                  threshold_agg, ratio_agg, threshold_expander, ratio_expander, attack, release);
+    sf_simplecomp(&compressor_st, sample_rate, drcParam.pregain, drcParam.postgain, drcParam.knee,
+                  drcParam.thresholdCompressor, drcParam.ratioCompressor, drcParam.thresholdLimiter,
+                  drcParam.ratioLimiter, drcParam.thresholdExpander, drcParam.ratioExpander,
+                  drcParam.attack, drcParam.release);
 
-    while (frame_size == sf_read_short(infile, data, frame_size)) {
-        for (int i = 0; i < frame_size; i++) { input_float[i] = (float)data[i] / 32768.0f; }
-        sf_compressor_process(&compressor_st, frame_size, input_float, output_float);
-        for (int i = 0; i < frame_size; i++) { data[i] = (short)(output_float[i] * 32768.0f); }
-        sf_write_short(outfile, data, frame_size);
+    while (frameSize == sf_read_short(infile, data, frameSize)) {
+        for (int i = 0; i < frameSize; i++) { input_float[i] = (float)data[i] / 32768.0f; }
+        sf_compressor_process(&compressor_st, frameSize, input_float, output_float);
+        for (int i = 0; i < frameSize; i++) { data[i] = (short)(output_float[i] * 32768.0f); }
+        sf_write_short(outfile, data, frameSize);
         count++;
     }
 
