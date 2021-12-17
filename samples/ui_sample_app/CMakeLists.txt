@@ -25,6 +25,7 @@ include_directories(
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 	${PROJECT_ROOT}/thirdparty/CLI11/include
+	${PROJECT_ROOT}/thirdparty/json/include
 	${LIBSNDFILE_INCLUDE_DIRS}
 )
 

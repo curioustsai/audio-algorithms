@@ -5,8 +5,12 @@
 #include <string.h>
 #include <time.h>
 
+#include "CLI/Validators.hpp"
+#include "nlohmann/json.hpp"
+
 int main(int argc, char **argv) {
     std::string inputFilePath, outputFilePath;
+    std::string jsonConfigPath;
     short *data;
     int frame_size = 1024;
 
@@ -16,6 +20,9 @@ int main(int argc, char **argv) {
         ->required()
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
+    app.add_option("-c,--config", jsonConfigPath, "specify an json config file")
+        ->required()
+        ->check(CLI::ExistingFile);
     app.add_option("--frameSize", frame_size, "frame size in samples")->check(CLI::Number);
 
     try {
@@ -38,6 +45,19 @@ int main(int argc, char **argv) {
         puts(sf_strerror(NULL));
         return 1;
     };
+
+    // read json config file
+    std::ifstream ifs(jsonConfigPath);
+    nlohmann::json jf = nlohmann::json::parse(ifs);
+    std::string js_str = jf.dump();
+    std::cout << "json string: "<< js_str << std::endl;
+    std::cout << "jf samplerate" << " : " << jf["samplerate"] << std::endl;
+
+    // // iterate all items
+    // for (auto & el : jf.items()) {
+    //     std::cout << el.key() << " : " << el.value() << std::endl;
+    // }
+    
 
     int sample_rate = sfinfo.samplerate;
     printf("sample rate: %d\n", sample_rate);

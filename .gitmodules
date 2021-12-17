@@ -16,3 +16,6 @@
 [submodule "thirdparty/pffft"]
 	path = thirdparty/pffft
 	url = https://bitbucket.org/jpommier/pffft.git
+[submodule "thirdparty/json"]
+	path = thirdparty/json
+	url = https://github.com/nlohmann/json.git
