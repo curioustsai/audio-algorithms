@@ -5,6 +5,7 @@
 
 #include "biquad.h"
 #include "equalizer.h"
+#include "lowpass.h"
 #include "sndfile.h"
 #include "tone_generator.h"
 
@@ -31,19 +32,14 @@ TEST(SosFilter, Sweep_LPF4kHz) {
     float *inbuf = new float[totalLength];
     float *outbuf = new float[totalLength];
 
-    SF_INFO info_in, info_out;
-    info_in.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_LITTLE;
-    info_in.samplerate = samplerate;
-    info_in.channels = 1;
-    info_in.frames = 0;
-
-    info_out.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_LITTLE;
-    info_out.samplerate = samplerate;
-    info_out.channels = 1;
-    info_out.frames = 0;
+    SF_INFO info;
+    info.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_LITTLE;
+    info.samplerate = samplerate;
+    info.channels = 1;
+    info.frames = 0;
 
     generate_chirp(inbuf, totalLength, samplerate, f1, f2, amplitude);
-    SNDFILE *infile = sf_open("./Sweep_LPF4kHz_before.wav", SFM_WRITE, &info_in);
+    SNDFILE *infile = sf_open("./Sweep_LPF4kHz_before.wav", SFM_WRITE, &info);
     sf_write_float(infile, inbuf, totalLength);
     sf_close(infile);
 
@@ -53,7 +49,7 @@ TEST(SosFilter, Sweep_LPF4kHz) {
         sosfilt.process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
-    SNDFILE *outfile = sf_open("./Sweep_LPF4kHz_after.wav", SFM_WRITE, &info_out);
+    SNDFILE *outfile = sf_open("./Sweep_LPF4kHz_after.wav", SFM_WRITE, &info);
     sf_write_float(outfile, outbuf, totalLength);
     sf_close(outfile);
 
@@ -82,19 +78,14 @@ TEST(SosFilter, Sweep_LPF4kHz_int16) {
     int16_t *inbuf = new int16_t[totalLength];
     int16_t *outbuf = new int16_t[totalLength];
 
-    SF_INFO info_in, info_out;
-    info_in.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
-    info_in.samplerate = samplerate;
-    info_in.channels = 1;
-    info_in.frames = 0;
-
-    info_out.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
-    info_out.samplerate = samplerate;
-    info_out.channels = 1;
-    info_out.frames = 0;
+    SF_INFO info;
+    info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
+    info.samplerate = samplerate;
+    info.channels = 1;
+    info.frames = 0;
 
     generate_chirp_int16(inbuf, totalLength, samplerate, f1, f2, amplitude);
-    SNDFILE *infile = sf_open("./Sweep_LPF4kHz_int16_before.wav", SFM_WRITE, &info_in);
+    SNDFILE *infile = sf_open("./Sweep_LPF4kHz_int16_before.wav", SFM_WRITE, &info);
     sf_write_short(infile, inbuf, totalLength);
     sf_close(infile);
 
@@ -104,9 +95,69 @@ TEST(SosFilter, Sweep_LPF4kHz_int16) {
         sosfilt.process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
-    SNDFILE *outfile = sf_open("./Sweep_LPF4kHz_int16_after.wav", SFM_WRITE, &info_out);
+    SNDFILE *outfile = sf_open("./Sweep_LPF4kHz_int16_after.wav", SFM_WRITE, &info);
     sf_write_short(outfile, outbuf, totalLength);
     sf_close(outfile);
+
+    delete[] inbuf;
+    delete[] outbuf;
+}
+
+TEST(LowPassFilter, IterativeFilters) {
+    int frameSize = 1024;
+    int numFrames = 500;
+    int totalLength = frameSize * numFrames;
+    int16_t amplitude = 16384;
+
+    int16_t *inbuf = new int16_t[totalLength];
+    int16_t *outbuf = new int16_t[totalLength];
+
+    using SampleRate = ubnt::LowPassFilter::SampleRate;
+    using CutoffFreq = ubnt::LowPassFilter::CutoffFreq;
+
+    std::string strCutoffFreq[] = {"4kHz", "5kHz", "6kHz", "7kHz"};
+    std::string strSampleRate[] = {"16kHz", "32kHz", "48kHz"};
+    int samplerateTable[] = {16000, 32000, 48000};
+
+    for (SampleRate fs = SampleRate::Fs_16kHz; fs != SampleRate::Fs_ALL;
+         fs = static_cast<SampleRate>(static_cast<int>(fs) + 1)) {
+
+        int index_fs = static_cast<int>(fs);
+        int samplerate = samplerateTable[index_fs];
+        int f1 = 0;
+        int f2 = samplerate / 2;
+
+        SF_INFO info;
+        info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE;
+        info.samplerate = samplerate;
+        info.channels = 1;
+        info.frames = 0;
+
+        generate_chirp_int16(inbuf, totalLength, samplerate, f1, f2, amplitude);
+
+        std::string infileName = "./LPF_" + strSampleRate[index_fs] + "_before.wav";
+        SNDFILE *infile = sf_open(infileName.c_str(), SFM_WRITE, &info);
+        sf_write_short(infile, inbuf, totalLength);
+        sf_close(infile);
+
+        for (CutoffFreq fc = CutoffFreq::Fc_4kHz; fc != CutoffFreq::Fc_ALL;
+             fc = static_cast<CutoffFreq>(static_cast<int>(fc) + 1)) {
+
+            int index_fc = static_cast<int>(fc);
+            LowPassFilter *lpf = new LowPassFilter(fs, fc);
+            lpf->process(inbuf, outbuf, totalLength);
+            for (int i = 0; i < numFrames; ++i) {
+                lpf->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+            }
+
+            std::string outfileName =
+                "./LPF_" + strSampleRate[index_fs] + "_fc_" + strCutoffFreq[index_fc] + ".wav";
+            SNDFILE *outfile = sf_open(outfileName.c_str(), SFM_WRITE, &info);
+            sf_write_short(outfile, outbuf, totalLength);
+            sf_close(outfile);
+            delete lpf;
+        }
+    }
 
     delete[] inbuf;
     delete[] outbuf;
