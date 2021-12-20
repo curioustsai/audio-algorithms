@@ -1,12 +1,6 @@
-[submodule "thirdparty/matplotlib"]
-	path = thirdparty/matplotlib
-	url = https://github.com/matplotlib/matplotlib
 [submodule "thirdparty/CLI11"]
 	path = thirdparty/CLI11
 	url = https://github.com/CLIUtils/CLI11
-[submodule "thirdparty/spdlog"]
-	path = thirdparty/spdlog
-	url = https://github.com/gabime/spdlog
 [submodule "thirdparty/soundtouch"]
 	path = thirdparty/soundtouch
 	url = https://gitlab.com/soundtouch/soundtouch.git
