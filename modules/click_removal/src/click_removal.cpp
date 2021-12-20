@@ -70,10 +70,12 @@ ClickRemoval::ClickRemoval(const int frameSize, const int subframeSize, const fl
 #endif
 }
 
-void ClickRemoval::threshold_all(const int threshold_all) { _threshold_all = threshold_all; }
-int ClickRemoval::threshold_all() const { return _threshold_all; }
-void ClickRemoval::threshold_4kHz(const int threshold_4kHz) { _threshold_4kHz = threshold_4kHz; }
-int ClickRemoval::threshold_4kHz() const { return _threshold_4kHz; }
+void ClickRemoval::threshold_all(const float threshold_all) { _threshold_all = threshold_all; }
+float ClickRemoval::threshold_all() const { return _threshold_all; }
+void ClickRemoval::threshold_4kHz(const float threshold_4kHz) { _threshold_4kHz = threshold_4kHz; }
+float ClickRemoval::threshold_4kHz() const { return _threshold_4kHz; }
+void ClickRemoval::noiseFrames(const int noiseFrames) { _noiseFrames = noiseFrames; }
+int ClickRemoval::noiseFrames() const { return _noiseFrames; }
 
 ClickRemoval::~ClickRemoval() {
     SAFEDELETE(_inBuffer);
@@ -142,7 +144,7 @@ int ClickRemoval::process(float *buf, const int num) {
         float power = _currFrame->getPowerMean();
         float power_4kHz = _frameHP->getPowerMean();
 
-        if ((power > _threshold_all) && (power_4kHz > _threshold_4kHz)) { _detected = 4; }
+        if ((power > _threshold_all) && (power_4kHz > _threshold_4kHz)) { _detected = _noiseFrames; }
 
         _outBuffer->putFrame(_windowed);
         _outBuffer->getFrame(_outFrame);
