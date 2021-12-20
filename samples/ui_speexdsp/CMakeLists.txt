@@ -23,8 +23,11 @@ include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
     ${SOURCES_ROOT}/version
+    ${SOURCES_ROOT}/audio_utils/include/
+    ${SOURCES_ROOT}/compressor/include/
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
     ${PROJECT_ROOT}/thirdparty/CLI11/include
+    ${PROJECT_ROOT}/thirdparty/json/include
     ${PROJECT_ROOT}/thirdparty/speexdsp/include
     )
 
@@ -46,6 +49,8 @@ target_link_libraries(
     -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
     -L${PROJECT_ROOT}/build/${UBNT_PLATFORM_NAME}/${CMAKE_BUILD_TYPE}/rootfs/lib/
     -lspeexdsp
+    -laudio_utils
+    -lcompressor
     -lsndfile
     -lpthread
     -lm

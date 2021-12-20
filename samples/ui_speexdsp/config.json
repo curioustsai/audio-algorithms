@@ -1,0 +1,55 @@
+{
+    "frameSize": 1024,
+    "modules": {
+        "aec": false,
+        "denoise": true,
+        "agc": false,
+        "equalizer": false,
+        "highpass": false,
+        "lowpass": false
+    },
+    "aec": {
+        "tailLength": 1024
+    },
+    "denoise": {
+        "nsLevel": 20
+    },
+    "agc": {
+        "agcTarget": 16384
+    },
+    "equalizer" : {
+        "NUM_EQ": 2,
+        "EQ0": {
+            "f0": 2000,
+            "gain": 6,
+            "Q": 10
+        },
+        "EQ1": {
+            "f0": 3000,
+            "gain": 6,
+            "Q": 10
+        }
+    },
+
+    "highpass" : {
+        "f0": 100
+    },
+
+    "lowpass" : {
+        "f0": 7000
+    },
+
+    "drc": {
+        "pregain": 6,
+        "postgain": 0,
+        "knee": 1,
+        "threshold": -12.0,
+        "ratio": 3.0,
+        "threshold_agg": -6.0,
+        "ratio_agg": 12.0,
+        "threshold_expander": -96,
+        "ratio_expander": 1.0,
+        "attack": 0.003,
+        "release": 0.250
+    }
+}
