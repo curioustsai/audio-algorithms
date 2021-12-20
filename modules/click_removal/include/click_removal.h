@@ -29,6 +29,9 @@ public:
     void threshold_4kHz(const float threshold_4kHz);
     float threshold_4kHz() const;
 
+    void noiseFrames(const int noiseFrames);
+    int noiseFrames() const;
+
 #ifdef AUDIO_ALGO_DEBUG
     int dbgChannels{3};
     std::unique_ptr<float[]> dbgInfo;
@@ -63,6 +66,7 @@ private:
 
     float _threshold_all{0.01};
     float _threshold_4kHz{0.005};
+    int _noiseFrames{6};
 };
 
 } // namespace ubnt
