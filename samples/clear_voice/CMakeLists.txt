@@ -25,11 +25,10 @@ endif()
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
+    ${SOURCES_ROOT}/version
     ${SOURCES_ROOT}/mic_array/include/
     ${SOURCES_ROOT}/mic_array/src/
-    ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
-	${PYTHON_INCLUDE_DIRS}
 )
 
 #print some debug info about the list of files and include folders

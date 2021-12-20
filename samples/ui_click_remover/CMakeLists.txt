@@ -19,31 +19,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_definitions(-DAUDIO_ALGO_DEBUG)
 endif()
 
-
-#set the include folder search path
-# find_package(PythonLibs 2.7)
-# message("STATUS PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
-# message("STATUS PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
-
-# set(SndFile_DIR, "/home/richard/workspace/libsndfile/build")
-# list(APPEND CMAKE_MODULE_PATH "/home/richard/workspace/libsndfile/CMakeBuild")
-
-# find_package(SndFile REQUIRED)
-# target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
-# find_path(LIBSNDFILE_INCLUDE_DIRS sndfile.h)
-# find_library(LIBSNDFILE_LIBRARIES sndfile)
-
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
     ${SOURCES_ROOT}/click_removal/include/
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
-	${PYTHON_INCLUDE_DIRS}
-    ${PROJECT_ROOT}/thirdparty/matplotlib-cpp
 	${PROJECT_ROOT}/thirdparty/CLI11/include
-	${PROJECT_ROOT}/thirdparty/spdlog/include
-	${LIBSNDFILE_INCLUDE_DIRS}
 )
 
 #print some debug info about the list of files and include folders
@@ -61,8 +43,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 #define the list of library dependencies
 target_link_libraries(
     ${PROJECT_NAME}
-    # ${PYTHON_LIBRARIES}
-	${LIBSNDFILE_LIBRARIES}
 	${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib/libsndfile.a
     click_removal
     -lpthread

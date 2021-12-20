@@ -26,7 +26,6 @@ include_directories(
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
     ${PROJECT_ROOT}/thirdparty/CLI11/include/
     ${formant_shift_include_dirs}
-    ${LIBSNDFILE_INCLUDE_DIRS}
 )
 
 #print some debug info about the list of files and include folders
