@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
         /* run something here */
         /* run something here */
         for (int i = 0; i < NUM_EQ; ++i) {
-           eqs[i]->process(data, data, frame_size); 
+           eqs[i]->Process(data, data, frame_size);
         }
         sf_write_short(outfile, data, frame_size);
         count++;

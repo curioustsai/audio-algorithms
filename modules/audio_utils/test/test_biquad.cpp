@@ -25,8 +25,8 @@ TEST(Biquad, Process) {
                    1.59630523e-02,  1.04854130e-03,  -5.96644303e-03, -4.35777513e-03,
                    -3.75957416e-04, 1.56983489e-03,  1.18830129e-03,  1.26335735e-04};
 
-    biquad.reset(ba, 5);
-    biquad.process(inbuf, outbuf, 16);
+    biquad.Reset(ba, 5);
+    biquad.Process(inbuf, outbuf, 16);
 
     for (int i = 0; i < frameSize; i++) { ASSERT_LT(fabs(outbuf[i] - ans[i]), 1e-3); }
 
@@ -45,9 +45,9 @@ TEST(SosFilter, Process) {
                      -0.04897011, 0.11620218,  0.20197575, 0.21500525, 0.174264,    0.09675092,
                      0.00131773,  -0.08798588, -0.1468685, -0.15983416};
 
-    sosfilt.reset(ba, 2);
+    sosfilt.Reset(ba, 2);
     for (int i = 0; i < frameSize; i++) { inbuf[i] = i; }
-    sosfilt.process(inbuf, outbuf, frameSize);
+    sosfilt.Process(inbuf, outbuf, frameSize);
 
     for (int i = 0; i < frameSize; i++) {
         // printf("%d\t%f\t%f\n", i, outbuf[i], ans[i]);
@@ -75,8 +75,8 @@ TEST(SosFilter, HPF1kHz) {
                      -1.03606497, -1.20043981, -1.30134908, -1.34109836};
 
     for (int i = 0; i < 16; i++) { inbuf[i] = (float)i; }
-    sosfilt.reset(hpf_1kHz, 2);
-    sosfilt.process(inbuf, outbuf, 16);
+    sosfilt.Reset(hpf_1kHz, 2);
+    sosfilt.Process(inbuf, outbuf, 16);
 
     for (int i = 0; i < frameSize; i++) {
         printf("%d\t%f\t%f\n", i, outbuf[i], ans[i]);
@@ -106,8 +106,8 @@ TEST(SosFilter, LPF1kHz) {
                      6.35513889e-02, 9.22358102e-02, 1.29971422e-01, 1.78502021e-01};
 
     for (int i = 0; i < 16; i++) { inbuf[i] = (float)i; }
-    sosfilt.reset(lpf_1kHz, 2);
-    sosfilt.process(inbuf, outbuf, 16);
+    sosfilt.Reset(lpf_1kHz, 2);
+    sosfilt.Process(inbuf, outbuf, 16);
 
     for (int i = 0; i < frameSize; i++) {
         printf("%d\t%f\t%f\n", i, outbuf[i], ans[i]);

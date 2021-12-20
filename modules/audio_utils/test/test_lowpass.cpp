@@ -43,10 +43,10 @@ TEST(SosFilter, Sweep_LPF4kHz) {
     sf_write_float(infile, inbuf, totalLength);
     sf_close(infile);
 
-    sosfilt.reset(lpf_4kHz, 2);
-    sosfilt.process(inbuf, outbuf, totalLength);
+    sosfilt.Reset(lpf_4kHz, 2);
+    sosfilt.Process(inbuf, outbuf, totalLength);
     for (int i = 0; i < numFrames; ++i) {
-        sosfilt.process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        sosfilt.Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     SNDFILE *outfile = sf_open("./Sweep_LPF4kHz_after.wav", SFM_WRITE, &info);
@@ -89,10 +89,10 @@ TEST(SosFilter, Sweep_LPF4kHz_int16) {
     sf_write_short(infile, inbuf, totalLength);
     sf_close(infile);
 
-    sosfilt.reset(lpf_4kHz, 2);
-    sosfilt.process(inbuf, outbuf, totalLength);
+    sosfilt.Reset(lpf_4kHz, 2);
+    sosfilt.Process(inbuf, outbuf, totalLength);
     for (int i = 0; i < numFrames; ++i) {
-        sosfilt.process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        sosfilt.Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     SNDFILE *outfile = sf_open("./Sweep_LPF4kHz_int16_after.wav", SFM_WRITE, &info);
@@ -145,9 +145,9 @@ TEST(LowPassFilter, IterativeFilters) {
 
             int index_fc = static_cast<int>(fc);
             LowPassFilter *lpf = new LowPassFilter(fs, fc);
-            lpf->process(inbuf, outbuf, totalLength);
+            lpf->Process(inbuf, outbuf, totalLength);
             for (int i = 0; i < numFrames; ++i) {
-                lpf->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+                lpf->Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
             }
 
             std::string outfileName =

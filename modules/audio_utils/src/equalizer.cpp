@@ -25,7 +25,7 @@ Equalizer::Equalizer(int f0, int fs, float gain, float Q) : _f0(f0), _fs(fs), _g
     float a0_inv = 1 / a0;
     float ba[5] = {b0 * a0_inv, b1 * a0_inv, b2 * a0_inv, a1 * a0_inv, a2 * a0_inv};
 
-    reset(ba, 5);
+    Reset(ba, 5);
 }
 
 } // namespace ubnt

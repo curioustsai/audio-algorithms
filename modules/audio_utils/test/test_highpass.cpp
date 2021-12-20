@@ -42,10 +42,10 @@ TEST(SosFilter, Sweep_HPF1kHz) {
     sf_write_float(infile, inbuf, totalLength);
     sf_close(infile);
 
-    sosfilt.reset(hpf_1kHz, 2);
-    sosfilt.process(inbuf, outbuf, totalLength);
+    sosfilt.Reset(hpf_1kHz, 2);
+    sosfilt.Process(inbuf, outbuf, totalLength);
     for (int i = 0; i < numFrames; ++i) {
-        sosfilt.process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        sosfilt.Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     SNDFILE *outfile = sf_open("./Sweep_HPF1kHz_after.wav", SFM_WRITE, &info);
@@ -87,10 +87,10 @@ TEST(SosFilter, Sweep_HPF1kHz_int16) {
     sf_write_short(infile, inbuf, totalLength);
     sf_close(infile);
 
-    sosfilt.reset(hpf_1kHz, 2);
-    sosfilt.process(inbuf, outbuf, totalLength);
+    sosfilt.Reset(hpf_1kHz, 2);
+    sosfilt.Process(inbuf, outbuf, totalLength);
     for (int i = 0; i < numFrames; ++i) {
-        sosfilt.process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        sosfilt.Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     SNDFILE *outfile = sf_open("./Sweep_HPF1kHz_int16_after.wav", SFM_WRITE, &info);
@@ -143,9 +143,9 @@ TEST(HighPassFilter, IterativeFilters) {
 
             int index_fc = static_cast<int>(fc);
             HighPassFilter *hpf = new HighPassFilter(fs, fc);
-            hpf->process(inbuf, outbuf, totalLength);
+            hpf->Process(inbuf, outbuf, totalLength);
             for (int i = 0; i < numFrames; ++i) {
-                hpf->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+                hpf->Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
             }
 
             std::string outfileName =

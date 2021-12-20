@@ -41,7 +41,7 @@ TEST(Equalizer, Peak) {
     eq = new Equalizer(f0, fs, gain, Q);
 
     for (int i = 0; i < numFrames; ++i) {
-        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        eq->Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     outfile = sf_open("./EQ_4000Hz_gain6.wav", SFM_WRITE, &info);
@@ -80,7 +80,7 @@ TEST(Equalizer, Notch) {
     eq = new Equalizer(f0, fs, gain, Q);
 
     for (int i = 0; i < numFrames; ++i) {
-        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        eq->Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     SNDFILE *outfile = sf_open("./EQ_4000Hz_gain-6.wav", SFM_WRITE, &info);
@@ -121,10 +121,10 @@ TEST(Equalizer, MulitEQ) {
     eq[2] = new Equalizer(3000, fs, gain, 0.033);
     eq[3] = new Equalizer(4000, fs, gain, 0.025);
 
-    eq[0]->process(inbuf, outbuf, bufSize);
-    eq[1]->process(outbuf, outbuf, bufSize);
-    eq[2]->process(outbuf, outbuf, bufSize);
-    eq[3]->process(outbuf, outbuf, bufSize);
+    eq[0]->Process(inbuf, outbuf, bufSize);
+    eq[1]->Process(outbuf, outbuf, bufSize);
+    eq[2]->Process(outbuf, outbuf, bufSize);
+    eq[3]->Process(outbuf, outbuf, bufSize);
 
     SNDFILE *outfile = sf_open("./MultiEQ.wav", SFM_WRITE, &info);
     sf_write_float(outfile, outbuf, bufSize);
@@ -136,39 +136,6 @@ TEST(Equalizer, MulitEQ) {
     delete[] outbuf;
 }
 
-TEST(Equalizer, Peak4kHzSpeech) {
-    Equalizer *eq;
-
-    SF_INFO info;
-    SNDFILE *infile = sf_open("./test_vector/speech.wav", SFM_READ, &info);
-
-    int fs = info.samplerate;
-    int bufSize = info.frames;
-    int frameSize = 1024;
-    int numFrames = bufSize / frameSize;
-
-    int16_t *inbuf = new int16_t[bufSize] {0};
-    int16_t *outbuf = new int16_t[bufSize] {0};
-
-    // EQ coefficient
-    int f0 = 4000;
-    float gain = 6;
-    float Q = 0.5;
-    eq = new Equalizer(f0, fs, gain, Q);
-
-    for (int i = 0; i < numFrames; ++i) {
-        sf_read_short(infile, &inbuf[i*frameSize], frameSize);
-        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
-    }
-
-    SNDFILE* outfile = sf_open("./speech_4000Hz_gain6.wav", SFM_WRITE, &info);
-    sf_write_short(outfile, outbuf, bufSize);
-    sf_close(outfile);
-
-    delete eq;
-    delete[] inbuf;
-    delete[] outbuf;
-}
 
 TEST(Equalizer, 4kTone) {
     Equalizer *eq;
@@ -201,7 +168,7 @@ TEST(Equalizer, 4kTone) {
     eq = new Equalizer(f0, fs, gain, Q);
 
     for (int i = 0; i < numFrames; ++i) {
-        eq->process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
+        eq->Process(&inbuf[i * frameSize], &outbuf[i * frameSize], frameSize);
     }
 
     outfile = sf_open("./tone_4kHz_supp6.wav", SFM_WRITE, &info);

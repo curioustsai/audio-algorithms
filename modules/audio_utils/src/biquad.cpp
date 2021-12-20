@@ -8,7 +8,7 @@
 
 namespace ubnt {
 
-bool Biquad::reset(const float *coef, const int num) {
+bool Biquad::Reset(const float *coef, const int num) {
     if (num != 5) {
         printf("the element of coef array should be 5");
         return false;
@@ -18,7 +18,7 @@ bool Biquad::reset(const float *coef, const int num) {
     return true;
 }
 
-void Biquad::process(const float *input, float *output, const int num) {
+void Biquad::Process(const float *input, float *output, const int num) {
     float b0 = _coef[0];
     float b1 = _coef[1];
     float b2 = _coef[2];
@@ -36,7 +36,7 @@ void Biquad::process(const float *input, float *output, const int num) {
     }
 }
 
-void Biquad::process(const int16_t *input, int16_t *output, const int num) {
+void Biquad::Process(const int16_t *input, int16_t *output, const int num) {
     float b0 = _coef[0];
     float b1 = _coef[1];
     float b2 = _coef[2];
@@ -68,25 +68,25 @@ SosFilter::~SosFilter() {
     }
 }
 
-bool SosFilter::reset(const float coefs[][5], const int numCascade) {
+bool SosFilter::Reset(const float coefs[][5], const int numCascade) {
     _numCascade = numCascade;
     _biquads = new Biquad *[numCascade];
 
     for (int i = 0; i < numCascade; i++) {
         _biquads[i] = new Biquad();
-        _biquads[i]->reset(coefs[i], 5);
+        _biquads[i]->Reset(coefs[i], 5);
     }
 
     return true;
 }
 
-void SosFilter::process(const float *input, float *output, const int num) {
-    _biquads[0]->process(input, output, num);
-    for (int i = 1; i < _numCascade; i++) { _biquads[i]->process(output, output, num); }
+void SosFilter::Process(const float *input, float *output, const int num) {
+    _biquads[0]->Process(input, output, num);
+    for (int i = 1; i < _numCascade; i++) { _biquads[i]->Process(output, output, num); }
 }
 
-void SosFilter::process(const int16_t *input, int16_t *output, const int num) {
-    _biquads[0]->process(input, output, num);
-    for (int i = 1; i < _numCascade; i++) { _biquads[i]->process(output, output, num); }
+void SosFilter::Process(const int16_t *input, int16_t *output, const int num) {
+    _biquads[0]->Process(input, output, num);
+    for (int i = 1; i < _numCascade; i++) { _biquads[i]->Process(output, output, num); }
 }
 } // namespace ubnt

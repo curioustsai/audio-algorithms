@@ -57,7 +57,7 @@ public:
 
     LowPassFilter() = delete;
     LowPassFilter(SampleRate fs, CutoffFreq fc) {
-        reset(hpfCoefs[static_cast<int>(fs)][static_cast<int>(fc)], numBiquad);
+        Reset(hpfCoefs[static_cast<int>(fs)][static_cast<int>(fc)], numBiquad);
     };
     ~LowPassFilter() = default;
 };
