@@ -78,6 +78,7 @@ include_directories(
 link_directories(
     ${CMAKE_FIND_ROOT_PATH}/lib
     ${CMAKE_FIND_ROOT_PATH}/usr/lib
+    ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 )
 
 #mandatory compile flags for all platforms
