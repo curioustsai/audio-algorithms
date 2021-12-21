@@ -10,6 +10,7 @@ if (${UBNT_PLATFORM_NAME} MATCHES "gen[34].")
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
+	add_subdirectory(audio_utils)
 	add_subdirectory(speexdsp-builder)
 endif()
 
