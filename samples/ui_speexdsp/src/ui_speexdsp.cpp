@@ -5,10 +5,10 @@
 #include "speex/speex_preprocess.h"
 
 #include "compressor.h"
+#include "config.h"
 #include "equalizer.h"
 #include "highpass.h"
 #include "lowpass.h"
-#include "config.h"
 
 #include "CLI/CLI.hpp"
 #include "sndfile.h"
@@ -17,6 +17,9 @@
 #include <string.h>
 #include <time.h>
 
+using Equalizer = ubnt::Equalizer;
+using HPF = ubnt::HighPassFilter;
+using LPF = ubnt::LowPassFilter;
 
 int main(int argc, char **argv) {
     SpeexPreprocessState *den_st;
@@ -41,12 +44,11 @@ int main(int argc, char **argv) {
     app.add_option("-r,--refFile", refFilePath, "specify an reference file")
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
-    app.add_option("-c,--config", configFilePath, "specify an configu file")->required();
+    app.add_option("-c,--config", configFilePath, "specify an config file")->required();
 
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError &e) { return app.exit(e); }
-
 
     std::ifstream ifs(configFilePath);
     nlohmann::json jsonFile = nlohmann::json::parse(ifs);
@@ -96,7 +98,7 @@ int main(int argc, char **argv) {
     int num_channel = sfinfo_in.channels;
     int frameSize = config.frameSize;
     int tail_length = config.aecParam.tailLength;
-    bool enable_aec = config.moduleParam.aec;
+    bool enable_aec = config.enable.aec;
 #ifdef ENABLE_BF
     enable_bf = (num_channel > 1) ? true : false;
 #endif
@@ -122,33 +124,108 @@ int main(int argc, char **argv) {
 #endif
 
     /* denoise */
-    parameter = config.moduleParam.denoise;
+    parameter = config.enable.denoise;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_DENOISE, &parameter);
     parameter = config.denoiseParam.nsLevel;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_NOISE_SUPPRESS, &parameter);
 
     /* agc */
-    parameter = config.moduleParam.agc;
+    parameter = config.enable.agc;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_AGC, &parameter);
     parameter = config.agcParam.agcTarget;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_AGC_TARGET, &parameter);
 
     /* EQ */
-    ubnt::Equalizer *eq = new ubnt::Equalizer(4000, 6, 1, sample_rate);
+    int numEQ = config.eqParamSet.numEQ;
+    Equalizer **eqs = new Equalizer *[numEQ];
+    for (int i = 0; i < numEQ; ++i) {
+        int f0 = config.eqParamSet.eqParamVec.at(i).f0;
+        float gain = config.eqParamSet.eqParamVec.at(i).gain;
+        float Q = config.eqParamSet.eqParamVec.at(i).Q;
+
+        eqs[i] = new Equalizer(f0, sample_rate, gain, Q);
+    }
+
+    HPF::SampleRate HPF_FS;
+    LPF::SampleRate LPF_FS;
+    switch (sample_rate) {
+        case 48000:
+            HPF_FS = HPF::SampleRate::Fs_48kHz;
+            LPF_FS = LPF::SampleRate::Fs_48kHz;
+            break;
+        case 3200:
+            HPF_FS = HPF::SampleRate::Fs_32kHz;
+            LPF_FS = LPF::SampleRate::Fs_32kHz;
+            break;
+        case 16000:
+            HPF_FS = HPF::SampleRate::Fs_16kHz;
+            LPF_FS = LPF::SampleRate::Fs_16kHz;
+            break;
+        case 8000:
+            HPF_FS = HPF::SampleRate::Fs_8kHz;
+            /* FIXME */
+            LPF_FS = LPF::SampleRate::Fs_48kHz;
+            break;
+        default: 
+            printf("not support");
+
+    }
+
+    HPF::CutoffFreq HPF_FC;
+    switch (config.hpfParam.f0) {
+        case 100:
+            HPF_FC = HPF::CutoffFreq::Fc_100Hz;
+            break;
+        case 200:
+            HPF_FC = HPF::CutoffFreq::Fc_200Hz;
+            break;
+        case 300:
+            HPF_FC = HPF::CutoffFreq::Fc_300Hz;
+            break;
+        case 400:
+            HPF_FC = HPF::CutoffFreq::Fc_400Hz;
+            break;
+        case 500:
+            HPF_FC = HPF::CutoffFreq::Fc_500Hz;
+            break;
+        default: 
+            printf("not support");
+    }
+
+    LPF::CutoffFreq LPF_FC;
+    switch (config.lpfParam.f0) {
+        case 7000:
+            LPF_FC = LPF::CutoffFreq::Fc_7kHz;
+            break;
+        case 6000:
+            LPF_FC = LPF::CutoffFreq::Fc_6kHz;
+            break;
+        case 5000:
+            LPF_FC = LPF::CutoffFreq::Fc_5kHz;
+            break;
+        case 4000:
+            LPF_FC = LPF::CutoffFreq::Fc_4kHz;
+            break;
+        default: 
+            printf("not support");
+    }
+
+    HPF *hpf = new HPF(HPF_FS, HPF_FC);
+    LPF *lpf = new LPF(LPF_FS, LPF_FC);
 
     /* DRC */
     sf_compressor_state_st compressor_st;
-    float pregain = 6;
-    float postgain = 0;
-    float knee = 1;
-    float threshold = -12.0f;
-    float ratio = 3.f;
-    float threshold_agg = -6.0f;
-    float ratio_agg = 12.f;
-    float threshold_expander = -96;
-    float ratio_expander = 1.0f;
-    float attack = 0.003f;
-    float release = 0.250f;
+    float pregain = config.drcParam.pregain;
+    float postgain = config.drcParam.postgain;
+    float knee = config.drcParam.knee;
+    float threshold = config.drcParam.threshold;
+    float ratio = config.drcParam.ratio;
+    float threshold_agg = config.drcParam.threshold_agg;
+    float ratio_agg = config.drcParam.ratio_agg;
+    float threshold_expander = config.drcParam.threshold_expander;
+    float ratio_expander = config.drcParam.ratio_expander;
+    float attack = config.drcParam.attack;
+    float release = config.drcParam.release;
 
     sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
                   threshold_agg, ratio_agg, threshold_expander, ratio_expander, attack, release);
@@ -156,10 +233,6 @@ int main(int argc, char **argv) {
     clock_t tick = clock();
     int readcount = 0;
 
-    using HPF = ubnt::HighPassFilter;
-    HPF *hpf = new HPF(HPF::SampleRate::Fs_16kHz, HPF::CutoffFreq::Fc_500Hz);
-    using LPF = ubnt::LowPassFilter;
-    LPF *lpf = new LPF(LPF::SampleRate::Fs_16kHz, LPF::CutoffFreq::Fc_6kHz);
 
     while (1) {
         readcount = sf_read_short(infile, mic_data, num_channel * frameSize);
@@ -181,18 +254,16 @@ int main(int argc, char **argv) {
         }
 #endif
 
-        hpf->Process(data, data, frameSize);
-        speex_preprocess_run(den_st, data);
+        if (config.enable.highpass) hpf->Process(data, data, frameSize);
+        if (config.enable.denoise) speex_preprocess_run(den_st, data);
+        if (config.enable.lowpass) lpf->Process(data, data, frameSize);
+        if (config.enable.equalizer)
+            for (int i = 0; i < numEQ; ++i) { eqs[i]->Process(data, data, frameSize); }
+
+        if (config.enable.drc)
+            sf_compressor_process(&compressor_st, frameSize, f32data_out, f32data_out);
+
         sf_write_short(outfile, data, frameSize);
-
-        /* HPF / LPF */
-        lpf->Process(data, data, frameSize);
-
-        /* Parameter EQ */
-        // eq->process(data, data, frameSize);
-
-        /* DRC */
-        // sf_compressor_process(&compressor_st, frameSize, f32data_out, f32data_out);
 
         count++;
     }
@@ -221,7 +292,8 @@ int main(int argc, char **argv) {
         free(ref_data);
     }
 
-    delete eq;
+    for (int i = 0; i < numEQ; ++i) { delete eqs[i]; }
+    delete[] eqs;
 
     return 0;
 }

@@ -2,12 +2,13 @@
 
 void ParseConfig(nlohmann::json &jsonFile, Config &config) {
     config.frameSize = jsonFile["frameSize"];
-    config.moduleParam.aec = jsonFile["modules"]["aec"];
-    config.moduleParam.denoise = jsonFile["modules"]["denoise"];
-    config.moduleParam.agc = jsonFile["modules"]["agc"];
-    config.moduleParam.equalizer = jsonFile["modules"]["equalizer"];
-    config.moduleParam.highpass = jsonFile["modules"]["highpass"];
-    config.moduleParam.lowpass = jsonFile["modules"]["lowpass"];
+    config.enable.aec = jsonFile["enable"]["aec"];
+    config.enable.denoise = jsonFile["enable"]["denoise"];
+    config.enable.agc = jsonFile["enable"]["agc"];
+    config.enable.equalizer = jsonFile["enable"]["equalizer"];
+    config.enable.highpass = jsonFile["enable"]["highpass"];
+    config.enable.lowpass = jsonFile["enable"]["lowpass"];
+    config.enable.drc = jsonFile["enable"]["drc"];
 
     config.aecParam.tailLength = jsonFile["aec"]["tailLength"];
 
@@ -15,10 +16,10 @@ void ParseConfig(nlohmann::json &jsonFile, Config &config) {
     config.agcParam.agcTarget = jsonFile["agc"]["agcTarget"];
 
     // // eq
-    config.eqParamSet.numEQ = jsonFile["equalizer"]["NUM_EQ"];
+    config.eqParamSet.numEQ = jsonFile["equalizer"]["num_eq"];
     for (int i = 0; i < config.eqParamSet.numEQ; ++i) {
         EqParam eqParam;
-        std::string eqIndex = "EQ" + std::to_string(i);
+        std::string eqIndex = "eq" + std::to_string(i);
         eqParam.f0 = jsonFile["equalizer"][eqIndex]["f0"];
         eqParam.gain = jsonFile["equalizer"][eqIndex]["gain"];
         eqParam.Q = jsonFile["equalizer"][eqIndex]["Q"];

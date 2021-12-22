@@ -1,12 +1,13 @@
 {
     "frameSize": 1024,
-    "modules": {
+    "enable": {
         "aec": false,
         "denoise": true,
         "agc": false,
-        "equalizer": false,
+        "equalizer": true,
         "highpass": false,
-        "lowpass": false
+        "lowpass": false,
+        "drc": false
     },
     "aec": {
         "tailLength": 1024
@@ -18,15 +19,20 @@
         "agcTarget": 16384
     },
     "equalizer" : {
-        "NUM_EQ": 2,
-        "EQ0": {
+        "num_eq": 3,
+        "eq0": {
             "f0": 2000,
             "gain": 6,
             "Q": 10
         },
-        "EQ1": {
+        "eq1": {
             "f0": 3000,
             "gain": 6,
+            "Q": 10
+        },
+        "eq2": {
+            "f0": 8000,
+            "gain": -6,
             "Q": 10
         }
     },

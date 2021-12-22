@@ -4,13 +4,14 @@
 #include <string>
 #include <vector>
 
-struct ModuleParam {
+struct Enable {
     bool aec{false};
     bool denoise{true};
     bool agc{false};
     bool equalizer{false};
     bool highpass{false};
     bool lowpass{false};
+    bool drc{false};
 };
 
 struct AecParam {
@@ -59,7 +60,7 @@ struct DrcParam {
 
 struct Config {
     int frameSize;
-    ModuleParam moduleParam;
+    Enable enable;
     AecParam aecParam;
     DenoiseParam denoiseParam;
     AgcParam agcParam;
