@@ -4,11 +4,9 @@
 #include "speex/speex_echo.h"
 #include "speex/speex_preprocess.h"
 
+#include "audio_utils.h"
 #include "compressor.h"
 #include "config.h"
-#include "equalizer.h"
-#include "highpass.h"
-#include "lowpass.h"
 
 #include "CLI/CLI.hpp"
 #include "sndfile.h"
@@ -84,7 +82,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    assert(sfinfo_in.format == SF_FORMAT_PCM_16);
+    assert(sfinfo_in.format & SF_FORMAT_WAV);
+    assert(sfinfo_in.format & SF_FORMAT_PCM_16);
 
     /**
      * open output file

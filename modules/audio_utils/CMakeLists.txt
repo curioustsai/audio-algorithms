@@ -30,6 +30,12 @@ add_library(
     ${C_SOURCES}
 )
 
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/biquad.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/equalizer.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/highpass.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/lowpass.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/gain.h DESTINATION /include/${PROJECT_NAME})
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/audio_utils.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/comfort_noise.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
 
