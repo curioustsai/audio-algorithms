@@ -4,11 +4,11 @@
         "pregain":0.0,
         "postgain":0.0,
 
-        "thresholdExpander":-45,
-        "ratioExpander":2.0,
-        "thresholdCompressor":-12.0,
+        "thresholdExpander":-60,
+        "ratioExpander":4.0,
+        "thresholdCompressor":-24.0,
         "ratioCompressor":2.0,
-        "thresholdLimiter":-6.0,
+        "thresholdLimiter":-12.0,
         "ratioLimiter":4,
 
         "knee":1.0,
