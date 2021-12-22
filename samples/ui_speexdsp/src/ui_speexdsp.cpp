@@ -12,6 +12,7 @@
 
 #include "CLI/CLI.hpp"
 #include "sndfile.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,8 @@ int main(int argc, char **argv) {
         printf("sample rate doesn't match between near-end and far-end.\n");
         return 1;
     }
+
+    assert(sfinfo_in.format == SF_FORMAT_PCM_16);
 
     /**
      * open output file
@@ -166,9 +169,8 @@ int main(int argc, char **argv) {
             /* FIXME */
             LPF_FS = LPF::SampleRate::Fs_48kHz;
             break;
-        default: 
+        default:
             printf("not support");
-
     }
 
     HPF::CutoffFreq HPF_FC;
@@ -188,7 +190,7 @@ int main(int argc, char **argv) {
         case 500:
             HPF_FC = HPF::CutoffFreq::Fc_500Hz;
             break;
-        default: 
+        default:
             printf("not support");
     }
 
@@ -206,7 +208,7 @@ int main(int argc, char **argv) {
         case 4000:
             LPF_FC = LPF::CutoffFreq::Fc_4kHz;
             break;
-        default: 
+        default:
             printf("not support");
     }
 
@@ -232,7 +234,6 @@ int main(int argc, char **argv) {
 
     clock_t tick = clock();
     int readcount = 0;
-
 
     while (1) {
         readcount = sf_read_short(infile, mic_data, num_channel * frameSize);
