@@ -148,8 +148,8 @@ int main(int argc, char **argv) {
         eqs[i] = new Equalizer(f0, sample_rate, gain, Q);
     }
 
-    HPF::SampleRate HPF_FS;
-    LPF::SampleRate LPF_FS;
+    HPF::SampleRate HPF_FS = HPF::SampleRate::Fs_16kHz;
+    LPF::SampleRate LPF_FS = LPF::SampleRate::Fs_16kHz;
     switch (sample_rate) {
         case 48000:
             HPF_FS = HPF::SampleRate::Fs_48kHz;
@@ -165,14 +165,15 @@ int main(int argc, char **argv) {
             break;
         case 8000:
             HPF_FS = HPF::SampleRate::Fs_8kHz;
-            /* FIXME */
-            LPF_FS = LPF::SampleRate::Fs_48kHz;
+            config.enable.lowpass = false;
             break;
         default:
             printf("not support");
+            config.enable.highpass = false;
+            config.enable.lowpass = false;
     }
 
-    HPF::CutoffFreq HPF_FC;
+    HPF::CutoffFreq HPF_FC = HPF::CutoffFreq::Fc_100Hz;
     switch (config.hpfParam.f0) {
         case 100:
             HPF_FC = HPF::CutoffFreq::Fc_100Hz;
@@ -191,9 +192,10 @@ int main(int argc, char **argv) {
             break;
         default:
             printf("not support");
+            config.enable.highpass = false;
     }
 
-    LPF::CutoffFreq LPF_FC;
+    LPF::CutoffFreq LPF_FC = LPF::CutoffFreq::Fc_7kHz;
     switch (config.lpfParam.f0) {
         case 7000:
             LPF_FC = LPF::CutoffFreq::Fc_7kHz;
@@ -209,6 +211,7 @@ int main(int argc, char **argv) {
             break;
         default:
             printf("not support");
+            config.enable.lowpass = false;
     }
 
     HPF *hpf = new HPF(HPF_FS, HPF_FC);
@@ -294,6 +297,8 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < numEQ; ++i) { delete eqs[i]; }
     delete[] eqs;
+    delete hpf;
+    delete lpf;
 
     return 0;
 }
