@@ -7,7 +7,7 @@ from scipy import signal
 high pass filter coeffiecents
 """
 
-cutoff_freqs = [100, 200, 300, 400, 500]
+cutoff_freqs = [100, 150, 200, 250, 300, 400, 500]
 sample_rates = [8000, 16000, 32000, 48000]
 num_biquad = 2
 num_coefs = 5

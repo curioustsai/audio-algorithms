@@ -13,27 +13,27 @@
         "tailLength": 1024
     },
     "denoise": {
-        "nsLevel": 20
+        "nsLevel": 15
     },
     "agc": {
         "agcTarget": 16384
     },
     "equalizer" : {
-        "num_eq": 3,
+        "num_eq": 1,
         "eq0": {
             "f0": 2000,
             "gain": 6,
             "Q": 10
         },
         "eq1": {
-            "f0": 3000,
-            "gain": 6,
-            "Q": 10
+            "f0": 5500,
+            "gain": -40,
+            "Q": 5
         },
         "eq2": {
-            "f0": 8000,
+            "f0": 6000,
             "gain": -6,
-            "Q": 10
+            "Q": 12
         }
     },
 

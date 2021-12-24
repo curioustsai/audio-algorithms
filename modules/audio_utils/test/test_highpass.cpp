@@ -115,7 +115,7 @@ TEST(HighPassFilter, IterativeFilters) {
     using SampleRate = ubnt::HighPassFilter::SampleRate;
     using CutoffFreq = ubnt::HighPassFilter::CutoffFreq;
 
-    std::string strCutoffFreq[] = {"100Hz", "200Hz", "300Hz", "400Hz", "500Hz"};
+    std::string strCutoffFreq[] = {"100Hz", "150Hz", "200Hz", "250Hz", "300Hz", "400Hz", "500Hz"};
     std::string strSampleRate[] = {"8kHz", "16kHz", "32kHz", "48kHz"};
     int samplerateTable[] = {8000, 16000, 32000, 48000};
 

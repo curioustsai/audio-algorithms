@@ -11,7 +11,7 @@ class Gain {
 public:
     Gain() = delete;
 
-    Gain(float gaindB) : _gaindB(gaindB) { _gain = powf(10, gaindB / 20.f); };
+    Gain(float gaindB) { _gain = powf(10, gaindB / 20.f); };
 
     ~Gain() = default;
 
@@ -26,7 +26,6 @@ public:
     }
 
 private:
-    float _gaindB{0.f};
     float _gain{1.0f};
 };
 

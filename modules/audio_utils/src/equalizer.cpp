@@ -21,7 +21,6 @@ Equalizer::Equalizer(int f0, int fs, float gain, float Q) : _f0(f0), _fs(fs), _g
     float a1 = -2 * cosf(w0);
     float a2 = 1 - alpha / amp;
 
-    // PeakEQ coefficient
     float a0_inv = 1 / a0;
     float ba[5] = {b0 * a0_inv, b1 * a0_inv, b2 * a0_inv, a1 * a0_inv, a2 * a0_inv};
 
