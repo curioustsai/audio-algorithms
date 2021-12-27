@@ -1,6 +1,7 @@
 {
     "frameSize": 1024,
     "enable": {
+        "micgain": true,
         "aec": false,
         "denoise": true,
         "agc": false,
@@ -8,6 +9,9 @@
         "highpass": false,
         "lowpass": false,
         "drc": false
+    },
+    "micgain": {
+        "gaindB": 15
     },
     "aec": {
         "tailLength": 1024
@@ -37,12 +41,14 @@
         }
     },
 
+    "_comment": "Fc_100Hz = 0, Fc_150Hz = 1, Fc_200Hz = 2, Fc_250Hz = 3, Fc_300Hz = 4, Fc_400Hz = 5, Fc_500Hz = 6",
     "highpass" : {
-        "f0": 100
+        "f0": 1
     },
 
+    "_comment": "Fc_4kHz = 0, Fc_5kHz = 1, Fc_6kHz = 2, Fc_7kHz = 3",
     "lowpass" : {
-        "f0": 7000
+        "f0": 3
     },
 
     "drc": {

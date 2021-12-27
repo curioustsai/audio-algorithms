@@ -5,6 +5,7 @@
 #include <vector>
 
 struct Enable {
+    bool micgain{false};
     bool aec{false};
     bool denoise{true};
     bool agc{false};
@@ -12,6 +13,10 @@ struct Enable {
     bool highpass{false};
     bool lowpass{false};
     bool drc{false};
+};
+
+struct MicParam {
+    float gaindB;
 };
 
 struct AecParam {
@@ -61,6 +66,7 @@ struct DrcParam {
 struct Config {
     int frameSize;
     Enable enable;
+    MicParam micParam;
     AecParam aecParam;
     DenoiseParam denoiseParam;
     AgcParam agcParam;

@@ -1,12 +1,12 @@
-#ifdef ENABLE_BF
-#include "MicArray.h"
-#endif
 #include "speex/speex_echo.h"
 #include "speex/speex_preprocess.h"
 
-#include "audio_utils.h"
 #include "compressor.h"
 #include "config.h"
+#include "equalizer.h"
+#include "gain.h"
+#include "highpass.h"
+#include "lowpass.h"
 
 #include "CLI/CLI.hpp"
 #include "sndfile.h"
@@ -19,19 +19,15 @@
 using Equalizer = ubnt::Equalizer;
 using HPF = ubnt::HighPassFilter;
 using LPF = ubnt::LowPassFilter;
+using Gain = ubnt::Gain;
 
 int main(int argc, char **argv) {
     SpeexPreprocessState *den_st;
     SpeexEchoState *echo_st;
-#ifdef ENABLE_BF
-    void *hMicArray;
-    int fftlen = 512;
-    bool enable_bf = false;
-#endif
 
     std::string inputFilePath, outputFilePath, refFilePath, configFilePath;
-    short *data, *mic_data, *ref_data, *echo_out, *bf_out;
-    float *f32data, *f32data_out;
+    short *data, *mic_data, *ref_data, *echo_out;
+    float *f32data;
     int parameter;
     int count = 0;
 
@@ -84,6 +80,7 @@ int main(int argc, char **argv) {
 
     assert(sfinfo_in.format & SF_FORMAT_WAV);
     assert(sfinfo_in.format & SF_FORMAT_PCM_16);
+    assert((sfinfo_in.channels == 1));
 
     /**
      * open output file
@@ -101,14 +98,12 @@ int main(int argc, char **argv) {
     int frameSize = config.frameSize;
     int tail_length = config.aecParam.tailLength;
     bool enable_aec = config.enable.aec;
-#ifdef ENABLE_BF
-    enable_bf = (num_channel > 1) ? true : false;
-#endif
 
     mic_data = (short *)malloc(num_channel * frameSize * sizeof(short));
-    bf_out = (short *)malloc(frameSize * sizeof(short));
     f32data = (float *)malloc(frameSize * sizeof(float));
-    f32data_out = (float *)malloc(frameSize * sizeof(float));
+
+    float micgain_dB = jsonFile["micgain"]["gaindB"];
+    Gain micgain(micgain_dB);
 
     if (enable_aec) {
         ref_data = (short *)malloc(frameSize * sizeof(short));
@@ -120,10 +115,6 @@ int main(int argc, char **argv) {
     } else {
         den_st = speex_preprocess_state_init(frameSize, sample_rate);
     }
-
-#ifdef ENABLE_BF
-    if (enable_bf) { MicArray_Init(&hMicArray, sample_rate, num_channel, fftlen, frameSize); }
-#endif
 
     /* denoise */
     parameter = config.enable.denoise;
@@ -171,49 +162,11 @@ int main(int argc, char **argv) {
             printf("not support");
             config.enable.highpass = false;
             config.enable.lowpass = false;
+            return 1;
     }
 
-    HPF::CutoffFreq HPF_FC = HPF::CutoffFreq::Fc_100Hz;
-    switch (config.hpfParam.f0) {
-        case 100:
-            HPF_FC = HPF::CutoffFreq::Fc_100Hz;
-            break;
-        case 200:
-            HPF_FC = HPF::CutoffFreq::Fc_200Hz;
-            break;
-        case 300:
-            HPF_FC = HPF::CutoffFreq::Fc_300Hz;
-            break;
-        case 400:
-            HPF_FC = HPF::CutoffFreq::Fc_400Hz;
-            break;
-        case 500:
-            HPF_FC = HPF::CutoffFreq::Fc_500Hz;
-            break;
-        default:
-            printf("not support");
-            config.enable.highpass = false;
-    }
-
-    LPF::CutoffFreq LPF_FC = LPF::CutoffFreq::Fc_7kHz;
-    switch (config.lpfParam.f0) {
-        case 7000:
-            LPF_FC = LPF::CutoffFreq::Fc_7kHz;
-            break;
-        case 6000:
-            LPF_FC = LPF::CutoffFreq::Fc_6kHz;
-            break;
-        case 5000:
-            LPF_FC = LPF::CutoffFreq::Fc_5kHz;
-            break;
-        case 4000:
-            LPF_FC = LPF::CutoffFreq::Fc_4kHz;
-            break;
-        default:
-            printf("not support");
-            config.enable.lowpass = false;
-    }
-
+    HPF::CutoffFreq HPF_FC = static_cast<HPF::CutoffFreq>(jsonFile["highpass"]["f0"]);
+    LPF::CutoffFreq LPF_FC = static_cast<LPF::CutoffFreq>(jsonFile["lowpass"]["f0"]);
     HPF *hpf = new HPF(HPF_FS, HPF_FC);
     LPF *lpf = new LPF(LPF_FS, LPF_FC);
 
@@ -238,8 +191,9 @@ int main(int argc, char **argv) {
     int readcount = 0;
 
     while (1) {
-        readcount = sf_read_short(infile, mic_data, num_channel * frameSize);
-        if (readcount != num_channel * frameSize) break;
+        readcount = sf_read_short(infile, mic_data, frameSize);
+        if (config.enable.micgain) { micgain.Process(mic_data, frameSize); }
+        if (readcount != frameSize) break;
 
         if (enable_aec) {
             readcount = sf_read_short(refile, ref_data, frameSize);
@@ -250,30 +204,19 @@ int main(int argc, char **argv) {
             data = mic_data;
         }
 
-#ifdef ENABLE_BF
-        if (num_channel >= 2) {
-            MicArray_Process(hMicArray, data, bf_out);
-            data = bf_out;
-        }
-#endif
-
         if (config.enable.highpass) hpf->Process(data, data, frameSize);
         if (config.enable.denoise) speex_preprocess_run(den_st, data);
         if (config.enable.lowpass) lpf->Process(data, data, frameSize);
         if (config.enable.equalizer)
             for (int i = 0; i < numEQ; ++i) { eqs[i]->Process(data, data, frameSize); }
 
-        if (config.enable.drc)
-            sf_compressor_process(&compressor_st, frameSize, f32data_out, f32data_out);
+        if (config.enable.drc) sf_compressor_process(&compressor_st, frameSize, f32data, f32data);
 
         sf_write_short(outfile, data, frameSize);
 
         count++;
     }
 
-#ifdef ENABLE_BF
-    if (enable_bf) MicArray_Release(hMicArray);
-#endif
     if (enable_aec) speex_echo_state_destroy(echo_st);
     speex_preprocess_state_destroy(den_st);
 
@@ -284,10 +227,8 @@ int main(int argc, char **argv) {
     sf_close(infile);
     sf_close(outfile);
 
-    free(bf_out);
     free(mic_data);
     free(f32data);
-    free(f32data_out);
 
     if (enable_aec) {
         sf_close(refile);

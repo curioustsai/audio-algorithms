@@ -2,6 +2,7 @@
 
 void ParseConfig(nlohmann::json &jsonFile, Config &config) {
     config.frameSize = jsonFile["frameSize"];
+    config.enable.micgain = jsonFile["enable"]["micgain"];
     config.enable.aec = jsonFile["enable"]["aec"];
     config.enable.denoise = jsonFile["enable"]["denoise"];
     config.enable.agc = jsonFile["enable"]["agc"];
