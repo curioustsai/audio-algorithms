@@ -285,7 +285,6 @@ void SoundLocater_GccPhat(SoundLocater *handle, complex float *X, complex float 
     }
     for (int i = half_fftlen; i < half_fftlen_interpl; i++) { xcorr_interpl[i] = 0; }
 
-    uiv_ifft_shift(handle->fft_lookup, (float *)(xcorr_interpl));
     uiv_ifft(handle->fft_lookup, (float *)(xcorr_interpl), ifft);
 
     for (int q = 0; q < handle->num_angle_samples; q++) {
