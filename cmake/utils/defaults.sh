@@ -6,7 +6,7 @@ set -e
 #local variables used to compute various defaults when they are missing
 if [ -z ${UBNT_BASE_FOLDER} ]
 then
-	export UBNT_BASE_FOLDER=${HOME}/.ubnt
+	export UBNT_BASE_FOLDER=${HOME}/.ubnt_audio
 	echo "UBNT_BASE_FOLDER is not set, using \"${UBNT_BASE_FOLDER}\""
 else
 	echo "UBNT_BASE_FOLDER is set to \"${UBNT_BASE_FOLDER}\""
