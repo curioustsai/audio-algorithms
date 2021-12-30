@@ -1,36 +1,35 @@
-#ifdef ENABLE_BF
-#include "MicArray.h"
-#endif
 #include "speex/speex_echo.h"
 #include "speex/speex_preprocess.h"
 
+#include "compressor.h"
+#include "config.h"
+#include "equalizer.h"
+#include "gain.h"
+#include "highpass.h"
+#include "lowpass.h"
+
 #include "CLI/CLI.hpp"
-#include <sndfile.h>
+#include "sndfile.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+using Equalizer = ubnt::Equalizer;
+using HPF = ubnt::HighPassFilter;
+using LPF = ubnt::LowPassFilter;
+using Gain = ubnt::Gain;
+
 int main(int argc, char **argv) {
     SpeexPreprocessState *den_st;
     SpeexEchoState *echo_st;
-#ifdef ENABLE_BF
-    void *hMicArray;
-    int fftlen = 512;
-    bool enable_bf = false;
-#endif
 
-    std::string inputFilePath, outputFilePath, refFilePath;
-    short *data, *mic_data, *ref_data, *echo_out, *bf_out;
+    std::string inputFilePath, outputFilePath, refFilePath, configFilePath;
+    short *data, *mic_data, *ref_data, *echo_out;
+    float *f32data;
     int parameter;
     int count = 0;
-    int frame_size = 256;
-    int nsLevel = 15;
-    int agcTarget = 16000;
-    int tail_length = 1024;
-    bool enable_aec = false;
-    bool enable_ns = true, disable_ns = false;
-    bool enable_agc = false;
 
     CLI::App app{"UI speexdsp"};
 
@@ -40,21 +39,19 @@ int main(int argc, char **argv) {
     app.add_option("-r,--refFile", refFilePath, "specify an reference file")
         ->check(CLI::ExistingFile);
     app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
-    app.add_flag("--disable-ns", disable_ns, "disable ns");
-    app.add_flag("--enable-agc", enable_agc, "enable agc");
-    app.add_option("--nsLevel", nsLevel, "noise suppression level")->check(CLI::Number);
-    app.add_option("--agcTarget", agcTarget, "agc target sample value")->check(CLI::Number);
-    app.add_option("--tailLength", tail_length, "tail length in samples")->check(CLI::Number);
-    app.add_option("--frameSize", frame_size, "frame size in samples")->check(CLI::Number);
+    app.add_option("-c,--config", configFilePath, "specify an config file")->required();
 
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError &e) { return app.exit(e); }
 
-    enable_ns = !disable_ns;
+    std::ifstream ifs(configFilePath);
+    nlohmann::json jsonFile = nlohmann::json::parse(ifs);
+    Config config;
+    ParseConfig(jsonFile, config);
+
     SNDFILE *infile, *outfile, *refile;
     SF_INFO sfinfo_in, sfinfo_out, sfinfo_ref;
-    memset(&sfinfo_in, 0, sizeof(SF_INFO));
 
     /**
      * check input files 
@@ -65,7 +62,6 @@ int main(int argc, char **argv) {
             puts(sf_strerror(NULL));
             return 1;
         }
-        enable_aec = true;
     }
 
     if (!(infile = sf_open(inputFilePath.c_str(), SFM_READ, &sfinfo_in))) {
@@ -82,6 +78,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    assert(sfinfo_in.format & SF_FORMAT_WAV);
+    assert(sfinfo_in.format & SF_FORMAT_PCM_16);
+    assert((sfinfo_in.channels == 1));
+
     /**
      * open output file
      */
@@ -95,74 +95,128 @@ int main(int argc, char **argv) {
 
     int sample_rate = sfinfo_in.samplerate;
     int num_channel = sfinfo_in.channels;
-#ifdef ENABLE_BF
-    enable_bf = (num_channel > 1) ? true : false;
-#endif
+    int frameSize = config.frameSize;
+    int tail_length = config.aecParam.tailLength;
+    bool enable_aec = config.enable.aec;
 
-    mic_data = (short *)malloc(num_channel * frame_size * sizeof(short));
-    bf_out = (short *)malloc(frame_size * sizeof(short));
+    mic_data = (short *)malloc(num_channel * frameSize * sizeof(short));
+    f32data = (float *)malloc(frameSize * sizeof(float));
+
+    float micgain_dB = jsonFile["micgain"]["gaindB"];
+    Gain micgain(micgain_dB);
 
     if (enable_aec) {
-        ref_data = (short *)malloc(frame_size * sizeof(short));
-        echo_out = (short *)malloc(num_channel * frame_size * sizeof(short));
-        echo_st = speex_echo_state_init_mc(frame_size, tail_length, num_channel, 1);
-        den_st = speex_preprocess_state_init(frame_size, sample_rate);
+        ref_data = (short *)malloc(frameSize * sizeof(short));
+        echo_out = (short *)malloc(num_channel * frameSize * sizeof(short));
+        echo_st = speex_echo_state_init_mc(frameSize, tail_length, num_channel, 1);
+        den_st = speex_preprocess_state_init(frameSize, sample_rate);
         speex_echo_ctl(echo_st, SPEEX_ECHO_SET_SAMPLING_RATE, &sample_rate);
         speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_ECHO_STATE, echo_st);
     } else {
-        den_st = speex_preprocess_state_init(frame_size, sample_rate);
+        den_st = speex_preprocess_state_init(frameSize, sample_rate);
     }
-
-#ifdef ENABLE_BF
-    if (enable_bf) {
-        MicArray_Init(&hMicArray, sample_rate, num_channel, fftlen, frame_size);
-    }
-#endif
 
     /* denoise */
-    parameter = enable_ns;
+    parameter = config.enable.denoise;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_DENOISE, &parameter);
-    parameter = nsLevel;
+    parameter = config.denoiseParam.nsLevel;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_NOISE_SUPPRESS, &parameter);
 
     /* agc */
-    parameter = enable_agc;
+    parameter = config.enable.agc;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_AGC, &parameter);
-    parameter = agcTarget;
-    if (enable_agc) { printf("agc target: %d\n", agcTarget); }
+    parameter = config.agcParam.agcTarget;
     speex_preprocess_ctl(den_st, SPEEX_PREPROCESS_SET_AGC_TARGET, &parameter);
+
+    /* EQ */
+    int numEQ = config.eqParamSet.numEQ;
+    Equalizer **eqs = new Equalizer *[numEQ];
+    for (int i = 0; i < numEQ; ++i) {
+        int f0 = config.eqParamSet.eqParamVec.at(i).f0;
+        float gain = config.eqParamSet.eqParamVec.at(i).gain;
+        float Q = config.eqParamSet.eqParamVec.at(i).Q;
+
+        eqs[i] = new Equalizer(f0, sample_rate, gain, Q);
+    }
+
+    HPF::SampleRate HPF_FS = HPF::SampleRate::Fs_16kHz;
+    LPF::SampleRate LPF_FS = LPF::SampleRate::Fs_16kHz;
+    switch (sample_rate) {
+        case 48000:
+            HPF_FS = HPF::SampleRate::Fs_48kHz;
+            LPF_FS = LPF::SampleRate::Fs_48kHz;
+            break;
+        case 3200:
+            HPF_FS = HPF::SampleRate::Fs_32kHz;
+            LPF_FS = LPF::SampleRate::Fs_32kHz;
+            break;
+        case 16000:
+            HPF_FS = HPF::SampleRate::Fs_16kHz;
+            LPF_FS = LPF::SampleRate::Fs_16kHz;
+            break;
+        case 8000:
+            HPF_FS = HPF::SampleRate::Fs_8kHz;
+            config.enable.lowpass = false;
+            break;
+        default:
+            printf("not support");
+            config.enable.highpass = false;
+            config.enable.lowpass = false;
+            return 1;
+    }
+
+    HPF::CutoffFreq HPF_FC = static_cast<HPF::CutoffFreq>(jsonFile["highpass"]["f0"]);
+    LPF::CutoffFreq LPF_FC = static_cast<LPF::CutoffFreq>(jsonFile["lowpass"]["f0"]);
+    HPF *hpf = new HPF(HPF_FS, HPF_FC);
+    LPF *lpf = new LPF(LPF_FS, LPF_FC);
+
+    /* DRC */
+    sf_compressor_state_st compressor_st;
+    float pregain = config.drcParam.pregain;
+    float postgain = config.drcParam.postgain;
+    float knee = config.drcParam.knee;
+    float threshold = config.drcParam.threshold;
+    float ratio = config.drcParam.ratio;
+    float threshold_agg = config.drcParam.threshold_agg;
+    float ratio_agg = config.drcParam.ratio_agg;
+    float threshold_expander = config.drcParam.threshold_expander;
+    float ratio_expander = config.drcParam.ratio_expander;
+    float attack = config.drcParam.attack;
+    float release = config.drcParam.release;
+
+    sf_simplecomp(&compressor_st, sample_rate, pregain, postgain, knee, threshold, ratio,
+                  threshold_agg, ratio_agg, threshold_expander, ratio_expander, attack, release);
 
     clock_t tick = clock();
     int readcount = 0;
 
     while (1) {
-        readcount = sf_read_short(infile, mic_data, num_channel * frame_size);
-        if (readcount != num_channel * frame_size) break;
+        readcount = sf_read_short(infile, mic_data, frameSize);
+        if (config.enable.micgain) { micgain.Process(mic_data, frameSize); }
+        if (readcount != frameSize) break;
 
         if (enable_aec) {
-            readcount = sf_read_short(refile, ref_data, frame_size);
-            if (readcount != frame_size) break;
+            readcount = sf_read_short(refile, ref_data, frameSize);
+            if (readcount != frameSize) break;
             speex_echo_cancellation(echo_st, mic_data, ref_data, echo_out);
             data = echo_out;
         } else {
             data = mic_data;
         }
 
-#ifdef ENABLE_BF
-        if (num_channel >= 2) {
-            MicArray_Process(hMicArray, data, bf_out);
-            data = bf_out;
-        }
-#endif
+        if (config.enable.highpass) hpf->Process(data, data, frameSize);
+        if (config.enable.denoise) speex_preprocess_run(den_st, data);
+        if (config.enable.lowpass) lpf->Process(data, data, frameSize);
+        if (config.enable.equalizer)
+            for (int i = 0; i < numEQ; ++i) { eqs[i]->Process(data, data, frameSize); }
 
-        speex_preprocess_run(den_st, data);
-        sf_write_short(outfile, data, frame_size);
+        if (config.enable.drc) sf_compressor_process(&compressor_st, frameSize, f32data, f32data);
+
+        sf_write_short(outfile, data, frameSize);
+
         count++;
     }
 
-#ifdef ENABLE_BF
-    if (enable_bf) MicArray_Release(hMicArray);
-#endif
     if (enable_aec) speex_echo_state_destroy(echo_st);
     speex_preprocess_state_destroy(den_st);
 
@@ -172,8 +226,9 @@ int main(int argc, char **argv) {
     /* Close input and output files. */
     sf_close(infile);
     sf_close(outfile);
-    free(bf_out);
+
     free(mic_data);
+    free(f32data);
 
     if (enable_aec) {
         sf_close(refile);
@@ -181,6 +236,10 @@ int main(int argc, char **argv) {
         free(ref_data);
     }
 
+    for (int i = 0; i < numEQ; ++i) { delete eqs[i]; }
+    delete[] eqs;
+    delete hpf;
+    delete lpf;
 
     return 0;
 }

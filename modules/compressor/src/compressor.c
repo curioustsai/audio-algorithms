@@ -103,7 +103,8 @@ static inline float calculate_k(float linearthreshold, float linearthresholdknee
     float mink = 0.1f;
     float maxk = 10000.0f;
     // search by comparing the knee slope at the current k guess, to the ideal slope
-    for (int i = 0; i < 15; i++) {
+    int i = 0;
+    for (i = 0; i < 15; i++) {
         if (kneeslope(xknee, k, linearthreshold) < slope)
             maxk = k;
         else

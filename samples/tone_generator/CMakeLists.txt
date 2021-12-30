@@ -1,5 +1,5 @@
 #Set the name of the project
-project(ui_speexdsp)
+project(tone_generator)
 
 #detect the source files
 file(
@@ -22,13 +22,12 @@ endif()
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
-    ${SOURCES_ROOT}/version
     ${SOURCES_ROOT}/audio_utils/include/
-    ${SOURCES_ROOT}/compressor/include/
+    ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
     ${PROJECT_ROOT}/thirdparty/CLI11/include
     ${PROJECT_ROOT}/thirdparty/json/include
-    ${PROJECT_ROOT}/thirdparty/speexdsp/include
+    ${LIBSNDFILE_INCLUDE_DIRS}
     )
 
 #print some debug info about the list of files and include folders
@@ -47,10 +46,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 target_link_libraries(
     ${PROJECT_NAME}
     -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
-    -L${PROJECT_ROOT}/build/${UBNT_PLATFORM_NAME}/${CMAKE_BUILD_TYPE}/rootfs/lib/
-    -lspeexdsp
     -laudio_utils
-    -lcompressor
     -lsndfile
     -lpthread
     -lm
@@ -59,20 +55,6 @@ target_link_libraries(
     -lcrypt
     -lrt
     )
-
-OPTION(ENABLE_BF "enable beamforming features" OFF)
-
-if (ENABLE_BF)
-    add_definitions(-DAUDIO_ALGO_DEBUG)
-    include_directories(
-        AFTER
-        ${SOURCES_ROOT}/mic_array/include/
-        )
-    target_link_libraries(
-        ${PROJECT_NAME}
-        mic_array
-        )
-endif()
 
 #where do we want the app(s) installed
 install(
