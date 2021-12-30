@@ -3,6 +3,7 @@ configure_file("${SOURCES_ROOT}/version/version.cpp.in" "${CMAKE_BINARY_DIR}/ver
 set(VERSION_SOURCES "${CMAKE_BINARY_DIR}/version.cpp" "${SOURCES_ROOT}/version/version.h")
 
 if (${UBNT_PLATFORM_NAME} MATCHES "gen[34].")
+	add_subdirectory(audio_utils)
 	add_subdirectory(audio_events)
 	add_subdirectory(pffft)
 	add_subdirectory(formant_shift)
@@ -10,12 +11,10 @@ if (${UBNT_PLATFORM_NAME} MATCHES "gen[34].")
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "gen4l")
-	add_subdirectory(audio_utils)
 	add_subdirectory(speexdsp-builder)
 endif()
 
 if (${UBNT_PLATFORM_NAME} STREQUAL "gen4c")
-	add_subdirectory(audio_utils)
 	add_subdirectory(click_removal)
 	add_subdirectory(speexdsp-builder)
 endif()
