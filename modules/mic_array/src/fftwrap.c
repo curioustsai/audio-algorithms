@@ -1,6 +1,8 @@
-#include "fftwrap.h"
-#include <fftw3.h>
 #include <stdlib.h>
+#include "fftwrap.h"
+
+#ifdef _FFTW_
+#include <fftw3.h>
 
 struct fftw_config {
     float *in;
@@ -37,8 +39,6 @@ void uiv_fft_destroy(void *table) {
     free(table);
 }
 
-#ifndef _SPEEX_FFT_
-
 void uiv_fft(void *table, float *in, float *out) {
     int i;
     struct fftw_config *t = (struct fftw_config *)table;
@@ -48,9 +48,16 @@ void uiv_fft(void *table, float *in, float *out) {
 
     for (i = 0; i < N; ++i) iptr[i] = in[i];
 
+    /*
+     * fftw: 
+     * input real value of length N
+     * output complex value of length (N/2+1) * 2, length in real value equals to N + 2
+     * |bin 0, real| bin 0, imag | bin 1, real| bin 1, image| ... | bin N/2 + 1 real |, bin N/2 + 1 imag|
+     */    
+
     fftwf_execute(t->fft);
 
-    for (i = 0; i < N+2; ++i) out[i] = optr[i];
+    for (i = 0; i < N + 2; ++i) out[i] = optr[i];
 }
 
 void uiv_ifft(void *table, float *in, float *out) {
@@ -61,68 +68,73 @@ void uiv_ifft(void *table, float *in, float *out) {
     float *optr = t->out;
     const float m = 1.0 / N;
 
-    for (i = 0; i < N+2; ++i) iptr[i] = in[i];
+    for (i = 0; i < N + 2; ++i) iptr[i] = in[i];
 
-    fftwf_execute(t->ifft);
-
+    fftwf_execute(t->ifft); 
     for (i = 0; i < N; ++i) out[i] = optr[i] * m;
 }
 
-void uiv_fft_shift(void* table, float *ptr){}
-void uiv_ifft_shift(void* table, float *ptr){}
-
 #else
-void uiv_fft(void *table, float *in, float *out) {
-    int i;
-    struct fftw_config *t = (struct fftw_config *)table;
-    const int N = t->N;
-    float *iptr = t->in;
-    float *optr = t->out;
-    const float m = 1.0 / N;
+#include "pffft.h"
 
-    for (i = 0; i < N; ++i) iptr[i] = in[i] * m;
+typedef struct pffft_config_ {
+    float *in;
+    float *out;
+    PFFFT_Setup *setup;
+    int N;
+} pffft_config;
 
-    fftwf_execute(t->fft);
+void *uiv_fft_init(int size) {
+    pffft_config *config = (pffft_config *)malloc(sizeof(pffft_config));
+    config->setup = pffft_new_setup(size, PFFFT_REAL);
+    config->in = (float *)malloc(sizeof(float) * size);
+    config->out = (float *)malloc(sizeof(float) * (size + 2));
+    config->N = size;
 
-    out[0] = optr[0];
-    for (i = 1; i < N; ++i) out[i] = optr[i + 1];
+    return config;
 }
 
-void uiv_fft_shift(void* table, float *ptr) {
-	int i;
-    struct fftw_config *t = (struct fftw_config *)table;
-	const int N = t-> N;
-	ptr[N+1] = 0.0;
-	for (i = N; i > 1; i--) { ptr[i] = ptr[i - 1] * N; };
-	ptr[1] = 0.0;
-    ptr[0] *= N;
+void uiv_fft_destroy(void *config) {
+    pffft_config *handle = (pffft_config *)config;
+    free(handle->in);
+    free(handle->out);
+    pffft_destroy_setup(handle->setup);
+
+    free(config);
 }
 
-void uiv_ifft_shift(void* table, float *ptr) {
-	int i;
-    struct fftw_config *t = (struct fftw_config *)table;
-	const int N = t-> N;
-    const float m = 1.0f / N;
-    ptr[0] *= m;
-	for (i = 1; i < N; i++) { ptr[i] = ptr[i + 1] * m; };
-	ptr[N] = 0.0;
+void uiv_fft(void *config, float *in, float *out) {
+    pffft_config *handle = (pffft_config *)config;
+
+    for (int i = 0; i < handle->N; ++i) { handle->in[i] = in[i]; }
+    pffft_transform_ordered(handle->setup, handle->in, handle->out, NULL, PFFFT_FORWARD);
+
+    /*
+     * pffft: 
+     * input: real value of length N
+     * output: complex value of length (N/2) * 2, length in real value equals to N 
+     * |bin 0, real| bin N-1, real | bin 1, real| bin 1, image| ... | bin N/2 real |, bin N/2 imag|
+     *
+     * fft value bin 0 and N-1 is always real. They are combined at the first 2 real value.
+     */    
+    out[0] = handle->out[0];
+    out[1] = 0;
+    for (int i = 2; i < handle->N; ++i) { out[i] = handle->out[i]; }
+    out[handle->N] = handle->out[1];
+    out[handle->N + 1] = 0;
 }
 
-void uiv_ifft(void *table, float *in, float *out) {
-    int i;
-    struct fftw_config *t = (struct fftw_config *)table;
-    const int N = t->N;
-    float *iptr = t->in;
-    float *optr = t->out;
+void uiv_ifft(void *config, float *in, float *out) {
+    pffft_config *handle = (pffft_config *)config;
 
-    iptr[0] = in[0];
-    iptr[1] = 0.0f;
-    for (i = 1; i < N; ++i) iptr[i + 1] = in[i];
-    iptr[N + 1] = 0.0f;
+    handle->in[0] = in[0];
+    handle->in[1] = in[handle->N];
+    for (int i = 2; i < handle->N; ++i) { handle->in[i] = in[i]; }
+    pffft_transform_ordered(handle->setup, handle->in, handle->out, NULL, PFFFT_BACKWARD);
 
-    fftwf_execute(t->ifft);
-
-    for (i = 0; i < N; ++i) out[i] = optr[i];
+    float inv_N = 1.0f / handle->N;
+    for (int i = 0; i < handle->N; ++i) { out[i] = handle->out[i] * inv_N; }
 }
+
 #endif
 

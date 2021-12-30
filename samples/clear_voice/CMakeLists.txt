@@ -46,10 +46,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 #define the list of library dependencies
 target_link_libraries(
     ${PROJECT_NAME}
-    -L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib/libsndfile.a
     mic_array
-    -lfftw3f
     -lpthread
     -lm
     -lz

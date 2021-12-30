@@ -135,7 +135,6 @@ int32_t MicArray_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* outp
         // windowing & fft
         uiv_mult_f32(&inputs_t[0], handle->fftwin, &inputs_t[0], fftlen);
         uiv_fft(handle->fft_lookup, &inputs_t[0], &inputs_f[idx_c * half_fftlen * 2U]);
-        uiv_fft_shift(handle->fft_lookup, &inputs_f[idx_c * half_fftlen * 2U]);
     }
 #ifdef _FFT_ONLY
     goto DEBUG_LOOP; // for debug
@@ -201,12 +200,10 @@ int32_t MicArray_Process(void* hSpeechEnance, int16_t* mic_inputs, int16_t* outp
     NoiseReduce_WienerFilter(&handle->stPostFilt, ref_input, ref_input);
 #endif
     /* ifft */
-    uiv_ifft_shift(handle->fft_lookup, ref_input);
     uiv_ifft(handle->fft_lookup, ref_input, output_ifft);
 
 #ifdef _FFT_ONLY
 DEBUG_LOOP:
-    uiv_ifft_shift(handle->fft_lookup, &inputs_f[ref_ch * half_fftlen * 2U]);
     uiv_ifft(handle->fft_lookup, &inputs_f[ref_ch * half_fftlen * 2U], output_ifft);
 #endif
 

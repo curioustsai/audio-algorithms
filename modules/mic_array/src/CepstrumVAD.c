@@ -74,7 +74,6 @@ uint32_t CepstrumVAD_Process(CepstrumVAD* handle, float* ref_pow) {
         xpow[2 * idx + 1] = 0;
     }
 
-    uiv_ifft_shift(handle->fft_lookup, xpow);
     uiv_ifft(handle->fft_lookup, xpow, cepDataAll);
     cepData = &cepDataAll[cepfreq_dn - 1 - step]; // range from [cepfreq_dn-1-step, cepfreq_up+step]
     for (int i = 0; i < cep_size; i++) { cepData_sm_max[i] = 0.0f; }

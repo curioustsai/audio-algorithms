@@ -65,8 +65,6 @@ if (ENABLE_BF)
         )
     target_link_libraries(
         ${PROJECT_NAME}
-        -L${PROJECT_ROOT}/thirdparty/fftw-3.3.8/build/${UBNT_PLATFORM_NAME}/lib
-        -lfftw3f
         mic_array
         )
 endif()
