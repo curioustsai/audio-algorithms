@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# This is a git pre-commit hook to check whether committed files are properly formatted
+# To install:
+# - copy this file to .git/hooks/ and rename it as pre-commit:
+#    cp builders/cmake/workspaces/apurdenko/clang-format/git_hooks_pre-commit .git/hooks/pre-commit -i
+# - set executable flag for pre-commit hook:
+#    chmod +x .git/hooks/pre-commit
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+GREY='\033[0;37m'
+DIM_GREY='\033[2;37m'
+NC='\033[0m' # No Color
+
+function verify() {
+
+	local type=$1
+	local pattern=$2
+	local formatter=$3
+	local hint=$4
+	local noverify_env=$5
+
+	local filter="grep -E $pattern"
+	local to_check_files=$(git diff --cached --name-only --diff-filter=ACMRT | $filter)
+	local unformatted=()
+	for f in $to_check_files ; do
+		if (! $(${formatter} $f | diff $f - 1>/dev/null)); then
+			unformatted+=($f)
+		fi
+	done
+
+	if [ ${#unformatted[@]} != 0 ] ; then
+		echo -e "Unformatted ${GREY}$type${NC} files:"
+		echo -e "  (use environment variable ${DIM_GREY}${noverify_env}=y git commit${NC} [<file> ...] to bypass verification of $type files)"
+		echo -e "  (or use ${DIM_GREY}git commit --no-verify${NC} [<file> ...] to force-commit bypassing ANY verification)"
+		echo -e "  (use ${GREEN}${hint}${NC} <file> ... to apply formatting. Do not forget ${GREEN}git add ${NC}<file>... after that)"
+		echo -e $RED
+		for f in ${unformatted[@]} ; do
+			echo -e "\t" $f
+		done
+		echo -e $NC
+		return 1
+	fi
+}
+
+if [ x"$NO_VERIFY_CPP" = x ] ; then
+	verify 'c/c++' '\.(h|hh|hpp|c|cc|cp|cpp|cxx)$' 'clang-format -style=file' 'clang-format -style=file -i' NO_VERIFY_CPP
+	cppCheck=$?
+fi
+
+if [ x"$NO_VERIFY_CMAKE" = x ] ; then
+	verify 'cmake' '(CMakeLists.txt|CMakeLists.txt.in|+\.cmake)$' 'cmake-format' 'cmake-format -i' NO_VERIFY_CMAKE
+	cmakeCheck=$?
+fi
+
+if [[ $cppCheck = 1 || $cmakeCheck = 1 ]] ; then
+	exit 1;
+fi
