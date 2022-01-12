@@ -2,16 +2,8 @@
 project(ui_sample_app)
 
 #detect the source files
-file(
-    GLOB_RECURSE
-    CPP_SOURCES
-    "${SAMPLES_ROOT}/${PROJECT_NAME}/src/*.cpp"
-    )
-file(
-    GLOB_RECURSE
-    C_SOURCES
-    "${SAMPLES_ROOT}/${PROJECT_NAME}/src/*.c"
-    )
+file(GLOB_RECURSE CPP_SOURCES "${SAMPLES_ROOT}/${PROJECT_NAME}/src/*.cpp")
+file(GLOB_RECURSE C_SOURCES "${SAMPLES_ROOT}/${PROJECT_NAME}/src/*.c")
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
@@ -22,21 +14,19 @@ endif()
 include_directories(
     AFTER
     ${SOURCES_ROOT}/${PROJECT_NAME}/include/
+    ${SOURCES_ROOT}/ubnt_logger/include
     ${SOURCES_ROOT}/version
     ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
     ${PROJECT_ROOT}/thirdparty/CLI11/include
     ${PROJECT_ROOT}/thirdparty/json/include
-    )
+)
 
 #print some debug info about the list of files and include folders
 show_include_and_src_files()
 
+add_definitions(-D_UBNT_MODULE_NAME=${PROJECT_NAME})
 #define the executable
-add_executable(
-    ${PROJECT_NAME}
-    ${CPP_SOURCES}
-    ${C_SOURCES}
-    )
+add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${C_SOURCES})
 
 target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 
@@ -44,6 +34,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${EXE_COMPILE_FLAGS})
 target_link_libraries(
     ${PROJECT_NAME}
     -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
+    -lubnt_logger
     -lsndfile
     -lpthread
     -lm
@@ -51,20 +42,18 @@ target_link_libraries(
     -ldl
     -lcrypt
     -lrt
-    )
+)
 
 #where do we want the app(s) installed
 install(
-    TARGETS
-    ${PROJECT_NAME}
+    TARGETS ${PROJECT_NAME}
     PERMISSIONS
-    OWNER_READ
-    OWNER_WRITE
-    OWNER_EXECUTE
-    GROUP_READ
-    GROUP_EXECUTE
-    WORLD_READ
-    WORLD_EXECUTE
-    DESTINATION
-    /bin
-    )
+        OWNER_READ
+        OWNER_WRITE
+        OWNER_EXECUTE
+        GROUP_READ
+        GROUP_EXECUTE
+        WORLD_READ
+        WORLD_EXECUTE
+    DESTINATION /bin
+)

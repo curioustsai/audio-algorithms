@@ -7,6 +7,7 @@
 
 #include "CLI/Validators.hpp"
 #include "nlohmann/json.hpp"
+#include "ubnt_logger/ubnt_logger.h"
 
 int main(int argc, char **argv) {
     std::string inputFilePath, outputFilePath;
@@ -15,6 +16,7 @@ int main(int argc, char **argv) {
     int frame_size = 1024;
 
     CLI::App app{"UI Sample App"};
+    INFO("UI Sample App: ubnt_logger example");
 
     app.add_option("-i,--inFile", inputFilePath, "specify an input file")
         ->required()
@@ -50,14 +52,14 @@ int main(int argc, char **argv) {
     std::ifstream ifs(jsonConfigPath);
     nlohmann::json jf = nlohmann::json::parse(ifs);
     std::string js_str = jf.dump();
-    std::cout << "json string: "<< js_str << std::endl;
-    std::cout << "jf samplerate" << " : " << jf["samplerate"] << std::endl;
+    std::cout << "json string: " << js_str << std::endl;
+    std::cout << "jf samplerate"
+              << " : " << jf["samplerate"] << std::endl;
 
     // // iterate all items
     // for (auto & el : jf.items()) {
     //     std::cout << el.key() << " : " << el.value() << std::endl;
     // }
-    
 
     int sample_rate = sfinfo.samplerate;
     printf("sample rate: %d\n", sample_rate);
