@@ -90,6 +90,22 @@ int main(int argc, char **argv) {
     param.mic_num = jf["mic_num"];
     param.ref_num = jf["ref_num"];
     param.loc_phi = jf["loc_phi"];
+
+    param.aec_param.dt_thr_factor = jf["aec"]["dt_thr_factor"];
+    param.aec_param.dt_min_thr = jf["aec"]["dt_min_thr"];
+
+    param.aec_param.res1_echo_noise_factor = jf["aec"]["res1_echo_noise_factor"];
+    param.aec_param.res2_echo_noise_factor = jf["aec"]["res2_echo_noise_factor"];
+    param.aec_param.res1_echo_suppress_default = jf["aec"]["res1_echo_suppress_default"];
+    param.aec_param.res2_st_echo_suppress_default = jf["aec"]["res2_st_echo_suppress_default"];
+    param.aec_param.res2_dt_echo_suppress_default = jf["aec"]["res2_dt_echo_suppress_default"];
+    param.aec_param.res1_echo_suppress_active_default = jf["aec"]["res1_echo_suppress_active_default"];
+    param.aec_param.res2_st_echo_suppress_active_default = jf["aec"]["res2_st_echo_suppress_active_default"];
+    param.aec_param.res2_dt_echo_suppress_active_default = jf["aec"]["res2_dt_echo_suppress_active_default"];
+    param.aec_param.res1_suppress_factor = jf["aec"]["res1_suppress_factor"];
+    param.aec_param.res2_st_suppress_factor = jf["aec"]["res2_st_suppress_factor"];
+    param.aec_param.res2_dt_suppress_factor = jf["aec"]["res2_dt_suppress_factor"];
+
     memset(param.mic_coord, 0, sizeof(param.mic_coord));
 
     void *hssp = dios_ssp_init_api(&param);

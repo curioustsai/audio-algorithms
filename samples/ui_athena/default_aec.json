@@ -1,0 +1,30 @@
+{
+    "AEC_KEY": 1,
+    "NS_KEY": 0,
+    "AGC_KEY": 0,
+    "HPF_KEY": 0,
+    "BF_KEY": 0,
+    "DOA_KEY": 0,
+    "mic_num": 1,
+    "ref_num": 1,
+    "loc_phi": 90.0,
+    "aec": {
+        "dt_thr_factor": 3.0,
+        "dt_min_thr": 1500,
+
+        "res1_echo_noise_factor": 0.95,
+        "res2_echo_noise_factor": 0.8,
+
+        "res1_echo_suppress_default": -100,
+        "res2_st_echo_suppress_default": -100,
+        "res2_dt_echo_suppress_default": -40,
+
+        "res1_echo_suppress_active_default": -25,
+        "res2_st_echo_suppress_active_default": -20,
+        "res2_dt_echo_suppress_active_default": -20,
+
+        "res1_suppress_factor": 30.0,
+        "res2_st_suppress_factor": 15.0,
+        "res2_dt_suppress_factor": 5.0 
+    }
+}
