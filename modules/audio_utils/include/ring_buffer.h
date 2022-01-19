@@ -8,7 +8,7 @@
 
 namespace ubnt {
 
-template<typename T>
+template <typename T>
 class RingBuffer {
 public:
     /* Constructor, create with default capacity 15360 samples */
@@ -23,19 +23,32 @@ public:
     /* Destructor, delete _data buffer */
     ~RingBuffer();
 
-    /* Resize with capacity */
+    /* Resize with capacity
+     * @parameter capacity, in samples
+     */
     bool resetCapacity(const int capacity);
 
-    /*  Put zeros into buffer */
+    /* Put zeros into buffer
+     * @parameter num, in samples
+     */
     bool setDelay(const int delaySamples);
 
-    /* Copy new frame into ring buffer */
+    /* Copy new frame into ring buffer
+     * @parameter newFrame, pointer to new frame data
+     * @parameter num, length of newFrame in samples
+     */
     bool putFrame(const T* newFrame, const int num);
 
-    /* Copy frame into buffer */
+    /* Copy frame into buffer
+     * @parameter buffer, destination of copy
+     * @parameter num, length of buffer samples
+     * @return how many samples copied
+     */
     int getFrame(T* buffer, const int num);
 
-    /* Get samples in use */
+    /* Get samples in use
+     * @return how many samples in use
+     */
     int getInUseSamples();
 
     /* print member info */
