@@ -4,9 +4,8 @@
 /compile_commands.json
 /.clangd
 /data
-/test.txt
-/samples/ui_webrtc_apm/
-/thirdparty/webrtc-audio-processing/
+/.cache
+/.gdb_history
 .vscode
 *CMakeFiles*
 *cmake_install.cmake
