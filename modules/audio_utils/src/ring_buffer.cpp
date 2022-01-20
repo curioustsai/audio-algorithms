@@ -3,24 +3,25 @@
  */
 
 #include "ring_buffer.h"
+#include "ubnt_logger/ubnt_logger.h"
 #include <cstring>
 #include <stdio.h>
 
 namespace ubnt {
 
-template<typename T>
+template <typename T>
 RingBuffer<T>::RingBuffer() {
     _capacity = 15360;
     resetCapacity(_capacity);
 }
 
-template<typename T>
+template <typename T>
 RingBuffer<T>::RingBuffer(const int frameSize, const int num) {
     _capacity = frameSize * num;
     resetCapacity(_capacity);
 }
 
-template<typename T>
+template <typename T>
 RingBuffer<T>::~RingBuffer() {
     if (_data) {
         delete[] _data;
@@ -28,7 +29,7 @@ RingBuffer<T>::~RingBuffer() {
     }
 }
 
-template<typename T>
+template <typename T>
 bool RingBuffer<T>::resetCapacity(const int capacity) {
     _data = new T[capacity]{0};
     if (_data == nullptr) return false;
@@ -37,7 +38,7 @@ bool RingBuffer<T>::resetCapacity(const int capacity) {
     return true;
 }
 
-template<typename T>
+template <typename T>
 bool RingBuffer<T>::setDelay(const int delaySamples) {
     T* buffer = new T[delaySamples]{0};
     putFrame(buffer, delaySamples);
@@ -46,10 +47,12 @@ bool RingBuffer<T>::setDelay(const int delaySamples) {
     return true;
 }
 
-template<typename T>
-int RingBuffer<T>::getInUseSamples() { return _inUseLength; }
+template <typename T>
+int RingBuffer<T>::getInUseSamples() {
+    return _inUseLength;
+}
 
-template<typename T>
+template <typename T>
 bool RingBuffer<T>::putFrame(const T* dataFrame, const int num) {
     // overwrite cases, ignore and return false
     if ((_capacity - _inUseLength) < num) { return false; }
@@ -72,7 +75,7 @@ bool RingBuffer<T>::putFrame(const T* dataFrame, const int num) {
     return true;
 }
 
-template<typename T>
+template <typename T>
 int RingBuffer<T>::getFrame(T* dataFrame, const int num) {
     // not enough data for output
     if (_inUseLength < num) { return 0; }
@@ -93,10 +96,10 @@ int RingBuffer<T>::getFrame(T* dataFrame, const int num) {
     return num;
 }
 
-template<typename T>
+template <typename T>
 void RingBuffer<T>::showInfo() {
-    printf("capacity: %d\nIn Use Lenght: %d\nStart index: %d\nEnd Index: %d\n\n", _capacity,
-           _inUseLength, _inUseStart, _inUseEnd);
+    INFO("capacity: %d\nIn Use Lenght: %d\nStart index: %d\nEnd Index: %d\n\n", _capacity,
+         _inUseLength, _inUseStart, _inUseEnd);
 }
 
 } // namespace ubnt

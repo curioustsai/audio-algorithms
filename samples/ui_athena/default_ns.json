@@ -1,0 +1,11 @@
+{
+    "AEC_KEY": 0,
+    "NS_KEY": 1,
+    "AGC_KEY": 0,
+    "HPF_KEY": 0,
+    "BF_KEY": 0,
+    "DOA_KEY": 0,
+    "mic_num": 1,
+    "ref_num": 0,
+    "loc_phi": 90.0
+}
