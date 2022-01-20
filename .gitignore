@@ -6,6 +6,9 @@
 /data
 /.cache
 /.gdb_history
+/tags
+/scripts
+/*.wav
 .vscode
 *CMakeFiles*
 *cmake_install.cmake
