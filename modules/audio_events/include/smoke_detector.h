@@ -5,7 +5,6 @@
 #pragma once
 
 #include "alarm_detector.h"
-#include "goertzel.h"
 
 namespace ubnt {
 namespace smartaudio {
@@ -27,31 +26,8 @@ public:
 #endif
 
 private:
-    int _sampleRate{48000};
-    int _frameSize{128};
-    float _threshold{-20.0};
-    int _numTargetFreq{2};
-    Goertzel** _goertzel;
-
-    bool* _observeBuf{0};
-    bool* _candidateBuf{0};
-    int _candidateBufLen{0};
-    int _candidateBufIndex{0};
-    int _observeBufLen{0};
-    int _observeBufIndex{0};
-
-    int _observeFrameNumHead{0};
-    int _observeFrameNumTail{0};
-    int _frameUpperBound{0};
-    int _frameLowerBound{0};
-    int _holdOn{0};
-    int _holdOff{0};
-    int _alarmCount{0};
-
-#ifdef AUDIO_ALGO_DEBUG
-    float _powerAvg{0.0};
-    bool _status{0};
-#endif
+    class Impl;
+    Impl *pimpl;
 };
 
 } // namespace smartaudio

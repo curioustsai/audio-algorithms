@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     float co_threshold = -20.0f;
     float levelUpperBound = -20.0f;
     float levelLowerBound = -70.0f;
-    float loudThreshold = 50.0f;
+    float loudThreshold = 80.0f;
     float quietThreshold = 0.0f;
 
     app.add_option("-i,--inFile", inputFilePath, "specify an input file")
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     int numTotalSamples = inFile.frames();
 
     int numSamplesPerWin = 2048;
-    int numSamplesPerFrame = 128;
+    int numSamplesPerFrame = 64;
     int numTotalWindows = numTotalSamples / numSamplesPerWin;
     int numFramePerWin = numSamplesPerWin / numSamplesPerFrame;
 
