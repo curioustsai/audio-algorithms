@@ -26,8 +26,31 @@ public:
 #endif
 
 private:
-    class Impl;
-    Impl *pimpl;
+    int _sampleRate{48000};
+    int _frameSize{128};
+    float _threshold{-20.0};
+    int _numTargetFreq{2};
+
+    Goertzel** _goertzel{nullptr};
+    Observer *_observer{nullptr};
+    CountDown *_holdOn{nullptr};
+
+    bool* _candidateBuf{0};
+    int _candidateBufLen{0};
+    int _candidateBufIndex{0};
+    int _frameUpperBound{0};
+    int _frameLowerBound{0};
+    int _alarmCount{0};
+    int _onThreshold{0};
+    float _framesPerSec{0.0f};
+
+    float getPower(float* data, int numSample);
+    AudioEventType DetectPattern(float *data, int numSample);
+
+#ifdef AUDIO_ALGO_DEBUG
+    float _powerAvg{0.0};
+    bool _status{0};
+#endif
 };
 
 } // namespace smartaudio
