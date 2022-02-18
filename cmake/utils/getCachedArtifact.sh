@@ -70,7 +70,7 @@ then
 	echo "${ARTIFACTORY_MD5}  ${ARTIFACTORY_FILE_NAME}" >"${TEMP_FOLDER}/${ARTIFACTORY_MD5}"
 
 	#grab the file from ARTIFACTORY
-	wget "${ARTIFACTORY_URL}" -P "${TEMP_FOLDER}"/
+	curl "${ARTIFACTORY_URL}" -o "${TEMP_FOLDER}/${ARTIFACTORY_FILE_NAME}"
 
 	#validate the MD5
 	(cd "${TEMP_FOLDER}" && (md5sum -c "${ARTIFACTORY_MD5}" || (md5sum "${ARTIFACTORY_FILE_NAME}" && false)))

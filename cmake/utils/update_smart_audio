@@ -58,7 +58,7 @@ done
 
 
 
-AudioAlgoPath=$AudioAlgoRoot"/build/gen3l/MinSizeRel/rootfs/"
+AudioAlgoPath=$AudioAlgoRoot"/build/gen3l/MinSizeRel/STATIC/rootfs/"
 
 
 $AudioAlgoRoot/cmake/utils/compile "-p gen3l -g off"
@@ -67,15 +67,16 @@ $AudioAlgoRoot/cmake/utils/compile "-p gen3s -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p gen4l -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p gen4c -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p gen4s -g off"
+$AudioAlgoRoot/cmake/utils/compile "-p gen4v -g off"
 $AudioAlgoRoot/cmake/utils/compile "-p x86"
 
-cp -r "$AudioAlgoPath"/include/*"" $MWPath"/include/"
+cp -r $AudioAlgoPath/include/* $MWPath/include/
 
 
-for plat in gen3l gen3m gen3s gen4l gen4c gen4s; do
+for plat in gen3l gen3m gen3s gen4l gen4c gen4s gen4v; do
 	if [ ! -d $MWPath"/lib/${plat}/" ]
 	then
 		mkdir $MWPath"/lib/${plat}/"
 	fi
-	cp "$AudioAlgoRoot"/build/${plat}/MinSizeRel/rootfs/lib/*"" $MWPath"/lib/${plat}/"
+	cp "$AudioAlgoRoot"/build/${plat}/MinSizeRel/STATIC/rootfs/lib/*"" $MWPath"/lib/${plat}/"
 done
