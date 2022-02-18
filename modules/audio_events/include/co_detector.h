@@ -30,10 +30,12 @@ private:
     int _sampleRate{48000};
     int _frameSize{128};
     float _threshold{-20.0};
+    float _onThreshold{0.0};
 
     Goertzel** _goertzel{nullptr};
     Observer *_shortObserver{nullptr};
     Observer *_longObserver{nullptr};
+    Observer * _energyObserver{nullptr};
     CountDown *_holdOn{nullptr};
     CountDown *_holdLong{nullptr};
 
@@ -46,6 +48,7 @@ private:
     AudioEventType DetectShortPattern(float power);
     AudioEventType DetectLongPattern(float power);
     float getPower(float* data, int numSample);
+    float getSignalPower(float *data, int numSample);
 #ifdef AUDIO_ALGO_DEBUG
     float _powerAvg{0.0};
     bool _status{false};

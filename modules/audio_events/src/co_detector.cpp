@@ -15,15 +15,18 @@ void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) 
     _frameSize = config.frameSize;
     _threshold = config.threshold;
 
+    _onThreshold = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 0.7);
     // 4 cycles of 100 ms and 100 ms off, then 5 seconds off
     // units in second
     _frameUpperBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 8.5f);
     _frameLowerBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 3.5f);
-    _holdOn = new CountDown(static_cast<unsigned int>(10.0f * (float)_sampleRate / (float)_frameSize));
+    _holdOn =
+        new CountDown(static_cast<unsigned int>(10.0f * (float)_sampleRate / (float)_frameSize));
     _holdOn->setCounter(0);
-    _holdLong = new CountDown(static_cast<unsigned int>(4.0f * (float)_sampleRate / (float)_frameSize));
+    _holdLong =
+        new CountDown(static_cast<unsigned int>(4.0f * (float)_sampleRate / (float)_frameSize));
     _holdLong->setCounter(0);
-    
+
     _alarmCount = 0;
 
     _goertzel = new Goertzel*[_numTargetFreq];
@@ -31,52 +34,66 @@ void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) 
         _goertzel[i] = new Goertzel(_sampleRate, _frameSize, targetFrequencies[i]);
     }
 
-    _shortObserver = new Observer(int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 10.0));
+    _shortObserver =
+        new Observer(int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 10.0));
+    _energyObserver =
+        new Observer(int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 10.0));
     _longObserver = new Observer(int(10.6f * (float)_sampleRate / (float)_frameSize));
 }
 
 void CoDetector::Release() {
     if (_goertzel != nullptr) {
         for (int i = 0; i < _numTargetFreq; ++i) { delete _goertzel[i]; }
-        delete[] _goertzel; _goertzel = nullptr;
+        delete[] _goertzel;
+        _goertzel = nullptr;
     }
 
     if (_holdOn != nullptr) {
-        delete _holdOn; _holdOn = nullptr;
+        delete _holdOn;
+        _holdOn = nullptr;
     }
 
     if (_holdLong != nullptr) {
-        delete _holdLong; _holdLong = nullptr;
+        delete _holdLong;
+        _holdLong = nullptr;
     }
 
     if (_shortObserver != nullptr) {
         _shortObserver->release();
-        delete _shortObserver; _shortObserver = nullptr;
+        delete _shortObserver;
+        _shortObserver = nullptr;
     }
-    
+
+    if (_energyObserver != nullptr) {
+        _energyObserver->release();
+        delete _energyObserver;
+        _energyObserver = nullptr;
+    }
+
     if (_longObserver != nullptr) {
         _longObserver->release();
-        delete _longObserver; _longObserver = nullptr;
+        delete _longObserver;
+        _longObserver = nullptr;
     }
 }
 
 AudioEventType CoDetector::Detect(float* data, int numSample) {
     float power = getPower(data, numSample);
+    float sigPower = getSignalPower(data, numSample);
+    _energyObserver->put(power > sigPower);
+
     return DetectLongPattern(power);
 }
 
-void CoDetector::SetThreshold(float threshold) { 
-    _threshold = threshold;
-}
+void CoDetector::SetThreshold(float threshold) { _threshold = threshold; }
 
-float CoDetector::GetThreshold() const {
-    return _threshold;
-}
+float CoDetector::GetThreshold() const { return _threshold; }
 
 void CoDetector::ResetStates() {
     if (_holdOn != nullptr) _holdOn->reset();
     if (_holdLong != nullptr) _holdLong->reset();
     if (_shortObserver != nullptr) _shortObserver->reset();
+    if (_energyObserver != nullptr) _energyObserver->reset();
     if (_longObserver != nullptr) _longObserver->reset();
 }
 
@@ -84,9 +101,15 @@ float CoDetector::getPower(float* data, int numSample) {
     if (_goertzel == nullptr) return 0.0f;
 
     float power = 0.f;
-    for (int i = 0; i < _numTargetFreq; ++i) { 
-        power += _goertzel[i]->calculate(data, numSample);
-    }
+    for (int i = 0; i < _numTargetFreq; ++i) { power += _goertzel[i]->calculate(data, numSample); }
+    power = 10.0f * (log10f(power) - log10f((float)numSample));
+
+    return power;
+}
+
+float CoDetector::getSignalPower(float* data, int numSample) {
+    float power = 0.0f;
+    for (int i = 0; i < numSample; i++) { power += data[i] * data[i]; }
     power = 10.0f * (log10f(power) - log10f((float)numSample));
 
     return power;
@@ -99,7 +122,7 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
     if (_shortObserver == nullptr || _holdOn == nullptr) {
         return AUDIO_EVENT_NONE;
     }
-    
+
 #ifdef AUDIO_ALGO_DEBUG
     powerAvg = power / (float)numSample;
     powerAvg = (powerAvg >= 1.f) ? 1.0f : powerAvg;
@@ -113,11 +136,17 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
     _status = power > _threshold;
 #endif
 
-    if (_holdOn->count() == 0) { _alarmCount = 0; }
+    if (_holdOn->count() == 0 && _alarmCount != 0) {
+        _alarmCount = 0;
+        _shortObserver->reset();
+    }
+    
     if (observePrev == observeNow) { return AUDIO_EVENT_NONE; }
 
     int numDetected = 0;
     int numDetectedOn[NUM_ON] = {0};
+    // int energyDetected = 0;
+    int energyDetectedOn[NUM_ON] = {0};
     int duration = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize);
 
     int index = _shortObserver->getCurrentIndex();
@@ -126,6 +155,7 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
         for (int step = 0; step < duration; ++step) {
             if ((intervalCount % 2) == 0) {
                 numDetectedOn[intervalCount_2] += _shortObserver->get(index);
+                energyDetectedOn[intervalCount_2] += _energyObserver->get(index);
             }
             numDetected += _shortObserver->get(index);
             index = (index + 1 < _shortObserver->getLength() ? index + 1 : 0);
@@ -139,9 +169,8 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
     }
 
     int legalCount = 0;
-    int threshold = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 0.7);
     for (int i = 0; i < NUM_ON; ++i) {
-        if (numDetectedOn[i] > threshold) { legalCount++; }
+        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > _onThreshold) { legalCount++; }
     }
 
     if ((_frameLowerBound < numDetected) && (legalCount >= NUM_ON)) {
@@ -150,6 +179,7 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
 
         if (_alarmCount >= 2) {
             _alarmCount = 0;
+            _shortObserver->reset();
             return AUDIO_EVENT_CO;
         }
     }
@@ -157,9 +187,7 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
 }
 
 AudioEventType CoDetector::DetectLongPattern(float power) {
-    if (_longObserver == nullptr || _holdLong == nullptr) {
-        return AUDIO_EVENT_NONE;
-    }
+    if (_longObserver == nullptr || _holdLong == nullptr) { return AUDIO_EVENT_NONE; }
 
     _longObserver->put(power > _threshold);
     const int upperBound = int((float)_sampleRate / (float)_frameSize * 5.8f * 0.3f);
@@ -177,6 +205,7 @@ AudioEventType CoDetector::DetectLongPattern(float power) {
             _alarmCountLong++;
             if (_alarmCountLong >= 2) {
                 _alarmCountLong = 0;
+                _longObserver->reset();
                 return AUDIO_EVENT_CO;
             }
         }
@@ -185,7 +214,6 @@ AudioEventType CoDetector::DetectLongPattern(float power) {
 
     return AUDIO_EVENT_NONE;
 }
-
 
 #ifdef AUDIO_ALGO_DEBUG
 float CoDetector::GetPowerAvg() const { return _powerAvg; }

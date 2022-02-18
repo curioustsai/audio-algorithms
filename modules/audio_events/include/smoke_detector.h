@@ -33,6 +33,7 @@ private:
 
     Goertzel** _goertzel{nullptr};
     Observer *_observer{nullptr};
+    Observer * _energyObserver{nullptr};
     CountDown *_holdOn{nullptr};
 
     bool* _candidateBuf{0};
@@ -43,8 +44,9 @@ private:
     int _alarmCount{0};
     int _onThreshold{0};
     float _framesPerSec{0.0f};
-
+    
     float getPower(float* data, int numSample);
+    float getSignalPower(float *data, int numSample);
     AudioEventType DetectPattern(float *data, int numSample);
 
 #ifdef AUDIO_ALGO_DEBUG

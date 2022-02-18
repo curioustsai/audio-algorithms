@@ -50,6 +50,7 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
     for (int i = 0; i < _candidateBufLen; ++i) { _candidateBuf[i] = false; }
 
     _observer = new Observer(observeBufLen);
+    _energyObserver = new Observer(observeBufLen);
 }
 
 void SmokeDetector::Release() {
@@ -65,6 +66,11 @@ void SmokeDetector::Release() {
     if (_observer != nullptr) {
         _observer->release();
         delete _observer; _observer = nullptr;
+    }
+
+    if (_energyObserver != nullptr) {
+        _energyObserver->release();
+        delete _energyObserver; _energyObserver = nullptr;
     }
 
     if (_holdOn != nullptr) {
@@ -83,6 +89,9 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
     bool observe_prev = false;
     bool observe_now = false;
     float power = getPower(data, numSample);
+    float sigPower = getSignalPower(data, numSample);
+
+    _energyObserver->put(power > sigPower);
 
 #ifdef AUDIO_ALGO_DEBUG
     _powerAvg = power / (float)numSample;
@@ -103,11 +112,18 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
     _observer->put(filterOut);
     observe_now = _observer->get();
 
-    if (_holdOn->count() == 0) { _alarmCount = 0; }
+    if (_holdOn->count() == 0 && _alarmCount != 0) {
+        _alarmCount = 0;
+        _observer->reset();
+        _energyObserver->reset();
+    }
+    
     if (observe_prev == observe_now) { return AUDIO_EVENT_NONE; }
 
     int numDetected = 0;
     int numDetectedOn[NUM_ON] = {0};
+    // int energyDetected = 0;
+    int energyDetectedOn[NUM_ON] = {0};
     int duration = int(INTERVAL_SEC * _framesPerSec);
 
     int index = _observer->getCurrentIndex();
@@ -117,6 +133,7 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
         for (int step = 0; step < duration; ++step) {
             if ((intervalCount % 2) == 0) {
                 numDetectedOn[intervalCount_2] += _observer->get(index);
+                energyDetectedOn[intervalCount_2] += _energyObserver->get(index);
             }
             numDetected += _observer->get(index);
             index = (index + 1 < _observer->getLength() ? index + 1 : 0);
@@ -131,7 +148,7 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
 
     int legalCount = 0;
     for (int i = 0; i < NUM_ON; ++i) {
-        if (numDetectedOn[i] > _onThreshold) { legalCount++; }
+        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > _onThreshold) { legalCount++; }
     }
 
     if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) &&
@@ -141,6 +158,8 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
 
         if (_alarmCount >= 5) {
             _alarmCount = 0;
+            _observer->reset();
+            _energyObserver->reset();
             return AUDIO_EVENT_SMOKE;
         }
     }
@@ -148,11 +167,24 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
     return AUDIO_EVENT_NONE;
 }
 
+
 float SmokeDetector::getPower(float* data, int numSample) {
     if (_goertzel == nullptr) return 0.0f;
 
     float power = 0.f;
     for (int i = 0; i < _numTargetFreq; ++i) { power += _goertzel[i]->calculate(data, numSample); }
+    // Reduce power slightly to avoid missing alerts
+    power = 10.0f * (log10f(power) - log10f((float)numSample));
+
+    return power;
+}
+
+
+float SmokeDetector::getSignalPower(float *data, int numSample) {
+    float power = 0.0f;
+    for (int i = 0; i < numSample; i++) {
+        power += data[i] * data[i];
+    }
     power = 10.0f * (log10f(power) - log10f((float)numSample));
 
     return power;
@@ -167,6 +199,7 @@ void SmokeDetector::ResetStates() {
         memset(_candidateBuf, 0, sizeof(bool) * _candidateBufLen);
 
     if (_observer != nullptr) _observer->reset();
+    if (_energyObserver != nullptr) _energyObserver->reset();
     if (_holdOn != nullptr) _holdOn->reset();
 }
 
