@@ -22,7 +22,6 @@ fi
 
 for gen in "${generations[@]}"; do
 	for what in barebones toolchains; do
-		echo "================= $(eval echo \$PATH_${gen}_${what})"
 		${UBNT_CMAKE_DIR}/utils/getCachedArtifact.sh \
 			$ARTIFACTORY_SERVER/unifi-video-firmware-dev/fw/${what}/uvc/$(eval echo \$PATH_${gen}_${what}) \
 			$(eval echo \$NAME_${gen}_${what}) \
