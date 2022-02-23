@@ -31,7 +31,8 @@ RingBuffer<T>::~RingBuffer() {
 
 template <typename T>
 bool RingBuffer<T>::resetCapacity(const int capacity) {
-    _data = new T[capacity]{0};
+    _data = new T[capacity];
+    memset(_data, 0, sizeof(T) * capacity);
     if (_data == nullptr) return false;
 
     _capacity = capacity;
@@ -40,7 +41,8 @@ bool RingBuffer<T>::resetCapacity(const int capacity) {
 
 template <typename T>
 bool RingBuffer<T>::setDelay(const int delaySamples) {
-    T* buffer = new T[delaySamples]{0};
+    T* buffer = new T[delaySamples];
+    memset(buffer, 0, sizeof(T) * delaySamples);
     putFrame(buffer, delaySamples);
     delete[] buffer;
 
