@@ -18,7 +18,7 @@ void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) 
     _onThreshold = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 0.7);
     // 4 cycles of 100 ms and 100 ms off, then 5 seconds off
     // units in second
-    _frameUpperBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 8.5f);
+    _frameUpperBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 8.75f);
     _frameLowerBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 3.5f);
     _holdOn =
         new CountDown(static_cast<unsigned int>(10.0f * (float)_sampleRate / (float)_frameSize));
@@ -102,7 +102,13 @@ float CoDetector::getPower(float* data, int numSample) {
 
     float power = 0.f;
     for (int i = 0; i < _numTargetFreq; ++i) { power += _goertzel[i]->calculate(data, numSample); }
-    power = 10.0f * (log10f(power) - log10f((float)numSample));
+
+    if (power < 0.000001f) {
+        power = -96.0f;
+    }
+    else {
+        power = 10.0f * (log10f(power) - log10f((float)numSample));
+    }
 
     return power;
 }
@@ -110,7 +116,13 @@ float CoDetector::getPower(float* data, int numSample) {
 float CoDetector::getSignalPower(float* data, int numSample) {
     float power = 0.0f;
     for (int i = 0; i < numSample; i++) { power += data[i] * data[i]; }
-    power = 10.0f * (log10f(power) - log10f((float)numSample));
+
+    if (power < 0.000001f) {
+        power = -96.0f;
+    } else {
+        power = 10.0f * (log10f(power) - log10f((float)numSample));
+    }
+    
 
     return power;
 }
@@ -139,21 +151,22 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
     if (_holdOn->count() == 0 && _alarmCount != 0) {
         _alarmCount = 0;
         _shortObserver->reset();
+        // _energyObserver->reset();
     }
     
     if (observePrev == observeNow) { return AUDIO_EVENT_NONE; }
 
     int numDetected = 0;
     int numDetectedOn[NUM_ON] = {0};
-    // int energyDetected = 0;
     int energyDetectedOn[NUM_ON] = {0};
     int duration = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize);
 
     int index = _shortObserver->getCurrentIndex();
     for (int intervalCount = 0; intervalCount < NUM_ON_OFF; ++intervalCount) {
         int intervalCount_2 = intervalCount / 2;
+        bool isEven = ((intervalCount & 1) == 0);
         for (int step = 0; step < duration; ++step) {
-            if ((intervalCount % 2) == 0) {
+            if (isEven) {
                 numDetectedOn[intervalCount_2] += _shortObserver->get(index);
                 energyDetectedOn[intervalCount_2] += _energyObserver->get(index);
             }
@@ -170,19 +183,23 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
 
     int legalCount = 0;
     for (int i = 0; i < NUM_ON; ++i) {
-        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > _onThreshold) { legalCount++; }
+        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > 21) { legalCount++; }
     }
-
-    if ((_frameLowerBound < numDetected) && (legalCount >= NUM_ON)) {
+    
+    if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount >= NUM_ON)) {
         _holdOn->reset();
         _alarmCount++;
 
         if (_alarmCount >= 2) {
             _alarmCount = 0;
             _shortObserver->reset();
+            // _energyObserver->reset();
+            // printf("num: %d  %d  %d  %d\n", numDetectedOn[0], numDetectedOn[1], numDetectedOn[2], numDetectedOn[3]);
+            // printf("energy: %d  %d  %d  %d\n", energyDetectedOn[0], energyDetectedOn[1], energyDetectedOn[2], energyDetectedOn[3]);
             return AUDIO_EVENT_CO;
         }
     }
+
     return AUDIO_EVENT_NONE;
 }
 

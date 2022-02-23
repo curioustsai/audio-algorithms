@@ -32,11 +32,11 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
     _onThreshold = static_cast<int>(INTERVAL_SEC * _framesPerSec * 0.7f);
 
     float observeBufLen = int(8.0f * INTERVAL_SEC * _framesPerSec);
-    _frameUpperBound = int(observeBufLen * 4.0 / 8.0);
+    _frameUpperBound = int(observeBufLen * 4.5 / 8.0);
     _frameLowerBound = int(observeBufLen * 2.5 / 8.0);
 
     _candidateBufLen = 10;
-    _holdOn = new CountDown(static_cast<unsigned int>(5.0 * _framesPerSec));
+    _holdOn = new CountDown(static_cast<unsigned int>(10.0 * _framesPerSec));
     _holdOn->setCounter(0);
     _alarmCount = 0;
 
@@ -122,7 +122,6 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
 
     int numDetected = 0;
     int numDetectedOn[NUM_ON] = {0};
-    // int energyDetected = 0;
     int energyDetectedOn[NUM_ON] = {0};
     int duration = int(INTERVAL_SEC * _framesPerSec);
 
@@ -174,7 +173,11 @@ float SmokeDetector::getPower(float* data, int numSample) {
     float power = 0.f;
     for (int i = 0; i < _numTargetFreq; ++i) { power += _goertzel[i]->calculate(data, numSample); }
     // Reduce power slightly to avoid missing alerts
-    power = 10.0f * (log10f(power) - log10f((float)numSample));
+    if (power < 0.000001f) {
+        power = -96.0f;
+    } else {
+        power = 10.0f * (log10f(power) - log10f((float)numSample));
+    }
 
     return power;
 }
@@ -185,7 +188,11 @@ float SmokeDetector::getSignalPower(float *data, int numSample) {
     for (int i = 0; i < numSample; i++) {
         power += data[i] * data[i];
     }
-    power = 10.0f * (log10f(power) - log10f((float)numSample));
+    if (power < 0.000001f) {
+        power = -96.0f;
+    } else {
+        power = 10.0f * (log10f(power) - log10f((float)numSample));
+    }
 
     return power;
 }

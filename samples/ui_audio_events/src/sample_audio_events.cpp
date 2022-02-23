@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
                         (float)samplerate;
                     float min = floor(sec / 60.0f);
                     sec = sec - min * 60.0f;
-                    fprintf(log, "smoke detected at %f:%f, %s\n", min, sec, inputFilePath.c_str());
+                    fprintf(log, "smoke detected at %.0f:%.2f, %s\n", min, sec, inputFilePath.c_str());
                 }
             }
 
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
                         (float)samplerate;
                     float min = floor(sec / 60.0f);
                     sec = sec - min * 60.0f;
-                    fprintf(log, "CO detected at %f:%f, %s\n", min, sec, inputFilePath.c_str());
+                    fprintf(log, "CO detected at %.0f:%.2f, %s\n", min, sec, inputFilePath.c_str());
                 }
             }
             event = loudnessDetector.Detect(dataFloat, numSamplesPerFrame);
