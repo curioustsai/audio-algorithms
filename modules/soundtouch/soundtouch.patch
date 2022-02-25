@@ -179,7 +179,7 @@ index e91cd63..6bf93f4 100644
      }
  
 diff --git a/source/SoundTouch/TDStretch.cpp b/source/SoundTouch/TDStretch.cpp
-index 243f7cc..5817c0b 100644
+index 243f7cc..1a08820 100644
 --- a/source/SoundTouch/TDStretch.cpp
 +++ b/source/SoundTouch/TDStretch.cpp
 @@ -306,8 +306,9 @@ int TDStretch::seekBestOverlapPositionFull(const SAMPLETYPE *refPos)
@@ -229,6 +229,16 @@ index 243f7cc..5817c0b 100644
      {
          // SSE support
          return ::new TDStretchSSE;
+@@ -908,7 +908,9 @@ double TDStretch::calcCrossCorr(const short *mixingPos, const short *compare, do
+     if (lnorm > maxnorm)
+     {
+         // modify 'maxnorm' inside critical section to avoid multi-access conflict if in OpenMP mode
++#ifdef USE_OPEN_MP
+         #pragma omp critical
++#endif
+         if (lnorm > maxnorm)
+         {
+             maxnorm = lnorm;
 diff --git a/source/SoundTouch/sse_optimized.cpp b/source/SoundTouch/sse_optimized.cpp
 index c17f443..f599e1e 100644
 --- a/source/SoundTouch/sse_optimized.cpp

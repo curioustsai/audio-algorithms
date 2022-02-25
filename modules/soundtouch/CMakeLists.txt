@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.1)
 
 #Set the name of the project
-project(soundtouch)
+project(SoundTouch)
 
 #detect the source files
 glob_source_files()
@@ -52,8 +52,17 @@ add_library(
     ${C_SOURCES}
 )
 
+option(INTEGER_SAMPLES "Use integers instead of floats for samples" ON)
+if(INTEGER_SAMPLES)
+  set(SOUNDTOUCH_INTEGER_SAMPLES, 1)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE SOUNDTOUCH_INTEGER_SAMPLES)
+else()
+  set(SOUNDTOUCH_FLOAT_SAMPLES, 1)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE SOUNDTOUCH_FLOAT_SAMPLES)
+endif()
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv7.*|armv8.*|aarch64.*)$")
+
+if(${UBNT_PLATFORM_HOST} MATCHES "^(armv7.*|armv8.*|aarch64.*)$")
   set(NEON_CPU ON)
 else()
   set(NEON_CPU OFF)
@@ -61,19 +70,22 @@ endif()
 
 option(NEON "Use ARM Neon SIMD instructions if in ARM CPU" ON)
 if(${NEON} AND ${NEON_CPU})
+  set(SOUNDTOUCH_USE_NEON, 1)
   target_compile_definitions(${PROJECT_NAME} PRIVATE SOUNDTOUCH_USE_NEON)
-  target_compile_options(${PROJECT_NAME} PRIVATE -mfpu=neon)
 endif()
 
-find_package(OpenMP)
-option(OPENMP "Use parallel multicore calculation through OpenMP" OFF)
-if(OPENMP AND OPENMP_FOUND)
-    add_definitions(-DUSE_OPEN_MP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
-install(FILES ${PROJECT_ROOT}/thirdparty/${PROJECT_NAME}/include/SoundTouch.h DESTINATION /include/${PROJECT_NAME})
-install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
+install(
+  FILES
+    ${PROJECT_ROOT}/thirdparty/soundtouch/include/SoundTouch.h
+    ${PROJECT_ROOT}/thirdparty/soundtouch/include/BPMDetect.h
+    ${PROJECT_ROOT}/thirdparty/soundtouch/include/FIFOSampleBuffer.h
+    ${PROJECT_ROOT}/thirdparty/soundtouch/include/FIFOSamplePipe.h
+    ${PROJECT_ROOT}/thirdparty/soundtouch/include/STTypes.h
+    ${SOURCES_ROOT}/soundtouch/soundtouch_config.h
+  DESTINATION
+    /include/${PROJECT_NAME}
+)
+install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libSoundTouch.a DESTINATION /lib)
 
 # if(UBNT_WITH_TESTS)
 # 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")
@@ -98,7 +110,7 @@ if(${UBNT_PLATFORM_NAME} STREQUAL "x86")
     )
     target_compile_definitions(soundstretch PRIVATE ${COMPILE_DEFINITIONS})
     target_compile_options(soundstretch PRIVATE ${COMPILE_OPTIONS})
-    target_link_libraries(soundstretch PRIVATE soundtouch)
+    target_link_libraries(soundstretch PRIVATE ${PROJECT_NAME})
     if(INTEGER_SAMPLES)
       target_compile_definitions(soundstretch PRIVATE SOUNDTOUCH_INTEGER_SAMPLES)
     endif()
