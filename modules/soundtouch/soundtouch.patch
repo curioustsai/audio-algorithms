@@ -1,0 +1,255 @@
+diff --git a/source/SoundStretch/WavFile.cpp b/source/SoundStretch/WavFile.cpp
+index 539edd2..ecf34ae 100644
+--- a/source/SoundStretch/WavFile.cpp
++++ b/source/SoundStretch/WavFile.cpp
+@@ -240,11 +240,8 @@ WavInFile::~WavInFile()
+ 
+ void WavInFile::rewind()
+ {
+-    int hdrsOk;
+-
+     fseek(fptr, 0, SEEK_SET);
+-    hdrsOk = readWavHeaders();
+-    assert(hdrsOk == 0);
++    assert(readWavHeaders() == 0);
+     dataRead = 0;
+ }
+ 
+diff --git a/source/SoundTouch/BPMDetect.cpp b/source/SoundTouch/BPMDetect.cpp
+index 72a9498..fbef894 100644
+--- a/source/SoundTouch/BPMDetect.cpp
++++ b/source/SoundTouch/BPMDetect.cpp
+@@ -309,8 +309,9 @@ void BPMDetect::updateXCorr(int process_samples)
+     {
+         tmp[i] = hamw[i] * hamw[i] * pBuffer[i];
+     }
+-
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (offs = windowStart; offs < windowLen; offs ++) 
+     {
+         float sum;
+@@ -348,8 +349,9 @@ void BPMDetect::updateBeatPos(int process_samples)
+     {
+         tmp[i] = hamw2[i] * hamw2[i] * pBuffer[i];
+     }
+-
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (int offs = windowStart; offs < windowLen; offs++)
+     {
+         float sum = 0;
+@@ -376,7 +378,7 @@ void BPMDetect::updateBeatPos(int process_samples)
+     // detect beats
+     for (int i = 0; i < skipstep; i++)
+     {
+-        LONG_SAMPLETYPE max = 0;
++        // LONG_SAMPLETYPE max = 0;
+ 
+         float sum = beatcorr_ringbuff[beatcorr_ringbuffpos];
+         sum -= beat_lpf.update(sum);
+diff --git a/source/SoundTouch/FIRFilter.cpp b/source/SoundTouch/FIRFilter.cpp
+index 260003e..03be570 100644
+--- a/source/SoundTouch/FIRFilter.cpp
++++ b/source/SoundTouch/FIRFilter.cpp
+@@ -78,7 +78,7 @@ uint FIRFilter::evaluateFilterStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, ui
+ #ifdef SOUNDTOUCH_FLOAT_SAMPLES
+     // when using floating point samples, use a scaler instead of a divider
+     // because division is much slower operation than multiplying.
+-    double dScaler = 1.0 / (double)resultDivider;
++    // double dScaler = 1.0 / (double)resultDivider;
+ #endif
+     // hint compiler autovectorization that loop length is divisible by 8
+     int ilength = length & -8;
+@@ -86,8 +86,9 @@ uint FIRFilter::evaluateFilterStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, ui
+     assert((length != 0) && (length == ilength) && (src != NULL) && (dest != NULL) && (filterCoeffs != NULL));
+ 
+     end = 2 * (numSamples - ilength);
+-
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (j = 0; j < end; j += 2) 
+     {
+         const SAMPLETYPE *ptr;
+@@ -124,7 +125,7 @@ uint FIRFilter::evaluateFilterMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint
+ #ifdef SOUNDTOUCH_FLOAT_SAMPLES
+     // when using floating point samples, use a scaler instead of a divider
+     // because division is much slower operation than multiplying.
+-    double dScaler = 1.0 / (double)resultDivider;
++    // double dScaler = 1.0 / (double)resultDivider;
+ #endif
+ 
+     // hint compiler autovectorization that loop length is divisible by 8
+@@ -133,7 +134,9 @@ uint FIRFilter::evaluateFilterMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint
+     assert(ilength != 0);
+ 
+     end = numSamples - ilength;
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (j = 0; j < end; j ++)
+     {
+         const SAMPLETYPE *pSrc = src + j;
+@@ -163,7 +166,7 @@ uint FIRFilter::evaluateFilterMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, uin
+ #ifdef SOUNDTOUCH_FLOAT_SAMPLES
+     // when using floating point samples, use a scaler instead of a divider
+     // because division is much slower operation than multiplying.
+-    double dScaler = 1.0 / (double)resultDivider;
++    // double dScaler = 1.0 / (double)resultDivider;
+ #endif
+ 
+     assert(length != 0);
+@@ -176,8 +179,9 @@ uint FIRFilter::evaluateFilterMulti(SAMPLETYPE *dest, const SAMPLETYPE *src, uin
+     int ilength = length & -8;
+ 
+     end = numChannels * (numSamples - ilength);
+-
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (j = 0; j < end; j += numChannels)
+     {
+         const SAMPLETYPE *ptr;
+@@ -298,15 +302,12 @@ void * FIRFilter::operator new(size_t s)
+ 
+ FIRFilter * FIRFilter::newInstance()
+ {
+-    uint uExtensions;
+-
+-    uExtensions = detectCPUextensions();
+ 
+     // Check if MMX/SSE instruction set extensions supported by CPU
+ 
+ #ifdef SOUNDTOUCH_ALLOW_MMX
+     // MMX routines available only with integer sample types
+-    if (uExtensions & SUPPORT_MMX)
++    if (detectCPUextensions() & SUPPORT_MMX)
+     {
+         return ::new FIRFilterMMX;
+     }
+@@ -314,7 +315,7 @@ FIRFilter * FIRFilter::newInstance()
+ #endif // SOUNDTOUCH_ALLOW_MMX
+ 
+ #ifdef SOUNDTOUCH_ALLOW_SSE
+-    if (uExtensions & SUPPORT_SSE)
++    if (detectCPUextensions() & SUPPORT_SSE)
+     {
+         // SSE support
+         return ::new FIRFilterSSE;
+diff --git a/source/SoundTouch/PeakFinder.cpp b/source/SoundTouch/PeakFinder.cpp
+index 5423c85..95c060c 100644
+--- a/source/SoundTouch/PeakFinder.cpp
++++ b/source/SoundTouch/PeakFinder.cpp
+@@ -136,11 +136,9 @@ int PeakFinder::findGround(const float *data, int peakpos, int direction) const
+ // proceeds to direction defined in 'direction'
+ int PeakFinder::findCrossingLevel(const float *data, float level, int peakpos, int direction) const
+ {
+-    float peaklevel;
+     int pos;
+ 
+-    peaklevel = data[peakpos];
+-    assert(peaklevel >= level);
++    assert(data[peakpos] >= level);
+     pos = peakpos;
+     while ((pos >= minPos) && (pos + direction < maxPos))
+     {
+diff --git a/source/SoundTouch/RateTransposer.cpp b/source/SoundTouch/RateTransposer.cpp
+index e91cd63..6bf93f4 100644
+--- a/source/SoundTouch/RateTransposer.cpp
++++ b/source/SoundTouch/RateTransposer.cpp
+@@ -131,8 +131,6 @@ void RateTransposer::putSamples(const SAMPLETYPE *samples, uint nSamples)
+ // the 'set_returnBuffer_size' function.
+ void RateTransposer::processSamples(const SAMPLETYPE *src, uint nSamples)
+ {
+-    uint count;
+-
+     if (nSamples == 0) return;
+ 
+     // Store samples to input buffer
+@@ -142,7 +140,7 @@ void RateTransposer::processSamples(const SAMPLETYPE *src, uint nSamples)
+     // the filter
+     if (bUseAAFilter == false) 
+     {
+-        count = pTransposer->transpose(outputBuffer, inputBuffer);
++        pTransposer->transpose(outputBuffer, inputBuffer);
+         return;
+     }
+ 
+diff --git a/source/SoundTouch/TDStretch.cpp b/source/SoundTouch/TDStretch.cpp
+index 243f7cc..1a08820 100644
+--- a/source/SoundTouch/TDStretch.cpp
++++ b/source/SoundTouch/TDStretch.cpp
+@@ -306,8 +306,9 @@ int TDStretch::seekBestOverlapPositionFull(const SAMPLETYPE *refPos)
+     // over the permitted range.
+     bestCorr = calcCrossCorr(refPos, pMidBuffer, norm);
+     bestCorr = (bestCorr + 0.1) * 0.75;
+-
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (i = 1; i < seekLength; i ++)
+     {
+         double corr;
+@@ -333,7 +334,9 @@ int TDStretch::seekBestOverlapPositionFull(const SAMPLETYPE *refPos)
+             // For optimal performance, enter critical section only in case that best value found.
+             // in such case repeat 'if' condition as it's possible that parallel execution may have
+             // updated the bestCorr value in the mean time
++#ifdef USE_OPEN_MP
+             #pragma omp critical
++#endif
+             if (corr > bestCorr)
+             {
+                 bestCorr = corr;
+@@ -769,15 +772,12 @@ void * TDStretch::operator new(size_t s)
+ 
+ TDStretch * TDStretch::newInstance()
+ {
+-    uint uExtensions;
+-
+-    uExtensions = detectCPUextensions();
+ 
+     // Check if MMX/SSE instruction set extensions supported by CPU
+ 
+ #ifdef SOUNDTOUCH_ALLOW_MMX
+     // MMX routines available only with integer sample types
+-    if (uExtensions & SUPPORT_MMX)
++    if (detectCPUextensions() & SUPPORT_MMX)
+     {
+         return ::new TDStretchMMX;
+     }
+@@ -786,7 +786,7 @@ TDStretch * TDStretch::newInstance()
+ 
+ 
+ #ifdef SOUNDTOUCH_ALLOW_SSE
+-    if (uExtensions & SUPPORT_SSE)
++    if (detectCPUextensions() & SUPPORT_SSE)
+     {
+         // SSE support
+         return ::new TDStretchSSE;
+@@ -908,7 +908,9 @@ double TDStretch::calcCrossCorr(const short *mixingPos, const short *compare, do
+     if (lnorm > maxnorm)
+     {
+         // modify 'maxnorm' inside critical section to avoid multi-access conflict if in OpenMP mode
++#ifdef USE_OPEN_MP
+         #pragma omp critical
++#endif
+         if (lnorm > maxnorm)
+         {
+             maxnorm = lnorm;
+diff --git a/source/SoundTouch/sse_optimized.cpp b/source/SoundTouch/sse_optimized.cpp
+index c17f443..f599e1e 100644
+--- a/source/SoundTouch/sse_optimized.cpp
++++ b/source/SoundTouch/sse_optimized.cpp
+@@ -252,7 +252,9 @@ uint FIRFilterSSE::evaluateFilterStereo(float *dest, const float *source, uint n
+     assert(((ulongptr)filterCoeffsAlign) % 16 == 0);
+ 
+     // filter is evaluated for two stereo samples with each iteration, thus use of 'j += 2'
++#ifdef USE_OPEN_MP
+     #pragma omp parallel for
++#endif
+     for (j = 0; j < count; j += 2)
+     {
+         const float *pSrc;

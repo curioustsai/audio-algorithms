@@ -8,6 +8,7 @@ set(VERSION_SOURCES "${CMAKE_BINARY_DIR}/version.cpp"
 )
 
 add_subdirectory(ubnt_logger)
+add_subdirectory(soundtouch)
 
 if(${UBNT_PLATFORM_NAME} MATCHES "gen[34].")
     add_subdirectory(audio_utils)

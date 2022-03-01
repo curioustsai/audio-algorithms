@@ -3,7 +3,7 @@
 	url = https://github.com/CLIUtils/CLI11
 [submodule "thirdparty/soundtouch"]
 	path = thirdparty/soundtouch
-	url = https://gitlab.com/soundtouch/soundtouch.git
+	url = https://codeberg.org/soundtouch/soundtouch.git
 [submodule "thirdparty/speexdsp"]
 	path = thirdparty/speexdsp
 	url = https://github.com/xiph/speexdsp
