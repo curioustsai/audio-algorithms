@@ -29,10 +29,11 @@ void SmokeDetector::Init(Config config, int* targetFrequencies, int numTargetFre
      */
 
     _framesPerSec = (float)_sampleRate / (float)_frameSize;
-    _onThreshold = static_cast<int>(INTERVAL_SEC * _framesPerSec * 0.7f);
+    _onThreshold = static_cast<int>(round(INTERVAL_SEC * _framesPerSec * 0.75f));
+    _energyOnThreshold = static_cast<int>(round(INTERVAL_SEC * _framesPerSec * 0.9f));
 
     float observeBufLen = int(8.0f * INTERVAL_SEC * _framesPerSec);
-    _frameUpperBound = int(observeBufLen * 4.5 / 8.0);
+    _frameUpperBound = int(observeBufLen * 1.0 / 8.0);
     _frameLowerBound = int(observeBufLen * 2.5 / 8.0);
 
     _candidateBufLen = 10;
@@ -126,11 +127,11 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
     int duration = int(INTERVAL_SEC * _framesPerSec);
 
     int index = _observer->getCurrentIndex();
-    for (int intervalCount = 0; intervalCount < NUM_ON_OFF; ++intervalCount) {
+    for (int intervalCount = 0; intervalCount < NUM_ON_OFF - 1; ++intervalCount) {
         int intervalCount_2 = intervalCount / 2;
-
+        bool isEven = ((intervalCount & 1) == 0);
         for (int step = 0; step < duration; ++step) {
-            if ((intervalCount % 2) == 0) {
+            if (isEven) {
                 numDetectedOn[intervalCount_2] += _observer->get(index);
                 energyDetectedOn[intervalCount_2] += _energyObserver->get(index);
             }
@@ -140,17 +141,18 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
     }
 
     int stepRemain = _observer->getLength() - NUM_ON_OFF * duration;
+    int remaining = 0;
     for (int step = 0; step < stepRemain; ++step) {
-        numDetected += _observer->get(index);
+        remaining += _observer->get(index);
         index = (index + 1 < _observer->getLength() ? index + 1 : 0);
     }
 
     int legalCount = 0;
     for (int i = 0; i < NUM_ON; ++i) {
-        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > _onThreshold) { legalCount++; }
+        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > _energyOnThreshold) { legalCount++; }
     }
 
-    if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) &&
+    if ((_frameLowerBound < numDetected) && (remaining < _frameUpperBound) &&
         (legalCount >= NUM_ON)) {
         _holdOn->reset();
         _alarmCount++;

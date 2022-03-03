@@ -43,6 +43,7 @@ private:
     int _frameLowerBound{0};
     int _alarmCount{0};
     int _onThreshold{0};
+    int _energyOnThreshold{0};
     float _framesPerSec{0.0f};
     
     float getPower(float* data, int numSample);

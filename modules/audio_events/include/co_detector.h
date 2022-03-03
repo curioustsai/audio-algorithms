@@ -31,6 +31,8 @@ private:
     int _frameSize{128};
     float _threshold{-20.0};
     float _onThreshold{0.0};
+    float _energyOnThreshold{0.0};
+    float _framesPerSec{0.0};
 
     Goertzel** _goertzel{nullptr};
     Observer *_shortObserver{nullptr};

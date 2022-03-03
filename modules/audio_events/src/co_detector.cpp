@@ -14,17 +14,20 @@ void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) 
     _sampleRate = config.sampleRate;
     _frameSize = config.frameSize;
     _threshold = config.threshold;
+    _framesPerSec = (float)_sampleRate / (float)_frameSize;
 
-    _onThreshold = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 0.7);
+    _onThreshold = int(INTERVAL_SEC * _framesPerSec * 0.7);
+    _energyOnThreshold = int(INTERVAL_SEC * _framesPerSec * 0.84);
+
     // 4 cycles of 100 ms and 100 ms off, then 5 seconds off
     // units in second
-    _frameUpperBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 8.75f);
-    _frameLowerBound = int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 3.5f);
+    _frameUpperBound = int(INTERVAL_SEC * _framesPerSec * 8.75f);
+    _frameLowerBound = int(INTERVAL_SEC * _framesPerSec * 3.5f);
     _holdOn =
-        new CountDown(static_cast<unsigned int>(10.0f * (float)_sampleRate / (float)_frameSize));
+        new CountDown(static_cast<unsigned int>(10.0f * _framesPerSec));
     _holdOn->setCounter(0);
     _holdLong =
-        new CountDown(static_cast<unsigned int>(4.0f * (float)_sampleRate / (float)_frameSize));
+        new CountDown(static_cast<unsigned int>(4.0f * _framesPerSec));
     _holdLong->setCounter(0);
 
     _alarmCount = 0;
@@ -35,10 +38,10 @@ void CoDetector::Init(Config config, int* targetFrequencies, int numTargetFreq) 
     }
 
     _shortObserver =
-        new Observer(int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 10.0));
+        new Observer(int(INTERVAL_SEC * _framesPerSec * 10.0));
     _energyObserver =
-        new Observer(int(INTERVAL_SEC * (float)_sampleRate / (float)_frameSize * 10.0));
-    _longObserver = new Observer(int(10.6f * (float)_sampleRate / (float)_frameSize));
+        new Observer(int(INTERVAL_SEC * _framesPerSec * 10.0));
+    _longObserver = new Observer(int(10.6f * _framesPerSec));
 }
 
 void CoDetector::Release() {
@@ -183,7 +186,7 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
 
     int legalCount = 0;
     for (int i = 0; i < NUM_ON; ++i) {
-        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > 21) { legalCount++; }
+        if (numDetectedOn[i] > _onThreshold && energyDetectedOn[i] > _energyOnThreshold) { legalCount++; }
     }
     
     if ((_frameLowerBound < numDetected) && (numDetected < _frameUpperBound) && (legalCount >= NUM_ON)) {
@@ -193,9 +196,6 @@ AudioEventType CoDetector::DetectShortPattern(float power) {
         if (_alarmCount >= 2) {
             _alarmCount = 0;
             _shortObserver->reset();
-            // _energyObserver->reset();
-            // printf("num: %d  %d  %d  %d\n", numDetectedOn[0], numDetectedOn[1], numDetectedOn[2], numDetectedOn[3]);
-            // printf("energy: %d  %d  %d  %d\n", energyDetectedOn[0], energyDetectedOn[1], energyDetectedOn[2], energyDetectedOn[3]);
             return AUDIO_EVENT_CO;
         }
     }
@@ -207,7 +207,7 @@ AudioEventType CoDetector::DetectLongPattern(float power) {
     if (_longObserver == nullptr || _holdLong == nullptr) { return AUDIO_EVENT_NONE; }
 
     _longObserver->put(power > _threshold);
-    const int upperBound = int((float)_sampleRate / (float)_frameSize * 5.8f * 0.3f);
+    const int upperBound = int(_framesPerSec * 5.8f * 0.3f);
     const int lowerBound = _frameLowerBound * 2;
 
     if (DetectShortPattern(power) == AUDIO_EVENT_CO) {

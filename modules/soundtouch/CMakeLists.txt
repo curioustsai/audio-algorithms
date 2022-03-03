@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.1.1)
 #Set the name of the project
 project(SoundTouch)
 
+# Apply soundtouch pathch
+execute_process (
+    COMMAND ${PROJECT_ROOT}/cmake/utils/apply_patch.sh ${PROJECT_ROOT}/thirdparty/soundtouch ${SOURCES_ROOT}/soundtouch/soundtouch.patch
+)
+
 #detect the source files
 glob_source_files()
 file (
