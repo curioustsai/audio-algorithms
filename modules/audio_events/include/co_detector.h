@@ -30,8 +30,8 @@ private:
     int _sampleRate{48000};
     int _frameSize{128};
     float _threshold{-20.0};
-    float _onThreshold{0.0};
-    float _energyOnThreshold{0.0};
+    int _onThreshold{0};
+    int _energyOnThreshold{0};
     float _framesPerSec{0.0};
 
     Goertzel** _goertzel{nullptr};
