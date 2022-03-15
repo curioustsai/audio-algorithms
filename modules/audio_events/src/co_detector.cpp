@@ -211,6 +211,7 @@ AudioEventType CoDetector::DetectLongPattern(float power) {
 
     if (_shortPatternDetected && _holdLong->count() == 0) {
         int numDetected = _longObserver->sum();
+
         if ((lowerBound < numDetected) && (numDetected < upperBound)) {
             _alarmCountLong++;
             if (_alarmCountLong >= 2) {
