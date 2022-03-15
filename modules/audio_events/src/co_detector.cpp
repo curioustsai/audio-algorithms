@@ -201,7 +201,7 @@ AudioEventType CoDetector::DetectLongPattern(float power) {
     if (_longObserver == nullptr || _holdLong == nullptr) { return AUDIO_EVENT_NONE; }
 
     _longObserver->put(power > _threshold);
-    const int upperBound = int(_framesPerSec * 5.8f * 0.3f);
+    const int upperBound = int(_framesPerSec * 5.7f * 0.33f);
     const int lowerBound = _frameLowerBound * 2;
 
     if (DetectShortPattern(power) == AUDIO_EVENT_CO) {
@@ -211,7 +211,6 @@ AudioEventType CoDetector::DetectLongPattern(float power) {
 
     if (_shortPatternDetected && _holdLong->count() == 0) {
         int numDetected = _longObserver->sum();
-
         if ((lowerBound < numDetected) && (numDetected < upperBound)) {
             _alarmCountLong++;
             if (_alarmCountLong >= 2) {

@@ -71,8 +71,10 @@ do
 	esac
 done
 
-UBNT_ROOTFS_DIR=$UBNT_BUILD_TYPE/rootfs
-UBNT_WORK_DIR=$UBNT_BUILD_TYPE/work
+WORKDIR=$ROOT/build/${UBNT_PLATFORM_TYPE}
+UBNT_OUTPUT_DIR=${WORKDIR}/${UBNT_BUILD_TYPE}/${UBNT_LIBRARIES_TYPE}
+UBNT_ROOTFS_DIR=${UBNT_OUTPUT_DIR}/rootfs
+UBNT_WORK_DIR=${UBNT_OUTPUT_DIR}/work
 
 #validation of the user input
 if [[ ! "${UBNT_PLATFORMS_LIST[*]}" =~ "${UBNT_PLATFORM_TYPE}" ]]
@@ -102,7 +104,6 @@ else
 	CXX="g++"
 	RANLIB="ranlib"
 fi
-WORKDIR=$ROOT/build/${UBNT_PLATFORM_TYPE}
 
 # Thirdparty repo dir
 SpeexdspDir=$ROOT/thirdparty/speexdsp
@@ -123,10 +124,10 @@ if [ $UBNT_VERBOSE = true ]; then
     echo "ubnt_fw_cache: $TOOLCHAIN_ROOT"
 fi
 
-mkdir -p $WORKDIR/$UBNT_WORK_DIR/lib
-mkdir -p $WORKDIR/$UBNT_ROOTFS_DIR/bin
-mkdir -p $WORKDIR/$UBNT_ROOTFS_DIR/lib
-mkdir -p $WORKDIR/$UBNT_ROOTFS_DIR/include/speex
+mkdir -p $UBNT_WORK_DIR/lib
+mkdir -p $UBNT_ROOTFS_DIR/bin
+mkdir -p $UBNT_ROOTFS_DIR/lib
+mkdir -p $UBNT_ROOTFS_DIR/include/speex
 
 # git apply patch
 cd $SpeexdspDir
@@ -151,15 +152,15 @@ if [[ $reconfigure == "yes" ]]; then
         ./autogen.sh
     fi
     if [[ $UBNT_PLATFORM_TYPE == "x86" ]]; then
-        CFLAGS="-g -O3" ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
+        CFLAGS="-g -O3" ./configure --prefix=$UBNT_WORK_DIR \
              --enable-static --enable-shared
     else
-        CXX=$CXX CXXFLAGS="$ARCHFLAGS -O3 " ./configure --prefix=${WORKDIR}/$UBNT_WORK_DIR \
+        CXX=$CXX CXXFLAGS="$ARCHFLAGS -O3 " ./configure --prefix=$UBNT_WORK_DIR \
             --enable-shared --enable-static -host=$HOST --build=x86-linux-gnu
     fi
     echo "${UBNT_PLATFORM_TYPE}_${UBNT_BUILD_TYPE}" > configured_platform_buildtype
 fi
 make -j $UBNT_JOB_COUNT
 make install
-cp ${WORKDIR}/${UBNT_WORK_DIR}/lib/libspeexdsp.a ${WORKDIR}/${UBNT_ROOTFS_DIR}/lib
-cp ${WORKDIR}/${UBNT_WORK_DIR}/include/speex/* ${WORKDIR}/${UBNT_ROOTFS_DIR}/include/speex
+cp ${UBNT_WORK_DIR}/lib/libspeexdsp.a ${UBNT_ROOTFS_DIR}/lib
+cp ${UBNT_WORK_DIR}/include/speex/* ${UBNT_ROOTFS_DIR}/include/speex
