@@ -46,8 +46,8 @@ private:
     int _energyOnThreshold{0};
     float _framesPerSec{0.0f};
     
-    float getPower(float* data, int numSample);
-    float getSignalPower(float *data, int numSample);
+    float GetPower(float* data, int numSample);
+    float GetSignalPower(float *data, int numSample);
     AudioEventType DetectPattern(float *data, int numSample);
 
 #ifdef AUDIO_ALGO_DEBUG

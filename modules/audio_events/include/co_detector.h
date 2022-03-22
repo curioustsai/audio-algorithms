@@ -49,8 +49,8 @@ private:
 
     AudioEventType DetectShortPattern(float power);
     AudioEventType DetectLongPattern(float power);
-    float getPower(float* data, int numSample);
-    float getSignalPower(float *data, int numSample);
+    float GetPower(float* data, int numSample);
+    float GetSignalPower(float *data, int numSample);
 #ifdef AUDIO_ALGO_DEBUG
     float _powerAvg{0.0};
     bool _status{false};

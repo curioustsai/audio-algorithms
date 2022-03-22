@@ -77,8 +77,8 @@ void CoDetector::Release() {
 }
 
 AudioEventType CoDetector::Detect(float* data, int numSample) {
-    float power = getPower(data, numSample);
-    float sigPower = getSignalPower(data, numSample);
+    float power = GetPower(data, numSample);
+    float sigPower = GetSignalPower(data, numSample);
     _energyObserver->put(power > sigPower);
 
     return DetectLongPattern(power);
@@ -96,7 +96,7 @@ void CoDetector::ResetStates() {
     if (_longObserver != nullptr) _longObserver->reset();
 }
 
-float CoDetector::getPower(float* data, int numSample) {
+float CoDetector::GetPower(float* data, int numSample) {
     if (_goertzel == nullptr) return 0.0f;
 
     float power = 0.f;
@@ -111,7 +111,7 @@ float CoDetector::getPower(float* data, int numSample) {
     return power;
 }
 
-float CoDetector::getSignalPower(float* data, int numSample) {
+float CoDetector::GetSignalPower(float* data, int numSample) {
     float power = 0.0f;
     for (int i = 0; i < numSample; i++) { power += data[i] * data[i]; }
 

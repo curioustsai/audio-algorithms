@@ -89,8 +89,8 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
     bool filterOut = false;
     bool observe_prev = false;
     bool observe_now = false;
-    float power = getPower(data, numSample);
-    float sigPower = getSignalPower(data, numSample);
+    float power = GetPower(data, numSample);
+    float sigPower = GetSignalPower(data, numSample);
 
     _energyObserver->put(power > sigPower);
 
@@ -169,7 +169,7 @@ AudioEventType SmokeDetector::DetectPattern(float* data, int numSample) {
 }
 
 
-float SmokeDetector::getPower(float* data, int numSample) {
+float SmokeDetector::GetPower(float* data, int numSample) {
     if (_goertzel == nullptr) return 0.0f;
 
     float power = 0.f;
@@ -185,7 +185,7 @@ float SmokeDetector::getPower(float* data, int numSample) {
 }
 
 
-float SmokeDetector::getSignalPower(float *data, int numSample) {
+float SmokeDetector::GetSignalPower(float *data, int numSample) {
     float power = 0.0f;
     for (int i = 0; i < numSample; i++) {
         power += data[i] * data[i];
