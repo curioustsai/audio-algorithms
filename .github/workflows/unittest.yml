@@ -1,0 +1,90 @@
+name: Audio-Algo Unittest
+on: [pull_request]
+
+env:
+  DURATION_LIMIT: 15
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Environment_Setup:
+    runs-on: [self-hosted, Linux, X64, aiteam]
+    container:
+      image: 10.58.1.67:32000/cvalgo:latest
+      volumes:
+        - /home/aidata/github_actions/unittest/:/workspace/unittest
+        - /home/aidata/ui_db/action/testset/:/workspace/testset/
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup git user
+        run: |
+          git config --global user.name "$(git --no-pager log --format=format:'%an' -n 1)"
+          git config --global user.email "$(git --no-pager log --format=format:'%ae' -n 1)"
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+      - name: Echo branch name
+        id: branch-name
+        run: |
+          echo ${{ env.BRANCH_NAME }}
+    outputs:
+      BRANCH_NAME: ${{ env.BRANCH_NAME }}
+
+  Build:
+    strategy:
+      matrix:
+        platform: [x86, gen4c, gen4l]
+        include:
+          - platform: x86
+            test: -t
+
+    runs-on: [self-hosted, Linux, X64, aiteam]
+    needs: Environment_Setup
+    container:
+      image: 10.58.1.67:32000/cvalgo:latest
+      volumes:
+        - /home/aidata/github_actions/github_actions_3rdparty/:/workspace/github_actions_3rdparty
+    steps:
+      - uses: actions/checkout@v2
+      - name: Copy actions
+        shell: bash
+        run: |
+          mkdir -p .github/github_actions_3rdparty
+          cp -fr /workspace/github_actions_3rdparty/ai-team.github-actions ./.github/github_actions_3rdparty
+      - name: Install ai-tools
+        uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
+      - name: Prepare submodule
+        shell: bash
+        run: |
+          git submodule update --init --recursive
+      - name: Build
+        shell: bash
+        run: |
+          rm -rf ~/.ubnt_audio/cache
+          ./cmake/utils/compile -p ${{ matrix.platform }} ${{ matrix.test }}
+      - name: Cache build result
+        uses: actions/cache@v2
+        with:
+          path: ./build/${{ matrix.platform }}/STATIC/MinSizeRel/rootfs
+          key: unittest-${{ matrix.platform }}-buildresult-${{ needs.Environment_Setup.outputs.BRANCH_NAME }}-${{ github.run_id }}
+      - name: Run Unittest x86
+        if: matrix.platform == 'x86'
+        working-directory: ./build/x86/MinSizeRel/work/
+        shell: bash
+        run: |
+          ctest -T test --no-compress-output
+      - name: Cache test result
+        if: matrix.platform == 'gen4l'
+        uses: actions/cache@v2
+        with:
+          path: ./build/${{ matrix.platform }}/STATIC/MinSizeRel/work
+          key: unittest-${{ matrix.platform }}-testresult-${{ needs.Environment_Setup.outputs.BRANCH_NAME }}-${{ github.run_id }}
+    outputs:
+      BRANCH_NAME: ${{ needs.Environment_Setup.outputs.BRANCH_NAME }}
