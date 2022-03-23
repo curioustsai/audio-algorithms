@@ -5,7 +5,7 @@
 #include "CLI/CLI.hpp"
 #include "audio_events.h"
 #include "sndfile.hh"
-#include "version.h"
+#include "audio_version.h"
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -17,17 +17,19 @@ int main(int argc, char** argv) {
 
     std::string inputFilePath;
     std::string outputFilePath;
+    std::string logFilePath;
     float smoke_threshold = -20.0f;
     float co_threshold = -20.0f;
     float levelUpperBound = -20.0f;
     float levelLowerBound = -70.0f;
-    float loudThreshold = 50.0f;
+    float loudThreshold = 80.0f;
     float quietThreshold = 0.0f;
 
     app.add_option("-i,--inFile", inputFilePath, "specify an input file")
         ->required()
         ->check(CLI::ExistingFile);
-    app.add_option("-o,--outFile", outputFilePath, "specify an output file")->required();
+    app.add_option("-o,--outFile", outputFilePath, "specify an output file");
+    app.add_option("-l,--logFile", logFilePath, "specify an output file");
     app.add_option("--smokeThreshold", smoke_threshold, "threshold for smoke")->check(CLI::Number);
     app.add_option("--coThreshold", co_threshold, "threshold for co")->check(CLI::Number);
     app.add_option("--levelUpperBound", levelUpperBound, "level upper bound for loudness detector")
@@ -48,12 +50,13 @@ int main(int argc, char** argv) {
 
     SndfileHandle inFile = SndfileHandle(inputFilePath);
     SndfileHandle outFile;
+    FILE* log = NULL;
 
     int samplerate = inFile.samplerate();
     int numTotalSamples = inFile.frames();
 
     int numSamplesPerWin = 2048;
-    int numSamplesPerFrame = 128;
+    int numSamplesPerFrame = 64;
     int numTotalWindows = numTotalSamples / numSamplesPerWin;
     int numFramePerWin = numSamplesPerWin / numSamplesPerFrame;
 
@@ -70,8 +73,14 @@ int main(int argc, char** argv) {
     auto* bufferOut = new float[numSamplesPerFrame * outputChannels];
     auto* dataFloat = new float[numSamplesPerFrame];
 
-    outFile = SndfileHandle(outputFilePath, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_FLOAT,
-                            outputChannels, samplerate);
+    if (!outputFilePath.empty()) {
+        outFile = SndfileHandle(outputFilePath, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_FLOAT,
+                                outputChannels, samplerate);
+    }
+    if (!logFilePath.empty()) {
+        log = fopen(logFilePath.c_str(), "at");
+        if (log == NULL) printf("cannot create log file......\n");
+    } 
 
     int targetFrequencies[] = {3000, 3450};
     int numTargetFreq = sizeof(targetFrequencies) / sizeof(targetFrequencies[0]);
@@ -104,28 +113,61 @@ int main(int argc, char** argv) {
             }
 
             AudioEventType event;
+            float weight = 0.0f;
             event = smokeDetector.Detect(dataFloat, numSamplesPerFrame);
-            event |= coDetector.Detect(dataFloat, numSamplesPerFrame);
-            event |= loudnessDetector.Detect(dataFloat, numSamplesPerFrame);
-
-            for (int sampleCount = 0; sampleCount < numSamplesPerFrame; ++sampleCount) {
-                bufferOut[outputChannels * sampleCount] = dataFloat[sampleCount];
-                bufferOut[outputChannels * sampleCount + 1] = ((float)(1 << event) * 0.1f);
-#ifdef AUDIO_ALGO_DEBUG
-                bufferOut[outputChannels * sampleCount + 2] = sqrtf(smokeDetector.GetPowerAvg());
-                bufferOut[outputChannels * sampleCount + 3] =
-                    0.8f * (float)smokeDetector.GetStatus();
-                // bufferOut[outputChannels * sampleCount + 4] = sqrtf(coDetector.GetPowerAvg());
-                bufferOut[outputChannels * sampleCount + 4] = sqrtf(loudnessDetector.GetPowerAvg());
-                bufferOut[outputChannels * sampleCount + 5] = 0.8f * (float)coDetector.GetStatus();
-#endif
+            if (event == AUDIO_EVENT_SMOKE) {
+                weight = 0.25;
+                if (log != NULL) {
+                    float sec =
+                        (float)(windowCount * numSamplesPerWin + frameCount * numFramePerWin) /
+                        (float)samplerate;
+                    float min = floor(sec / 60.0f);
+                    sec = sec - min * 60.0f;
+                    fprintf(log, "smoke detected at %.0f:%.2f, %s\n", min, sec, inputFilePath.c_str());
+                }
             }
-            outFile.write(bufferOut, numSamplesPerFrame * outputChannels);
+
+            event = coDetector.Detect(dataFloat, numSamplesPerFrame);
+            if (event == AUDIO_EVENT_CO) {
+                weight += 0.5f;
+                if (log != NULL) {
+                    float sec =
+                        (float)(windowCount * numSamplesPerWin + frameCount * numFramePerWin) /
+                        (float)samplerate;
+                    float min = floor(sec / 60.0f);
+                    sec = sec - min * 60.0f;
+                    fprintf(log, "CO detected at %.0f:%.2f, %s\n", min, sec, inputFilePath.c_str());
+                }
+            }
+            event = loudnessDetector.Detect(dataFloat, numSamplesPerFrame);
+
+            if (outFile.rawHandle() != NULL) {
+                for (int sampleCount = 0; sampleCount < numSamplesPerFrame; ++sampleCount) {
+                    bufferOut[outputChannels * sampleCount] = dataFloat[sampleCount];
+                    bufferOut[outputChannels * sampleCount + 1] = weight;
+#ifdef AUDIO_ALGO_DEBUG
+                    bufferOut[outputChannels * sampleCount + 2] =
+                        sqrtf(smokeDetector.GetPowerAvg());
+                    bufferOut[outputChannels * sampleCount + 3] =
+                        0.8f * (float)smokeDetector.GetStatus();
+                    // bufferOut[outputChannels * sampleCount + 4] = sqrtf(coDetector.GetPowerAvg());
+                    bufferOut[outputChannels * sampleCount + 4] =
+                        sqrtf(loudnessDetector.GetPowerAvg());
+                    bufferOut[outputChannels * sampleCount + 5] =
+                        0.8f * (float)coDetector.GetStatus();
+#endif
+                }
+                outFile.write(bufferOut, numSamplesPerFrame * outputChannels);
+            }
         }
     }
 
+    printf("Detect finish: %s\n", inputFilePath.c_str());
     smokeDetector.Release();
     coDetector.Release();
+    if (log != NULL) {
+        fclose(log); log = NULL;
+    }
 
     delete[] dataFloat;
     delete[] buffer;

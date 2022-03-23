@@ -5,36 +5,59 @@ set -e
 
 printHelp() {
 	echo "Usage: "
-	echo "$SCRIPT -p <platform> [-t] [-b <buildType>] [-l <libsType>] [-j <njobs>] [-n] [-c] [-h]"
+	echo "$SCRIPT -p <platform> [-t] [-u] [-b <buildType>] [-l <libsType>] [-j <njobs>] [-n] [-c] [-h] [--cppcheck] [--toolchains]"
 	echo ""
-	echo "    -p    Platform which can be: ${UBNT_PLATFORMS_LIST[*]}. There is no default value. This is mandatory."
-	echo "    -t    Build the tests."
-	echo "    -d    Build with log level debug."
-	echo "    -b    The build type which can be Debug, Release or MinSizeRel. Default is MinSizeRel."
-	echo "    -l    How the libraries will be built. Either STATIC or SHARED. Default is STATIC."
-	echo "    -j    How many compilation units will be done simultaneously. Default is 4."
-	echo "    -n    Skip all intermediate steps and perform the build directly"
-	echo "    -c    Do clean before build"
-	echo "    -v    Enable verbose build"
+	echo "    -p            Platform which can be: ${UBNT_PLATFORMS_LIST[*]}. There is no default value. This is mandatory. Not needed for building unit tests"
+	echo "    -t            Build the tests applications as well."
+	echo "    -u            Build and run the unit tests."
+	echo "    -b            The build type which can be Debug, Release or MinSizeRel. Default is MinSizeRel."
+	echo "    -l            How the libraries will be built. Either STATIC or SHARED. Default is STATIC."
+	echo "    -j            How many compilation units will be done simultaneously. Default is 4."
+	echo "    -n            Skip all intermediate steps and perform the build directly"
+	echo "    -c            Do clean before build"
+	echo "    -v            Enable verbose build"
+	echo "    -s            Enable backtrace to print call stack when crash dump"
 	echo "    -g    Audio log level: 'debug', 'info', 'warn', 'off'. Default is 'warn'"
-	echo "    -h    Prints this help and exits."
+	echo "    -h            Prints this help and exits."
+	echo "    --cppcheck    Also run cppcheck static code analyzer after the build"
+	echo "    --toolchains  Download all toolchains and barebones, quit after that"
 	echo ""
+}
+
+ccmake() {
+	local toolchainFile=$1
+
+	cd ${UBNT_WORK_DIR} && cmake \
+		-DCMAKE_TOOLCHAIN_FILE=${toolchainFile} \
+		-DUBNT_FW_CACHE=${UBNT_FW_CACHE} \
+		-DUBNT_LIBRARIES_TYPE=${UBNT_LIBRARIES_TYPE} \
+		-DCMAKE_BUILD_TYPE=${UBNT_BUILD_TYPE} \
+		-DUBNT_WITH_TESTS=${UBNT_WITH_TESTS} \
+		-DUBNT_LOG_LEVEL=${UBNT_LOG_LEVEL} \
+		-DUBNT_DEBUG_CMDS=${UBNT_DEBUG_CMDS} \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=${UBNT_EXPORT_COMPILE_COMMANDS} \
+		-DUBNT_BACKTRACE_ENABLE=${UBNT_BACKTRACE_ENABLE} \
+		-G Ninja \
+		${PROJECT_ROOT} \
+	#	-DCMAKE_VERBOSE_MAKEFILE=TRUE \
 }
 
 UBNT_BUILD_TYPE=MinSizeRel
 UBNT_PLATFORM_TYPE=__empty__
-UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3s gen4l gen4c gen4s x86)
+UBNT_PLATFORMS_LIST=(gen2 gen3l gen3m gen3s gen4s gen4l gen4c gen4v x86)
 UBNT_LIBRARIES_TYPE=STATIC
 UBNT_JOBS_COUNT=4
+UBNT_WITH_TESTS=OFF
+UBNT_WITH_UNIT_TESTS=OFF
+UBNT_CPPCHECK=OFF
 UBNT_EXPORT_COMPILE_COMMANDS=ON
 UBNT_DO_CLEAN=OFF
-
-UBNT_WITH_TESTS=OFF
+UBNT_BACKTRACE_ENABLE=OFF
+UBNT_DL_TOOLCHAINS=OFF
 AUDIO_LOG_LEVEL="warn"
-
 SCRIPT=$0
-OPTIONS="p:tg:b:l:j:ncvh"
-ARGS=`getopt $OPTIONS $*`
+OPTIONS="-u -o p:tubg:l:j:ncvsh -l cppcheck -l toolchains"
+ARGS=$(getopt $OPTIONS -- $*)
 set -- $ARGS
 for i
 do
@@ -46,6 +69,10 @@ do
 			;;
 		-t)
 			UBNT_WITH_TESTS=ON
+			shift
+			;;
+		-u)
+			UBNT_WITH_UNIT_TESTS=ON
 			shift
 			;;
 		-g)
@@ -73,14 +100,51 @@ do
 			shift
 			;;
 		-v)	UBNT_NINJA_VERBOSE="-v"
+			UBNT_UNIT_TEST_VERBOSE="VERBOSE=1 QUIET="
+			shift
+			;;
+		-s)	UBNT_BACKTRACE_ENABLE=ON
 			shift
 			;;
 		-h)
 			printHelp
 			exit 0
 			;;
+		--cppcheck)	UBNT_CPPCHECK=ON
+			shift
+			;;
+		--toolchains) UBNT_DL_TOOLCHAINS=ON
+			shift
+			;;
+
 	esac
 done
+
+UBNT_CMAKE_DIR=$(readlink -m $(dirname $0)/..)
+PROJECT_ROOT=$(realpath $UBNT_CMAKE_DIR/../)
+
+#download all toolchains and quit
+if [ ${UBNT_DL_TOOLCHAINS} == "ON" ]; then
+	UBNT_PLATFORM_TYPE=__empty__
+	. ${UBNT_CMAKE_DIR}/utils/getBarebonesBuilder.sh
+	exit 0
+fi
+
+#build and run unit tests
+if [ ${UBNT_WITH_UNIT_TESTS} == "ON" ]
+then
+	if [ ${UBNT_DO_CLEAN} == "YES" ]
+	then
+		echo "CLEAN unit tests"
+		make ${UBNT_UNIT_TEST_VERBOSE} -C ${UBNT_CMAKE_DIR}"/targets/unit_test" clean
+	fi
+	make ${UBNT_UNIT_TEST_VERBOSE} -C ${UBNT_CMAKE_DIR}"/targets/unit_test"
+fi
+
+if [ ${UBNT_WITH_UNIT_TESTS} == "ON" ] && [ "${UBNT_PLATFORM_TYPE}" == "__empty__" ]
+then
+	exit 0
+fi
 
 #validation of the user input
 if [[ ! "${UBNT_PLATFORMS_LIST[*]}" =~ "${UBNT_PLATFORM_TYPE}" ]]
@@ -100,8 +164,7 @@ then
 fi
 
 #compute some folder paths
-UBNT_CMAKE_DIR=$(readlink -m $(dirname $0)/../..)
-UBNT_OUTPUT_DIR=${UBNT_CMAKE_DIR}/build/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}/
+UBNT_OUTPUT_DIR=${PROJECT_ROOT}/build/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}/${UBNT_LIBRARIES_TYPE}
 UBNT_WORK_DIR=${UBNT_OUTPUT_DIR}/work
 UBNT_ROOTFS_DIR=${UBNT_OUTPUT_DIR}/rootfs
 
@@ -119,23 +182,85 @@ else
 	INSTALL_TARGET="install/strip"
 fi
 
+#run MW static code analyzer: cppcheck
+function run_cppcheck () {
+	if [ ${UBNT_CPPCHECK} != "ON" ]; then
+		return
+	fi
+
+	# check the correct cppcheck version
+	# awk -v cppcheck_required=2.3 -v cppcheck_installed=$(cppcheck --version 2>/dev/null | cut -d' ' -f2) 'BEGIN {
+	# 	if (cppcheck_required > cppcheck_installed) {
+	# 		printf "cppcheck-%s or newer is required %s\n", cppcheck_required, cppcheck_installed ? "(installed cppcheck-"cppcheck_installed")" : "";
+	# 		printf "to install run:\n"
+	# 		printf "\twget -qO- https://github.com/danmar/cppcheck/archive/%s.tar.gz | tar xvz -C /tmp/ && \\\n", cppcheck_required
+	# 		printf "\tcd /tmp/cppcheck-%s && \\\n", cppcheck_required
+	# 		printf "\tcmake . && \\\n"
+	# 		printf "\tmake -j $(nproc) && \\\n"
+	# 		printf "\tmake install\n"
+	# 		exit 1;
+	# 	}
+	# }'
+
+	# extract actual architecture specific longbit number from the generated binaries
+	local longbit=$(file ${UBNT_ROOTFS_DIR}/usr/bin/* | sed -ne 's/^.*ELF.* \([0-9]\+\)-bit .*/\1/p;T;q')
+
+	# reduce output a bit, but print everything if verbose set
+	local log_filter="sed '/^\(Checking .*\): .*\.\.\.$/d'"
+	if [ "${UBNT_NINJA_VERBOSE}" = "-v" ] ; then log_filter="tee"; fi
+
+	# better log by calculating the percent of the processed files. Otherwise 0% is printed.
+	local log_show_percent="sed 's/^\(.*\) files checked.*$/echo \1 files checked \$((100 \* \1))% done/e'"
+
+	# run the check. Apply sed filter to reduce output a bit
+	echo "Starting cppcheck static code analysis ..."
+	TIMEFORMAT="cppcheck static code analysis done! It took %R sec";
+
+	# a report file that stores warnings/errors detected by cppcheck
+	local report_file=${UBNT_WORK_DIR}/cppcheck-result.txt
+
+	time {
+		CPPCHECK_CACHE_DIR="${UBNT_CPPCHECK_CACHE_DIR:-${UBNT_BASE_FOLDER}/cppcheck-build}/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}/${UBNT_LIBRARIES_TYPE}"
+		cd ${UBNT_OUTPUT_DIR}; \
+			mkdir -p ${CPPCHECK_CACHE_DIR}; \
+			(cppcheck 2> >(tee ${report_file}) \
+				-j $(nproc) \
+				--platform=unix${longbit} \
+				--std=c++11 \
+				--error-exitcode=1 \
+				--project=./work/compile_commands.json \
+				--enable=performance,warning \
+				--suppress=*:*/usr/include/* \
+				--cppcheck-build-dir=${CPPCHECK_CACHE_DIR} \
+			) | eval $log_filter | eval $log_show_percent
+	}
+
+	if [ -s "$report_file" ]; then
+		echo -e "cppcheck warnings/errors detected, please check\n"
+		cat $report_file
+		echo -e "\n"
+		exit 1
+	fi
+}
+
 if [ "${UBNT_SKIP_TO_NINJA}" = "1" ]
 then
 	cd ${UBNT_WORK_DIR} && \
 	DESTDIR=${UBNT_ROOTFS_DIR} STAGING_DIR=none \
 		ninja ${UBNT_NINJA_VERBOSE} -j${UBNT_JOBS_COUNT} ${INSTALL_TARGET}
+
+	# run MW analysis using cppcheck tool (optional)
+	run_cppcheck
 	exit 0
 fi
-
-echo "${UBNT_PLATFORM_TYPE}"
 
 if [ "${UBNT_PLATFORM_TYPE}" != "x86" ]
 then
 	#------------- initialize variables for various parts of the scripts -----------
-	. ${UBNT_CMAKE_DIR}/cmake/utils/defaults.sh
+	. ${UBNT_CMAKE_DIR}/utils/defaults.sh
 
 	#------------- grab firmware cache - toolchains and staging --------------------
-	. ${UBNT_CMAKE_DIR}/cmake/utils/getBarebonesBuilder.sh
+	. ${UBNT_CMAKE_DIR}/utils/getBarebonesBuilder.sh
 fi
 
 #------------- do the compilation and installation -----------------------------
@@ -155,18 +280,42 @@ then
 	set -e
 fi
 
-cd ${UBNT_WORK_DIR} && cmake \
-	-DCMAKE_TOOLCHAIN_FILE=${UBNT_CMAKE_DIR}/cmake/conf/toolchain_${UBNT_PLATFORM_TYPE}.cmake \
-	-DUBNT_FW_CACHE=${UBNT_FW_CACHE} \
-	-DUBNT_LIBRARIES_TYPE=${UBNT_LIBRARIES_TYPE} \
-	-DCMAKE_BUILD_TYPE=${UBNT_BUILD_TYPE} \
-	-DUBNT_WITH_TESTS=${UBNT_WITH_TESTS} \
-	-DAUDIO_LOG_LEVEL=${AUDIO_LOG_LEVEL} \
-	-DUBNT_DEBUG_CMDS=${UBNT_DEBUG_CMDS} \
-	-DCMAKE_EXPORT_COMPILE_COMMANDS=${UBNT_EXPORT_COMPILE_COMMANDS} \
-	-G Ninja \
-	${UBNT_CMAKE_DIR}
-#	-DCMAKE_VERBOSE_MAKEFILE=TRUE \
+# Generate makefile
+ccmake "${UBNT_CMAKE_DIR}/conf/toolchain_${UBNT_PLATFORM_TYPE}.cmake"
+
+if [ "${UBNT_BUILD_TYPE}" = "Release" ] && [ "${UBNT_LIBRARIES_TYPE}" = "SHARED" ]
+then
+	echo -e "\n===========Checking Compile options difference=================="
+	. ${UBNT_CMAKE_DIR}/utils/getBarebonesCompileCmdDiff.sh $(ls ${BBB}/build_dir/*/ubnt-middleware/compile_commands.json)
+	set +e
+	# To capture ">", which means MW repo with more config options than BBB,
+	# so break building procedure and alert to align config options in FW Repo with MW Repo.
+	# Developer should check it in FW Repo and add it into Makefile by self,
+	# and remember to bump BBB in MW Repo.
+	grep '>' ${FLAGS_DIFF}
+	if [ $? -eq 0 ]
+	then
+		echo "[Error] Compile options not match, please sync up packages/packages-ubnt/ubnt-middleware/Makefile in FW Repo with builders/cmake/conf/toolchain_X.cmake, builders/cmake/CMakeLists.txt, etc. in MW Repo and remember to bump BBB"
+		exit 1
+	fi
+
+	# To capture "<", which means extra config options in FW Repo,
+	# will automerge to MW builder.
+	FLAGS=$(cat ${FLAGS_DIFF} | grep '<' | sed 's/< //g' | tr '\n' ' ')
+	set -e
+
+	if [ ! -z "${FLAGS}" ]
+	then
+		echo "remove previously generated work dir: ${UBNT_WORK_DIR}/*"
+		rm -rf ${UBNT_WORK_DIR}/*
+		cp ${UBNT_CMAKE_DIR}/conf/toolchain_${UBNT_PLATFORM_TYPE}.cmake ${UBNT_WORK_DIR}/inc.cmake
+		echo "add_compile_options(${FLAGS}) into inc.cmake"
+		echo "add_compile_options(${FLAGS})" >> ${UBNT_WORK_DIR}/inc.cmake
+
+		# Re-generate makefile with extra compile options added
+		ccmake "${UBNT_WORK_DIR}/inc.cmake"
+	fi
+fi
 
 cd ${UBNT_WORK_DIR} && \
 	DESTDIR=${UBNT_ROOTFS_DIR} STAGING_DIR=none \
@@ -177,6 +326,6 @@ cd ${UBNT_WORK_DIR} && \
 
 tree -s ${UBNT_ROOTFS_DIR}
 
-if [ "${UBNT_WITH_TESTS}" == "ON" ]; then
-    cd $UBNT_WORK_DIR && ctest
-fi
+# run MW analysis using cppcheck tool (optional)
+run_cppcheck
+

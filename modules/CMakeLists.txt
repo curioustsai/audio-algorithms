@@ -1,10 +1,10 @@
 # embed git commit sha1 in each modules
 configure_file(
-    "${SOURCES_ROOT}/version/version.cpp.in" "${CMAKE_BINARY_DIR}/version.cpp"
+    "${SOURCES_ROOT}/version/audio_version.cpp.in" "${CMAKE_BINARY_DIR}/audio_version.cpp"
     @ONLY
 )
-set(VERSION_SOURCES "${CMAKE_BINARY_DIR}/version.cpp"
-                    "${SOURCES_ROOT}/version/version.h"
+set(VERSION_SOURCES "${CMAKE_BINARY_DIR}/audio_version.cpp"
+                    "${SOURCES_ROOT}/version/audio_version.h"
 )
 
 add_subdirectory(ubnt_logger)

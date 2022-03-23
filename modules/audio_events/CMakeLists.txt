@@ -30,7 +30,7 @@ add_library(
     ${C_SOURCES}
 )
 
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/goertzel.h DESTINATION /include/${PROJECT_NAME})
+
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/alarm_detector.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/co_detector.h DESTINATION /include/${PROJECT_NAME})
 install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/smoke_detector.h DESTINATION /include/${PROJECT_NAME})

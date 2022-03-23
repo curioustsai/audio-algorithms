@@ -239,6 +239,20 @@ index 243f7cc..1a08820 100644
          if (lnorm > maxnorm)
          {
              maxnorm = lnorm;
+diff --git a/source/SoundTouch/mmx_optimized.cpp b/source/SoundTouch/mmx_optimized.cpp
+index 741ba4f..acaca2e 100644
+--- a/source/SoundTouch/mmx_optimized.cpp
++++ b/source/SoundTouch/mmx_optimized.cpp
+@@ -119,7 +119,9 @@ double TDStretchMMX::calcCrossCorr(const short *pV1, const short *pV2, double &d
+     if (norm > (long)maxnorm)
+     {
+         // modify 'maxnorm' inside critical section to avoid multi-access conflict if in OpenMP mode
++#ifdef USE_OPEN_MP
+         #pragma omp critical
++#endif
+         if (norm > (long)maxnorm)
+         {
+             maxnorm = norm;
 diff --git a/source/SoundTouch/sse_optimized.cpp b/source/SoundTouch/sse_optimized.cpp
 index c17f443..f599e1e 100644
 --- a/source/SoundTouch/sse_optimized.cpp

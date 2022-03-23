@@ -5,7 +5,6 @@
 #pragma once
 
 #include "audio_event_type.h"
-#include "goertzel.h"
 
 namespace ubnt {
 namespace smartaudio {
@@ -22,5 +21,9 @@ public:
     virtual void SetThreshold(float threshold) = 0;
     virtual float GetThreshold() const = 0;
 };
+
+class CountDown;
+class Observer;
+class Goertzel;
 } // namespace smartaudio
 } // namespace ubnt

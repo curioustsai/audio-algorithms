@@ -55,7 +55,7 @@ sed -i -r "s@(^job_name=).*@\1$JOB_NAME@" "$BBB_CONF_FILE"
 FULL_JOB_NAME=${JOB_NAME//\//\/job/}
 JENKINS_URL=https://pdx-build-aerith.rad.ubnt.com/job/$FULL_JOB_NAME/$JOB_NUMBER/artifact
 
-for plat in 2 3l 3m 3s 4l 4c 4s; do
+for plat in 3l 3m 3s 4l 4s 4c 4v; do
 	set -e
 	MD5FILE=openwrt-gen${plat}-rel.tar.gz.md5
 	TMP_FILE=$(mktemp --tmpdir barebonesBuilder-gen${plat}.XXXXX)

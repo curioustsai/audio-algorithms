@@ -1,12 +1,12 @@
 # default to uvc-develop and all configs use same build
 job_name=unifi-protect/uvc/uvc-firmware/develop
-job_number=1232
+job_number=1537
 default_barebones_path=${job_name}/$job_number
 
 # gen2
 NAME_gen2_barebones=openwrt-gen2-rel.tar.gz
-PATH_gen2_barebones=$default_barebones_path
-HASH_gen2_barebones=d825d075a206a212da9a222daa7933eb
+PATH_gen2_barebones=unifi-protect/uvc/uvc-firmware/develop/1400
+HASH_gen2_barebones=59e5172288a2f6f6c12a49ccd83e53d3
 
 NAME_gen2_toolchains=toolchain-arm_v6k_gcc-4.7-linaro_uClibc-0.9.33.2_eabi.tar.xz
 PATH_gen2_toolchains=7
@@ -15,7 +15,7 @@ HASH_gen2_toolchains=ac7e6f84130ac486c5a6713d82898e01
 # gen3l
 NAME_gen3l_barebones=openwrt-gen3l-rel.tar.gz
 PATH_gen3l_barebones=$default_barebones_path
-HASH_gen3l_barebones=ea2eddd811384638fe4b3db81ab15435
+HASH_gen3l_barebones=99d66eb24b1e55d0aa8cd7cc2ed802ee
 
 NAME_gen3l_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
 PATH_gen3l_toolchains=7
@@ -24,7 +24,7 @@ HASH_gen3l_toolchains=995f57d765f9e077ab68b8c2881fdfe5
 # gen3m
 NAME_gen3m_barebones=openwrt-gen3m-rel.tar.gz
 PATH_gen3m_barebones=$default_barebones_path
-HASH_gen3m_barebones=3e74cc78f8f75d500137b1ed957c5d63
+HASH_gen3m_barebones=9c7790b934348000fe3ca7b48e9063ed
 
 NAME_gen3m_toolchains=toolchain-arm_cortex-a9_gcc-4.8-linaro_uClibc-0.9.33.2_eabi.tar.xz
 PATH_gen3m_toolchains=7
@@ -42,7 +42,7 @@ HASH_gen3b_toolchains=995f57d765f9e077ab68b8c2881fdfe5
 # gen3s
 NAME_gen3s_barebones=openwrt-gen3s-rel.tar.gz
 PATH_gen3s_barebones=$default_barebones_path
-HASH_gen3s_barebones=506c799c0094652afd4e599ca334f428
+HASH_gen3s_barebones=529db40df63ffeb54e3579b1582c1df8
 
 NAME_gen3s_toolchains=gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.xz
 PATH_gen3s_toolchains=9
@@ -51,7 +51,7 @@ HASH_gen3s_toolchains=dc7455746d90259337fb88c3e67f8855
 # gen4l
 NAME_gen4l_barebones=openwrt-gen4l-rel.tar.gz
 PATH_gen4l_barebones=$default_barebones_path
-HASH_gen4l_barebones=f4cbcd4b35cdac74dcdb9b3b37d7b9cb
+HASH_gen4l_barebones=b2c409cd0d540f22955a4a32be46edd2
 
 NAME_gen4l_toolchains=linaro-aarch64-2017.02-gcc6.3.tar.xz
 PATH_gen4l_toolchains=7
@@ -60,7 +60,7 @@ HASH_gen4l_toolchains=ae21c0ad32874316819276f5ad1c233c
 # gen4c
 NAME_gen4c_barebones=openwrt-gen4c-rel.tar.gz
 PATH_gen4c_barebones=$default_barebones_path
-HASH_gen4c_barebones=3e49062ca81c83df5eccc90d655b1ec9
+HASH_gen4c_barebones=b21d1fb349d482125a65816ad22c3983
 
 NAME_gen4c_toolchains=linaro-aarch64-2020.09-gcc10.2-linux5.4-x86_64.tar.xz
 PATH_gen4c_toolchains=11
@@ -69,9 +69,17 @@ HASH_gen4c_toolchains=fa5ac3139511ae7296c83893785160fa
 # gen4s
 NAME_gen4s_barebones=openwrt-gen4s-rel.tar.gz
 PATH_gen4s_barebones=$default_barebones_path
-HASH_gen4s_barebones=d006ba4d792a5cf323abd921b9030b08
+HASH_gen4s_barebones=724dd456add30c5f937183fdc1cb7850
 
 NAME_gen4s_toolchains=gcc-sigmastar-9.1.0-2019.11-x86_64_arm-linux-gnueabihf.tar.xz
 PATH_gen4s_toolchains=12
 HASH_gen4s_toolchains=c26b5d3523356d32453a910e6d8684d9
 
+# gen4v
+NAME_gen4v_barebones=openwrt-gen4v-rel.tar.gz
+PATH_gen4v_barebones=$default_barebones_path
+HASH_gen4v_barebones=28b9071b498495060a9c54b286bdb269
+
+NAME_gen4v_toolchains=linaro-aarch64-2020.09-gcc10.2-linux5.4-x86_64.tar.xz
+PATH_gen4v_toolchains=11
+HASH_gen4v_toolchains=fa5ac3139511ae7296c83893785160fa
