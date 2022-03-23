@@ -53,6 +53,8 @@ jobs:
         - /home/aidata/github_actions/github_actions_3rdparty/:/workspace/github_actions_3rdparty
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
       - name: Copy actions
         shell: bash
         run: |
@@ -60,10 +62,6 @@ jobs:
           cp -fr /workspace/github_actions_3rdparty/ai-team.github-actions ./.github/github_actions_3rdparty
       - name: Install ai-tools
         uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
-      - name: Prepare submodule
-        shell: bash
-        run: |
-          git submodule update --init --recursive
       - name: Build
         shell: bash
         run: |
@@ -72,7 +70,7 @@ jobs:
       - name: Cache build result
         uses: actions/cache@v2
         with:
-          path: ./build/${{ matrix.platform }}/STATIC/MinSizeRel/rootfs
+          path: ./build/${{ matrix.platform }}/MinSizeRel/rootfs
           key: unittest-${{ matrix.platform }}-buildresult-${{ needs.Environment_Setup.outputs.BRANCH_NAME }}-${{ github.run_id }}
       - name: Run Unittest x86
         if: matrix.platform == 'x86'
@@ -84,7 +82,7 @@ jobs:
         if: matrix.platform == 'gen4l'
         uses: actions/cache@v2
         with:
-          path: ./build/${{ matrix.platform }}/STATIC/MinSizeRel/work
+          path: ./build/${{ matrix.platform }}/MinSizeRel/work
           key: unittest-${{ matrix.platform }}-testresult-${{ needs.Environment_Setup.outputs.BRANCH_NAME }}-${{ github.run_id }}
     outputs:
       BRANCH_NAME: ${{ needs.Environment_Setup.outputs.BRANCH_NAME }}
