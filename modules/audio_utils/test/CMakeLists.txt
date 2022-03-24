@@ -18,6 +18,7 @@ function(
 
     target_link_libraries(
         ${TEST_NAME}
+        -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
         audio_utils
         sndfile
         gmock
