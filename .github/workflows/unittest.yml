@@ -62,11 +62,11 @@ jobs:
           cp -fr /workspace/github_actions_3rdparty/ai-team.github-actions ./.github/github_actions_3rdparty
       - name: Install ai-tools
         uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
-      - name: Install autoconf
+      - name: Install necessary tools
         shell: bash
         run: |
           sudo apt-get install -y autoconf
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y libtool
       - name: Build
         shell: bash
         run: |
