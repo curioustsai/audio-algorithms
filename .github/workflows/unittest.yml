@@ -66,7 +66,14 @@ jobs:
         shell: bash
         run: |
           sudo apt-get install -y autoconf libtool shtool
-          autoreconf -i
+      - name: reconfigure speexdsp
+        working-directory: ./thirdparty/speexdsp/
+        shell: bash
+        run: autoreconf -i
+      - name: reconfigure soundtouch
+        working-directory: ./thirdparty/soundtouch/
+        shell: bash
+        run: autoreconf -i
       - name: Build
         shell: bash
         run: |
