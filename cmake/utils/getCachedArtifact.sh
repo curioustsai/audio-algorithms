@@ -12,7 +12,7 @@ DEST_FOLDER=$4
 #establish where the ARTIFACTORY downloads will be stored
 if [ "${UBNT_ARTIFACTORY_DOWNLOADS}" = "" ]
 then
-	UBNT_ARTIFACTORY_DOWNLOADS=${HOME}/.ubnt/artifactory
+	UBNT_ARTIFACTORY_DOWNLOADS=${HOME}/.ubnt_audio/artifactory
 	echo "UBNT_ARTIFACTORY_DOWNLOADS is not set, using \"${UBNT_ARTIFACTORY_DOWNLOADS}\""
 fi
 mkdir -p "${UBNT_ARTIFACTORY_DOWNLOADS}"

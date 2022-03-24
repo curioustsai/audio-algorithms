@@ -164,7 +164,7 @@ then
 fi
 
 #compute some folder paths
-UBNT_OUTPUT_DIR=${PROJECT_ROOT}/build/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}/${UBNT_LIBRARIES_TYPE}
+UBNT_OUTPUT_DIR=${PROJECT_ROOT}/build/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}
 UBNT_WORK_DIR=${UBNT_OUTPUT_DIR}/work
 UBNT_ROOTFS_DIR=${UBNT_OUTPUT_DIR}/rootfs
 
@@ -220,7 +220,7 @@ function run_cppcheck () {
 	local report_file=${UBNT_WORK_DIR}/cppcheck-result.txt
 
 	time {
-		CPPCHECK_CACHE_DIR="${UBNT_CPPCHECK_CACHE_DIR:-${UBNT_BASE_FOLDER}/cppcheck-build}/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}/${UBNT_LIBRARIES_TYPE}"
+		CPPCHECK_CACHE_DIR="${UBNT_CPPCHECK_CACHE_DIR:-${UBNT_BASE_FOLDER}/cppcheck-build}/${UBNT_PLATFORM_TYPE}/${UBNT_BUILD_TYPE}"
 		cd ${UBNT_OUTPUT_DIR}; \
 			mkdir -p ${CPPCHECK_CACHE_DIR}; \
 			(cppcheck 2> >(tee ${report_file}) \

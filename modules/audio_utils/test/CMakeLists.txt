@@ -18,6 +18,7 @@ function(
 
     target_link_libraries(
         ${TEST_NAME}
+        -L${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/lib
         audio_utils
         sndfile
         gmock
@@ -35,6 +36,11 @@ file(
     GLOB
     SRCS_test_audio_utils
     ${SOURCES_ROOT}/audio_utils/test/*.cpp
+)
+
+include_directories(
+    AFTER
+    ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
 )
 
 register_test(
