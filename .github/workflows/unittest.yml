@@ -18,8 +18,6 @@ jobs:
         - /home/aidata/ui_db/action/testset/:/workspace/testset/
     steps:
       - uses: actions/checkout@v2
-      - name: Install autoconf
-        run: sudo apt-get install -y autoconf
       - name: Setup git user
         run: |
           git config --global user.name "$(git --no-pager log --format=format:'%an' -n 1)"
@@ -63,6 +61,8 @@ jobs:
           cp -fr /workspace/github_actions_3rdparty/ai-team.github-actions ./.github/github_actions_3rdparty
       - name: Install ai-tools
         uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
+      - name: Install autoconf
+        run: sudo apt-get install -y autoconf
       - name: Build
         shell: bash
         run: |
