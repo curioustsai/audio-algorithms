@@ -37,6 +37,11 @@ file(
     ${SOURCES_ROOT}/audio_utils/test/*.cpp
 )
 
+include_directories(
+    AFTER
+    ${PROJECT_ROOT}/thirdparty/libsndfile/${UBNT_PLATFORM_NAME}/include
+)
+
 register_test(
     test_audio_utils
     "${SRCS_test_audio_utils}"
