@@ -18,6 +18,8 @@ jobs:
         - /home/aidata/ui_db/action/testset/:/workspace/testset/
     steps:
       - uses: actions/checkout@v2
+      - name: Install autoconf
+        run: sudo apt-get install -y autoconf
       - name: Setup git user
         run: |
           git config --global user.name "$(git --no-pager log --format=format:'%an' -n 1)"
