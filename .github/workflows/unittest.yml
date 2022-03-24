@@ -64,7 +64,7 @@ jobs:
         uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
       - name: Install autoconf
         shell: bash
-        run: sudo apt-get install autoconf
+        run: sudo apt-get install -y autoconf
       - name: Build
         shell: bash
         run: |
