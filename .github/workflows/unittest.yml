@@ -62,7 +62,10 @@ jobs:
       - name: Install ai-tools
         uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
       - name: Install autoconf
-        run: sudo apt-get install -y autoconf
+        run: |
+          if [ ${{ matrix.platform }} == "x86" ]; then
+            sudo apt-get install -y autoconf
+          fi
       - name: Build
         shell: bash
         run: |
