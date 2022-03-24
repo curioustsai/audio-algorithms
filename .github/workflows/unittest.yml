@@ -43,6 +43,7 @@ jobs:
         platform: [x86, gen4c, gen4l]
         include:
           - platform: x86
+            test: -t
 
     runs-on: [self-hosted, Linux, X64, aiteam]
     needs: Environment_Setup
