@@ -12,7 +12,7 @@ jobs:
   Environment_Setup:
     runs-on: [self-hosted, Linux, X64, aiteam]
     container:
-      image: 10.58.1.67:32000/cvalgo:latest
+      image: 10.58.1.67:32000/audioalgo:latest
       volumes:
         - /home/aidata/github_actions/unittest/:/workspace/unittest
         - /home/aidata/ui_db/action/testset/:/workspace/testset/
@@ -62,18 +62,6 @@ jobs:
           cp -fr /workspace/github_actions_3rdparty/ai-team.github-actions ./.github/github_actions_3rdparty
       - name: Install ai-tools
         uses: ./.github/github_actions_3rdparty/ai-team.github-actions/install-aitools
-      - name: Install necessary tools
-        shell: bash
-        run: |
-          sudo apt-get install -y autoconf libtool shtool
-      - name: reconfigure speexdsp
-        working-directory: ./thirdparty/speexdsp/
-        shell: bash
-        run: autoreconf -i
-      - name: reconfigure soundtouch
-        working-directory: ./thirdparty/soundtouch/
-        shell: bash
-        run: autoreconf -i
       - name: Build
         shell: bash
         run: |
