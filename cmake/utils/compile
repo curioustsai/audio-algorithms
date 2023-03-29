@@ -56,7 +56,7 @@ UBNT_BACKTRACE_ENABLE=OFF
 UBNT_DL_TOOLCHAINS=OFF
 AUDIO_LOG_LEVEL="warn"
 SCRIPT=$0
-OPTIONS="-u -o p:tubg:l:j:ncvsh -l cppcheck -l toolchains"
+OPTIONS="-u -o p:tub:g:l:j:ncvsh -l cppcheck -l toolchains"
 ARGS=$(getopt $OPTIONS -- $*)
 set -- $ARGS
 for i
