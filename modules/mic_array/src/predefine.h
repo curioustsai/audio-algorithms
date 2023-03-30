@@ -1,3 +1,13 @@
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+// #define abs(a) (((a) > 0) ? (a) : (-a))
+// #define fabsf(a) (((a) > 0) ? (a) : (-a))
+
 #ifdef __CMSIS_DSP__
 #include "arm_math.h"
 

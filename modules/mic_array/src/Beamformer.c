@@ -209,9 +209,9 @@ int32_t Beamformer_UpdateMvdrFilter(Beamformer *handle, uint32_t update_speech,
         matmul(steering_hmt, num, 1, nchannel, 1, &den);
 
         for (int n = 0; n < nchannel; n++) {
-            complex float coef = num[n] / (den + 1e-12);
-            bf_coef[n] = 0.9f * bf_coef[n] + 0.1 * coef;
-            /* bf_coef[n] = num[n] / (den + 1e-12); */
+            complex float coef = num[n] / (den + 1e-12f);
+            bf_coef[n] = 0.9f * bf_coef[n] + 0.1f * coef;
+            /* bf_coef[n] = num[n] / (den + 1e-12f); */
         }
     }
 

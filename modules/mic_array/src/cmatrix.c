@@ -18,7 +18,7 @@ complex float *cholesky(complex float *A, int n, complex float *L) {
             for (int k = 0; k < j; k++) { s += L[i * n + k] * conjf(L[j * n + k]); }
 
             L[i * n + j] = (i == j) ? sqrtf((float)(A[i * n + i] - s))
-                                    : (1.0 / L[j * n + j] * (A[i * n + j] - s));
+                                    : (1.0f / L[j * n + j] * (A[i * n + j] - s));
         }
     }
 

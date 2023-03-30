@@ -1,5 +1,5 @@
 #include "SoundLocater.h"
-#include "basic_op.h"
+#include "predefine.h"
 #include "fftwrap.h"
 
 #include <stdio.h>
@@ -254,7 +254,7 @@ void SoundLocater_Init(SoundLocater *handle, uint32_t fs, uint32_t fftlen, uint3
     handle->diffSourceCount = (int32_t *)calloc(handle->angleRetainNum, sizeof(int32_t));
     handle->angleDiff = (int *)calloc(handle->angleRetainNum, sizeof(int));
 
-    handle->angleRetainMaxTime = (uint32_t)(10.f / 0.016);
+    handle->angleRetainMaxTime = (uint32_t)(10.f / 0.016f);
 
     handle->gccValThreshold = 0.15f;
     handle->angleNumThreshold = 30.f;
@@ -275,7 +275,7 @@ void SoundLocater_GccPhat(SoundLocater *handle, complex float *X, complex float 
 
     for (int i = 0; i < half_fftlen; i++) {
         complex float xcorr = X[i] * conjf(Y[i]);
-        xcorr = xcorr / (cabsf(xcorr) + 1e-12);
+        xcorr = xcorr / (cabsf(xcorr) + 1e-12f);
         handle->xcorr[pair_id * half_fftlen + i] =
             0.9f * handle->xcorr[pair_id * half_fftlen + i] + 0.1f * xcorr;
     }
@@ -428,7 +428,7 @@ void SoundLocater_ClusterAngle(SoundLocater *handle, float gccValThreshold, uint
     *weightMax = weightMax_;
     *angleNum = numBuf[max_index];
     *vadNum = numBuf_vad[max_index];
-    *angleCluster = (weightMax_ == 0.0) ? ANGLE_UNVALID : (max_index - step);
+    *angleCluster = (weightMax_ == 0.0f) ? ANGLE_UNVALID : (max_index - step);
 
     return;
 }
@@ -555,11 +555,11 @@ uint32_t SoundLocater_OutBeamDet(SoundLocater *handle, int *angleBuf, float *gcc
             int angleDiff =
                 min(abs(angleBuf[i] - angleRetain), 360 - abs(angleBuf[i] - angleRetain));
             if (angleDiff < 10) {
-                if (gccValueBuf[i] > 0.3) { valid_count++; }
+                if (gccValueBuf[i] > 0.3f) { valid_count++; }
                 valid_count2++;
             }
 
-            if (gccValueBuf[i] > 0.3) { valid_count3++; }
+            if (gccValueBuf[i] > 0.3f) { valid_count3++; }
         }
 
         if ((valid_count > 1) || (valid_count2 > 3) || (valid_count3 > 4)) { handle->outbeam = 0; }
