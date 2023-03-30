@@ -4,18 +4,18 @@ project(mic_array)
 #detect the source files
 glob_source_files()
 
-add_definitions(-fexceptions -D_USE_MATH_DEFINES)
+add_definitions(
+    -fexceptions -D_USE_MATH_DEFINES -D__GNUC_PYTHON__ -D__CMSIS_DSP__
+)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	add_definitions(-DAUDIO_ALGO_DEBUG)
+    add_definitions(-DAUDIO_ALGO_DEBUG)
 endif()
-
 
 #set the include folder search path
 include_directories(
-    AFTER
-    ${SOURCES_ROOT}/${PROJECT_NAME}/include
-    ${SOURCES_ROOT}/version/
+    AFTER ${SOURCES_ROOT}/${PROJECT_NAME}/include ${SOURCES_ROOT}/version/
+    ${PROJECT_ROOT}/thirdparty/cmsisdsp/Include
 )
 
 #print some debug info about the list of files and include folders
@@ -23,15 +23,20 @@ show_include_and_src_files()
 
 #define the executable
 add_library(
-    ${PROJECT_NAME}
-    ${UBNT_LIBRARIES_TYPE}
-    ${VERSION_SOURCES}
-    ${CPP_SOURCES}
-    ${C_SOURCES}
+    ${PROJECT_NAME} ${UBNT_LIBRARIES_TYPE} ${VERSION_SOURCES} ${CPP_SOURCES}
+                    ${C_SOURCES}
 )
 
-install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/MicArray.h DESTINATION /include/${PROJECT_NAME})
-install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a DESTINATION /lib)
+target_link_libraries(
+    ${PROJECT_NAME} ${PROJECT_ROOT}/thirdparty/cmsisdsp/Bin/libCMSISDSP.a
+)
+
+install(FILES ${SOURCES_ROOT}/${PROJECT_NAME}/include/MicArray.h
+        DESTINATION /include/${PROJECT_NAME}
+)
+install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib${PROJECT_NAME}.a
+        DESTINATION /lib
+)
 
 # if(UBNT_WITH_TESTS)
 # 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O0")
