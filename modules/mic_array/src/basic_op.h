@@ -75,8 +75,8 @@ void uiv_mult_q15(const int16_t *pSrcA, const int16_t *pSrcB, int16_t *pDst, uin
 void uiv_mult_q31(const int32_t *pSrcA, const int32_t *pSrcB, int32_t *pDst, uint32_t block_size);
 void uiv_mult_f32(const float *pSrcA, const float *pSrcB, float *pDst, uint32_t block_size);
 
-void uiv_cmplx_dot_prod_f32(const int32_t *pSrcA, const int32_t *pSrcB, uint32_t numSamples,
-                            int32_t *realResult, int32_t *imagResult);
+void uiv_cmplx_dot_prod_f32(const float *pSrcA, const float *pSrcB, uint32_t numSamples,
+                            float *realResult, float *imagResult);
 
 void uiv_mean_f32(const float *pSrc, uint32_t block_size, float *mean);
 

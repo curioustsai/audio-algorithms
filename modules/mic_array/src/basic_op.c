@@ -124,12 +124,12 @@ void uiv_mult_f32(const float *pSrcA, const float *pSrcB, float *pDst,
     for (i = 0; i < block_size; i++) { pDst[i] = pSrcA[i] * pSrcB[i]; }
 }
 
-void uiv_cmplx_dot_prod_f32(const int32_t *pSrcA, const int32_t *pSrcB, uint32_t numSamples,
-                            int32_t *realResult, int32_t *imagResult) {
+void uiv_cmplx_dot_prod_f32(const float *pSrcA, const float *pSrcB, uint32_t numSamples,
+                            float *realResult, float *imagResult) {
     uint32_t i;
-    int32_t a0, b0, c0, d0;
-    int32_t real_sum = 0;
-    int32_t imag_sum = 0;
+    float a0, b0, c0, d0;
+    float real_sum = 0;
+    float imag_sum = 0;
 
     for (i = 0; i < numSamples; i++) {
         a0 = *pSrcA++;
