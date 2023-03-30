@@ -1,11 +1,11 @@
 #ifndef __NOISE_REDUCE_H__
 #define __NOISE_REDUCE_H__
 
+#include "predefine.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif 
-
-#include <stdint.h>
 
 #define MAX_NBAND	3
 

@@ -1,5 +1,6 @@
-#include <stdlib.h>
 #include "fftwrap.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef _FFTW_
 #include <fftw3.h>
@@ -53,7 +54,7 @@ void uiv_fft(void *table, float *in, float *out) {
      * input real value of length N
      * output complex value of length (N/2+1) * 2, length in real value equals to N + 2
      * |bin 0, real| bin 0, imag | bin 1, real| bin 1, image| ... | bin N/2 + 1 real |, bin N/2 + 1 imag|
-     */    
+     */
 
     fftwf_execute(t->fft);
 
@@ -70,8 +71,74 @@ void uiv_ifft(void *table, float *in, float *out) {
 
     for (i = 0; i < N + 2; ++i) iptr[i] = in[i];
 
-    fftwf_execute(t->ifft); 
+    fftwf_execute(t->ifft);
     for (i = 0; i < N; ++i) out[i] = optr[i] * m;
+}
+
+#elif __CMSIS_DSP__
+#include "arm_math.h"
+#include <assert.h>
+
+typedef struct cmsisfft_config_ {
+    float *in;
+    float *out;
+    arm_rfft_fast_instance_f32 *inst;
+    int N;
+} cmsisfft_config;
+
+void *uiv_fft_init(int size) {
+    cmsisfft_config *config = (cmsisfft_config *)malloc(sizeof(cmsisfft_config));
+    config->inst = (arm_rfft_fast_instance_f32 *)malloc(sizeof(arm_rfft_fast_instance_f32));
+    arm_status ret = arm_rfft_fast_init_f32(config->inst, (uint16_t)size);
+
+    assert(ret == ARM_MATH_SUCCESS);
+
+    config->in = (float *)malloc(sizeof(float) * size);
+    config->out = (float *)malloc(sizeof(float) * (size + 2));
+    config->N = size;
+
+    return config;
+}
+
+void uiv_fft_destroy(void *config) {
+    cmsisfft_config *handle = (cmsisfft_config *)config;
+    free(handle->in);
+    free(handle->out);
+
+    free(config);
+}
+
+void uiv_fft(void *config, float *in, float *out) {
+    cmsisfft_config *handle = (cmsisfft_config *)config;
+
+    for (int i = 0; i < handle->N; ++i) { handle->in[i] = in[i]; }
+    arm_rfft_fast_f32(handle->inst, handle->in, handle->out, 0);
+
+    /*
+     * rfft: 
+     * input: real value of length N
+     * output: complex value of length (N/2) * 2, length in real value equals to N 
+     * |bin 0, real| bin N-1, real | bin 1, real| bin 1, image| ... | bin N/2 real |, bin N/2 imag|
+     *
+     * fft value bin 0 and N-1 is always real. They are combined at the first 2 real value.
+     * grow up by a factor of fftLen
+     */
+    out[0] = handle->out[0];
+    out[1] = 0;
+    for (int i = 2; i < handle->N; ++i) { out[i] = handle->out[i]; }
+    out[handle->N] = handle->out[1];
+    out[handle->N + 1] = 0;
+}
+
+void uiv_ifft(void *config, float *in, float *out) {
+    // scale down by a factor of 1 / fftLen
+    cmsisfft_config *handle = (cmsisfft_config *)config;
+
+    handle->in[0] = in[0];
+    handle->in[1] = in[handle->N];
+    for (int i = 2; i < handle->N; ++i) { handle->in[i] = in[i]; }
+    arm_rfft_fast_f32(handle->inst, handle->in, handle->out, 1);
+    for (int i = 0; i < handle->N; ++i) { out[i] = handle->out[i]; }
 }
 
 #else
@@ -116,7 +183,7 @@ void uiv_fft(void *config, float *in, float *out) {
      * |bin 0, real| bin N-1, real | bin 1, real| bin 1, image| ... | bin N/2 real |, bin N/2 imag|
      *
      * fft value bin 0 and N-1 is always real. They are combined at the first 2 real value.
-     */    
+     */
     out[0] = handle->out[0];
     out[1] = 0;
     for (int i = 2; i < handle->N; ++i) { out[i] = handle->out[i]; }
@@ -137,4 +204,3 @@ void uiv_ifft(void *config, float *in, float *out) {
 }
 
 #endif
-

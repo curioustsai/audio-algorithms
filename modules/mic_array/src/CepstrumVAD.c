@@ -1,5 +1,5 @@
 #include "CepstrumVAD.h"
-#include "basic_op.h"
+#include "predefine.h"
 #include "fftwrap.h"
 #include <stdlib.h>
 

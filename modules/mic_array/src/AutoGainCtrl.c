@@ -1,5 +1,4 @@
 #include "AutoGainCtrl.h"
-#include "basic_op.h"
 
 int32_t AutoGainCtrl_Init(AutoGainCtrl* handle, float tpka_fp, uint32_t nframe, float g_min, float g_max)
 {

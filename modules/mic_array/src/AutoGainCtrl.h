@@ -1,7 +1,7 @@
 #ifndef __AUTOGAINCTRL_H__
 #define __AUTOGAINCTRL_H__
 
-#include <stdint.h>
+#include "predefine.h"
 
 #ifdef __cplusplus
 extern "C" {

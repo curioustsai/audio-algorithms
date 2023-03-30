@@ -1,7 +1,7 @@
 #ifndef __BEAMFORMER_H__
 #define __BEAMFORMER_H__
 
-#include <stdint.h>
+#include "predefine.h"
 #include <complex.h>
 
 #ifdef __cplusplus

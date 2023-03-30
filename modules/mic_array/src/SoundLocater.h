@@ -1,9 +1,10 @@
 #ifndef __SOUNDLOCATOR_H__
 #define __SOUNDLOCATOR_H__
 
-// #include "basic_op.h"
-#include <stdint.h>
 #include <complex.h>
+#include <stdio.h>
+#include "predefine.h"
+#include "fftwrap.h"
 
 #ifdef __cplusplus
 extern "C" {

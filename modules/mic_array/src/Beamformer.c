@@ -1,8 +1,6 @@
 #include "Beamformer.h"
 #include "cmatrix.h"
 #include "fftwrap.h"
-#include <math.h>
-#include <stdlib.h>
 
 int32_t Beamformer_Init(Beamformer *handle, uint32_t fftlen, uint32_t nchannel) {
     uint32_t i, c;

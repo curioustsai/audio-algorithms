@@ -1,14 +1,14 @@
 #ifndef __MIC_ARRAY_INTERNAL_H__
 #define __MIC_ARRAY_INTERNAL_H__
 
+#include "predefine.h"
+
 #include "AutoGainCtrl.h"
 #include "Beamformer.h"
 #include "Biquad.h"
 #include "CepstrumVAD.h"
 #include "NoiseReduce.h"
 #include "SoundLocater.h"
-#include "predefine.h"
-// #include "basic_op.h"
 #include "fftwrap.h"
 
 #define MAX_NCHANNEL 4

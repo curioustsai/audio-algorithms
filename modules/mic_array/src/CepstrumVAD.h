@@ -1,7 +1,7 @@
 #ifndef __CEPSTRUM_VAD_H__
 #define __CEPSTRUM_VAD_H__
 
-#include <stdint.h>
+#include "predefine.h"
 
 #ifdef __cplusplus
 extern "C" {

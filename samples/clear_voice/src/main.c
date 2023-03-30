@@ -102,8 +102,12 @@ int32_t simulator(char* input_filename) {
     /**
 	 * sndfile
 	 */
-    SNDFILE *cep_file, *nr_file, *agc_file, *doa_file, *cluster_file;
+    SNDFILE *cep_file, *nr_file, *doa_file, *cluster_file;
     SF_INFO sfinfo_cep, sfinfo_nr, sfinfo_agc, sfinfo_doa, sfinfo_cluster;
+
+#ifdef _AGC_ENABLE
+    SNDFILE *agc_file;
+#endif
 
     memcpy(&sfinfo_cep, &sfinfo_in, sizeof(SF_INFO));
     memcpy(&sfinfo_nr, &sfinfo_in, sizeof(SF_INFO));
@@ -133,9 +137,11 @@ int32_t simulator(char* input_filename) {
         replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_nr.wav");
     nr_file = sf_open(nr_filename, SFM_WRITE, &sfinfo_nr);
 
+#ifdef _AGC_ENABLE
     char* agc_filename =
         replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_agc.wav");
     agc_file = sf_open(agc_filename, SFM_WRITE, &sfinfo_agc);
+#endif
 
     char* doa_filename =
         replace_subffix(input_filename, filename, LEN_FILENAME, ".wav", "_c_doa.wav");
@@ -292,7 +298,9 @@ int32_t simulator(char* input_filename) {
     free(cep_buf);
     sf_close(doa_file);
     sf_close(cluster_file);
+#ifdef _AGC_ENABLE
     sf_close(agc_file);
+#endif
     sf_close(nr_file);
     sf_close(cep_file);
 

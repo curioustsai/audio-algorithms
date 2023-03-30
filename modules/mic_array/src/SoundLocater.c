@@ -1,9 +1,4 @@
 #include "SoundLocater.h"
-#include "predefine.h"
-#include "fftwrap.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #define ANGLE_UNVALID 1000
 

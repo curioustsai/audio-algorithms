@@ -100,7 +100,8 @@ set(
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options(-g)
+    set(CMAKE_C_FLAGS "-g -O0")
+    set(CMAKE_CXX_FLAGS "-g -O0")
 else()
     set(
         EXE_COMPILE_FLAGS

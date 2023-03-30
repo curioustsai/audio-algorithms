@@ -1,7 +1,6 @@
 #include "MicArray_Internal.h"
-#include <stdlib.h>
 
-#define _DUMP_FFT
+//#define _DUMP_FFT
 #ifdef _DUMP_FFT
 #include <stdio.h>
 FILE* fptr_fft;

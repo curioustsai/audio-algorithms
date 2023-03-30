@@ -29,7 +29,7 @@ endif()
 
 if(${UBNT_PLATFORM_NAME} STREQUAL "x86")
     add_subdirectory(pffft)
-    add_subdirectory(audio_events)
+    # add_subdirectory(audio_events)
     add_subdirectory(mic_array)
     add_subdirectory(formant_shift)
     add_subdirectory(click_removal)

@@ -1,11 +1,11 @@
 #ifndef __BIQUAD_H__
 #define __BIQUAD_H__
 
+#include "predefine.h"
 #ifdef __cplusplus
 extern "C" {
 #endif 
 
-// #include <stdint.h>
 // typedef int16_t Word16;
 // typedef int32_t Word32;
 // typedef int64_t Word64;

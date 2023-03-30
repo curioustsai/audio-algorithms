@@ -1,6 +1,6 @@
 #include "NoiseReduce.h"
 #include "fftwrap.h"
-#include "basic_op.h"
+#include "predefine.h"
 #include <stdlib.h>
 
 /**
