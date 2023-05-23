@@ -30,12 +30,14 @@ float amax_f32(float *array, int len, int *index) {
 
 int SoundLocater_ParamCtrl(SoundLocater *handle, int request, void *ptr) {
     int nchannel = handle->nchannel;
+		float *setMicPos = NULL;
+		float *retMicPos = NULL;
 
     switch (request) {
         case SOUNDLOCATOR_SET_MICARRAY:
             if (ptr == NULL) return -1;
 
-            float *setMicPos = (float *)ptr;
+            setMicPos = (float *)ptr;
 
             for (int mic_index = 0; mic_index < nchannel; mic_index++) {
                 handle->micPos[mic_index][0] = setMicPos[3 * mic_index];
@@ -47,7 +49,7 @@ int SoundLocater_ParamCtrl(SoundLocater *handle, int request, void *ptr) {
         case SOUNDLOCATOR_GET_MICARRAY:
             if (ptr == NULL) return -1;
 
-            float *retMicPos = (float *)ptr;
+            retMicPos = (float *)ptr;
 
             for (int mic_index = 0; mic_index < nchannel; mic_index++) {
                 retMicPos[3 * mic_index + 0] = handle->micPos[mic_index][0];
